@@ -50,12 +50,13 @@ export function AppInfoModal({ isOpen, onClose }) {
               width: '56px',
               height: '56px',
               borderRadius: '16px',
-              background: 'linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(99,102,241,0.2) 100%)',
+              overflow: 'hidden',
+              boxShadow: '0 4px 16px var(--accent-emerald-glow)',
               border: '1px solid var(--border-active)',
               marginBottom: '0.75rem'
             }}
           >
-            <Flame size={32} color="var(--accent-emerald)" />
+            <img src="/app-icon.png" alt="ADONIS Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <h2 style={{ fontSize: '1.6rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
             ADONIS

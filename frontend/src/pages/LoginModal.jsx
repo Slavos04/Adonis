@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Flame, Lock, Mail, UserCheck, Shield, KeyRound, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Flame, Lock, Mail, UserCheck, Shield, KeyRound, ArrowLeft, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { authApi } from '../api/client';
 
 export function LoginModal({ onLoginSuccess }) {
@@ -13,6 +13,8 @@ export function LoginModal({ onLoginSuccess }) {
   const [resetSuccess, setResetSuccess] = useState(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [role, setRole] = useState('patient');
@@ -68,10 +70,14 @@ export function LoginModal({ onLoginSuccess }) {
   }
 
   return (
-    <div style={{ maxWidth: '440px', margin: '4rem auto', padding: '2rem' }} className="glass-panel">
+    <div style={{ maxWidth: '440px', margin: '3rem auto', padding: '2rem' }} className="glass-panel login-card">
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <div style={{ display: 'inline-flex', background: 'rgba(16,185,129,0.15)', padding: '0.85rem', borderRadius: '50%', marginBottom: '0.75rem' }}>
-          {isForgot ? <KeyRound size={32} color="#10b981" /> : <Flame size={32} color="#10b981" />}
+        <div style={{ display: 'inline-flex', background: 'rgba(16,185,129,0.12)', padding: '0.4rem', borderRadius: '18px', marginBottom: '0.75rem', border: '1px solid var(--border-subtle)', boxShadow: '0 4px 16px var(--accent-emerald-glow)' }}>
+          {isForgot ? (
+            <div style={{ padding: '0.6rem' }}><KeyRound size={36} color="#10b981" /></div>
+          ) : (
+            <img src="/app-icon.png" alt="ADONIS" style={{ width: '64px', height: '64px', borderRadius: '14px', objectFit: 'cover', display: 'block' }} />
+          )}
         </div>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>ADONIS</h1>
         <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-emerald)', textTransform: 'uppercase', letterSpacing: '0.15em', marginTop: '0.2rem', marginBottom: '0.6rem' }}>
@@ -141,14 +147,24 @@ export function LoginModal({ onLoginSuccess }) {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Nowe Hasło</label>
-                <input
-                  type="password"
-                  required
-                  placeholder="Min. 8 znaków"
-                  value={newResetPassword}
-                  onChange={(e) => setNewResetPassword(e.target.value)}
-                  style={{ width: '100%', background: '#1f2937', border: '1px solid var(--border-subtle)', color: '#fff', padding: '0.6rem 0.85rem', borderRadius: '8px' }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showResetPassword ? "text" : "password"}
+                    required
+                    placeholder="Min. 8 znaków"
+                    value={newResetPassword}
+                    onChange={(e) => setNewResetPassword(e.target.value)}
+                    style={{ width: '100%', background: '#1f2937', border: '1px solid var(--border-subtle)', color: '#fff', padding: '0.6rem 2.5rem 0.6rem 0.85rem', borderRadius: '8px' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPassword(!showResetPassword)}
+                    style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    title={showResetPassword ? "Ukryj hasło" : "Pokaż hasło"}
+                  >
+                    {showResetPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
               <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }}>
                 {loading ? 'Zapisywanie...' : 'Zmień hasło i zatwierdź'}
@@ -233,14 +249,24 @@ export function LoginModal({ onLoginSuccess }) {
                 </button>
               )}
             </div>
-            <input
-              type="password"
-              required
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={{ width: '100%', background: '#1f2937', border: '1px solid var(--border-subtle)', color: '#fff', padding: '0.6rem 0.85rem', borderRadius: '8px' }}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ width: '100%', background: '#1f2937', border: '1px solid var(--border-subtle)', color: '#fff', padding: '0.6rem 2.5rem 0.6rem 0.85rem', borderRadius: '8px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                title={showPassword ? "Ukryj hasło" : "Pokaż hasło"}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
 
           <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }}>

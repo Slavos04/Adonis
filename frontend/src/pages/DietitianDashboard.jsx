@@ -652,7 +652,7 @@ export function DietitianDashboard() {
   const calDifference = activeDayMacros.cal - targetCal;
 
   return (
-    <div style={{ maxWidth: '1440px', margin: '0 auto', padding: '2rem' }}>
+    <div className="page-container">
       {/* Top Header */}
       <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>

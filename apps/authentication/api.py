@@ -71,12 +71,14 @@ def login(request, payload: LoginSchema, response: HttpResponse):
     Logowanie tradycyjne (Email/Login i Hasło).
     Ustawia bezpieczne ciasteczko HttpOnly dla Weba oraz zwraca token w JSON dla aplikacji Android.
     """
-    # Sprawdzenie po emailu lub username
-    user = User.objects.filter(email=payload.email).first()
+    # Sprawdzenie po emailu lub username (case-insensitive i strip whitespace)
+    clean_login = (payload.email or "").strip()
+    clean_password = (payload.password or "").strip()
+    user = User.objects.filter(email__iexact=clean_login).first()
     if not user:
-        user = User.objects.filter(username=payload.email).first()
+        user = User.objects.filter(username__iexact=clean_login).first()
         
-    if not user or not user.check_password(payload.password):
+    if not user or not (user.check_password(payload.password) or (clean_password and user.check_password(clean_password))):
         raise HttpError(401, "Nieprawidłowy adres e-mail lub hasło.")
 
     if not user.is_active:
@@ -102,21 +104,22 @@ def login(request, payload: LoginSchema, response: HttpResponse):
 @router.post("/register", response=AuthResponseSchema, auth=None)
 def register(request, payload: RegisterSchema, response: HttpResponse):
     """Rejestracja nowego użytkownika z automatycznym utworzeniem profilu pacjenta."""
-    if User.objects.filter(email=payload.email).exists():
+    clean_email = (payload.email or "").strip().lower()
+    if User.objects.filter(email__iexact=clean_email).exists():
         raise HttpError(400, "Użytkownik o podanym adresie e-mail już istnieje.")
 
-    username = payload.username or payload.email.split('@')[0]
+    username = payload.username or clean_email.split('@')[0]
     # Unikalny username
     base_username = username
     counter = 1
-    while User.objects.filter(username=username).exists():
+    while User.objects.filter(username__iexact=username).exists():
         username = f"{base_username}{counter}"
         counter += 1
 
     role = payload.role if payload.role in [UserRole.PATIENT, UserRole.DIETITIAN, UserRole.ADMIN] else UserRole.PATIENT
 
     user = User.objects.create_user(
-        email=payload.email,
+        email=clean_email,
         username=username,
         password=payload.password,
         first_name=payload.first_name or "",

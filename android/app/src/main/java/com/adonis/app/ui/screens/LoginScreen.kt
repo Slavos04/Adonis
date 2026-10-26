@@ -3,15 +3,21 @@ package com.adonis.app.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.adonis.app.data.api.AdonisApiService
@@ -36,6 +42,12 @@ fun LoginScreen(
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
 
+    // Toggle widoczności haseł ("oczko")
+    var passwordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
+    var resetNewPasswordVisible by remember { mutableStateOf(false) }
+    var resetConfirmPasswordVisible by remember { mutableStateOf(false) }
+
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var infoMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
@@ -55,11 +67,13 @@ fun LoginScreen(
 
     fun doLogin(loginEmail: String, loginPass: String) {
         val cleanEmail = loginEmail.trim()
+        val cleanPass = loginPass.trim()
+
         if (cleanEmail.isBlank()) {
-            errorMessage = "Podaj adres e-mail."
+            errorMessage = "Podaj adres e-mail lub login."
             return
         }
-        if (loginPass.isBlank()) {
+        if (cleanPass.isBlank()) {
             errorMessage = "Podaj hasło."
             return
         }
@@ -68,7 +82,7 @@ fun LoginScreen(
         errorMessage = null
         scope.launch {
             try {
-                val res = apiService.login(LoginRequest(cleanEmail, loginPass))
+                val res = apiService.login(LoginRequest(cleanEmail, cleanPass))
                 tokenManager.saveToken(
                     token = res.token,
                     email = res.user.email,
@@ -81,7 +95,7 @@ fun LoginScreen(
             } catch (e: Exception) {
                 val msg = e.localizedMessage ?: e.message ?: ""
                 errorMessage = if (msg.contains("401") || msg.contains("Unauthorized") || msg.contains("400")) {
-                    "Błąd logowania: nieprawidłowy e-mail lub hasło."
+                    "Błąd logowania: nieprawidłowy e-mail lub hasło. Sprawdź wpisane dane za pomocą ikony podglądu hasła (oczka)."
                 } else if (msg.contains("Failed to connect") || msg.contains("timeout") || msg.contains("Unable to resolve host") || msg.contains("Connection refused")) {
                     "Błąd połączenia z serwerem. Sprawdź połączenie internetowe."
                 } else {
@@ -97,6 +111,8 @@ fun LoginScreen(
         val cleanEmail = email.trim()
         val cleanFirst = firstName.trim()
         val cleanLast = lastName.trim()
+        val cleanPass = password.trim()
+        val cleanConfirm = confirmPassword.trim()
 
         if (cleanFirst.isBlank()) {
             errorMessage = "Podaj swoje imię."
@@ -106,11 +122,11 @@ fun LoginScreen(
             errorMessage = "Podaj adres e-mail."
             return
         }
-        if (password.length < 6) {
+        if (cleanPass.length < 6) {
             errorMessage = "Hasło musi mieć co najmniej 6 znaków."
             return
         }
-        if (password != confirmPassword) {
+        if (cleanPass != cleanConfirm) {
             errorMessage = "Hasła nie są identyczne."
             return
         }
@@ -122,7 +138,7 @@ fun LoginScreen(
                 val res = apiService.register(
                     RegisterRequest(
                         email = cleanEmail,
-                        password = password,
+                        password = cleanPass,
                         firstName = cleanFirst,
                         lastName = cleanLast,
                         role = "patient"
@@ -215,6 +231,9 @@ fun LoginScreen(
                 value = firstName,
                 onValueChange = { firstName = it },
                 label = { Text("Twoje imię *") },
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Words
+                ),
                 modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
                 singleLine = true
             )
@@ -223,6 +242,9 @@ fun LoginScreen(
                 value = lastName,
                 onValueChange = { lastName = it },
                 label = { Text("Nazwisko (opcjonalnie)") },
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Words
+                ),
                 modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
                 singleLine = true
             )
@@ -231,6 +253,10 @@ fun LoginScreen(
                 value = email,
                 onValueChange = { email = it },
                 label = { Text("Adres E-mail *") },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    capitalization = KeyboardCapitalization.None
+                ),
                 modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
                 singleLine = true
             )
@@ -239,7 +265,18 @@ fun LoginScreen(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Hasło (min. 6 znaków) *") },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    capitalization = KeyboardCapitalization.None
+                ),
+                trailingIcon = {
+                    val icon = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                    val desc = if (passwordVisible) "Ukryj hasło" else "Pokaż hasło"
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(icon, contentDescription = desc)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
                 singleLine = true
             )
@@ -248,7 +285,18 @@ fun LoginScreen(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
                 label = { Text("Powtórz hasło *") },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    capitalization = KeyboardCapitalization.None
+                ),
+                trailingIcon = {
+                    val icon = if (confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                    val desc = if (confirmPasswordVisible) "Ukryj hasło" else "Pokaż hasło"
+                    IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                        Icon(icon, contentDescription = desc)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
                 singleLine = true
             )
@@ -277,7 +325,11 @@ fun LoginScreen(
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Adres E-mail") },
+                label = { Text("Adres E-mail lub login") },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    capitalization = KeyboardCapitalization.None
+                ),
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 singleLine = true
             )
@@ -286,7 +338,18 @@ fun LoginScreen(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Hasło") },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    capitalization = KeyboardCapitalization.None
+                ),
+                trailingIcon = {
+                    val icon = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                    val desc = if (passwordVisible) "Ukryj hasło" else "Pokaż hasło"
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(icon, contentDescription = desc)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 singleLine = true
             )
@@ -378,6 +441,10 @@ fun LoginScreen(
                                 value = resetEmailInput,
                                 onValueChange = { resetEmailInput = it },
                                 label = { Text("Twój adres e-mail") },
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Email,
+                                    capitalization = KeyboardCapitalization.None
+                                ),
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -392,6 +459,10 @@ fun LoginScreen(
                                 value = resetTokenInput,
                                 onValueChange = { resetTokenInput = it },
                                 label = { Text("6-cyfrowy kod weryfikacyjny") },
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Number,
+                                    capitalization = KeyboardCapitalization.None
+                                ),
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -400,7 +471,17 @@ fun LoginScreen(
                                 value = resetNewPasswordInput,
                                 onValueChange = { resetNewPasswordInput = it },
                                 label = { Text("Nowe hasło") },
-                                visualTransformation = PasswordVisualTransformation(),
+                                visualTransformation = if (resetNewPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Password,
+                                    capitalization = KeyboardCapitalization.None
+                                ),
+                                trailingIcon = {
+                                    val icon = if (resetNewPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                                    IconButton(onClick = { resetNewPasswordVisible = !resetNewPasswordVisible }) {
+                                        Icon(icon, contentDescription = null)
+                                    }
+                                },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -409,7 +490,17 @@ fun LoginScreen(
                                 value = resetConfirmPasswordInput,
                                 onValueChange = { resetConfirmPasswordInput = it },
                                 label = { Text("Powtórz nowe hasło") },
-                                visualTransformation = PasswordVisualTransformation(),
+                                visualTransformation = if (resetConfirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Password,
+                                    capitalization = KeyboardCapitalization.None
+                                ),
+                                trailingIcon = {
+                                    val icon = if (resetConfirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                                    IconButton(onClick = { resetConfirmPasswordVisible = !resetConfirmPasswordVisible }) {
+                                        Icon(icon, contentDescription = null)
+                                    }
+                                },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -449,11 +540,13 @@ fun LoginScreen(
                     } else {
                         Button(
                             onClick = {
-                                if (resetNewPasswordInput != resetConfirmPasswordInput) {
+                                val cleanP1 = resetNewPasswordInput.trim()
+                                val cleanP2 = resetConfirmPasswordInput.trim()
+                                if (cleanP1 != cleanP2) {
                                     resetStatusMessage = "Hasła nie są identyczne."
                                     return@Button
                                 }
-                                if (resetNewPasswordInput.length < 6) {
+                                if (cleanP1.length < 6) {
                                     resetStatusMessage = "Hasło musi mieć co najmniej 6 znaków."
                                     return@Button
                                 }
@@ -464,12 +557,12 @@ fun LoginScreen(
                                             ResetPasswordRequest(
                                                 email = resetEmailInput.trim(),
                                                 code = resetTokenInput.trim(),
-                                                newPassword = resetNewPasswordInput
+                                                newPassword = cleanP1
                                             )
                                         )
                                         infoMessage = (res["message"] as? String) ?: "Hasło zostało pomyślnie zmienione! Możesz się zalogować."
-                                        password = resetNewPasswordInput
-                                        email = resetEmailInput
+                                        password = cleanP1
+                                        email = resetEmailInput.trim()
                                         showForgotDialog = false
                                         resetStep = 1
                                     } catch (e: Exception) {

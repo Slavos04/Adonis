@@ -92,7 +92,7 @@ export function RecipeBrowser() {
   const categories = ['Wszystkie', 'Śniadanie', 'Drugie śniadanie', 'Obiad', 'Przekąska / Podwieczorek', 'Kolacja'];
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
+    <div className="page-container">
       {/* Top Banner and Navigation */}
       <div className="glass-panel" style={{ padding: '1.75rem', marginBottom: '2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>

@@ -86,7 +86,7 @@ function MainLayout() {
         {activeTab === 'dashboard' && renderDashboard()}
 
         {activeTab === 'shopping' && (
-          <div style={{ maxWidth: '1000px', margin: '2rem auto', padding: '0 1.5rem' }}>
+          <div className="page-container" style={{ maxWidth: '1000px' }}>
             <ShoppingListWidget />
           </div>
         )}
@@ -94,7 +94,7 @@ function MainLayout() {
         {activeTab === 'recipes' && <RecipeBrowser />}
 
         {activeTab === 'chat' && (
-          <div style={{ maxWidth: '960px', margin: '2rem auto', padding: '0 1.5rem' }}>
+          <div className="page-container" style={{ maxWidth: '960px' }}>
             <ChatWidget />
           </div>
         )}

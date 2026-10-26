@@ -194,7 +194,7 @@ export function PatientDashboard() {
   };
 
   return (
-    <div style={{ maxWidth: '1350px', margin: '0 auto', padding: '2rem' }}>
+    <div className="page-container">
       {/* Personalized Welcome Header with Full Name */}
       <div
         className="glass-panel"
@@ -453,14 +453,8 @@ export function PatientDashboard() {
         </div>
 
         {/* 7 Days of the Week Grid */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(7, 1fr)',
-            gap: '0.75rem',
-            position: 'relative',
-          }}
-        >
+        <div className="week-calendar-scroll-wrapper">
+          <div className="week-calendar-grid">
           {weeklyData?.days.map((day) => {
             const isSelected = day.date === selectedDate;
             const isToday = day.date === todayStr;
@@ -608,6 +602,7 @@ export function PatientDashboard() {
               </div>
             );
           })}
+          </div>
         </div>
       </div>
 
