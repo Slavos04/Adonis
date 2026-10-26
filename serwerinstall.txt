@@ -1,0 +1,323 @@
+================================================================================
+          INSTRUKCJA INSTALACJI I WDROŻENIA PRODUKCYJNEGO ADONIS FIT & EAT
+                                  Wersja 1.0
+================================================================================
+
+Niniejszy przewodnik opisuje krok po kroku jak wdrożyć system ADONIS fit & eat
+(Backend Django Ninja ASGI + Baza PostgreSQL + Frontend Web React + Aplikacja Android)
+na serwerze produkcyjnym (np. VPS z systemem Ubuntu 22.04 / 24.04 LTS).
+
+Kontakt w razie pytań technicznych: slavosmm@gmail.com
+
+
+================================================================================
+1. GDZIE I JAKIE ADRESY WPISAĆ DO ŁĄCZENIA Z SERWEREM I Z APLIKACJĄ?
+================================================================================
+
+Załóżmy, że posiadasz zarejestrowaną domenę: twojadomena.pl
+(oraz opcjonalnie poddomenę dla API: api.twojadomena.pl lub wszystko pod jedną domeną).
+
+Poniżej znajduje się lista wszystkich miejsc, w których należy wpisać adresy:
+
+--------------------------------------------------------------------------------
+A) BACKEND - Plik konfiguracyjny ".env" na serwerze:
+--------------------------------------------------------------------------------
+W głównym katalogu projektu na serwerze utwórz plik `.env` (skopiuj z `.env.example`):
+
+DEBUG=False
+SECRET_KEY=wygeneruj_bardzo_dlugi_i_losowy_ciag_znakow_minimum_50_znakow
+
+# Adresy domen, z których serwer może przyjmować zapytania:
+ALLOWED_HOSTS=twojadomena.pl,www.twojadomena.pl,127.0.0.1,localhost
+
+# Domeny, z których dozwolone są zapytania CORS (dla przeglądarek WWW):
+CORS_ALLOWED_ORIGINS=https://twojadomena.pl,https://www.twojadomena.pl
+
+# Zaufane domeny dla formularzy i ochrony CSRF:
+CSRF_TRUSTED_ORIGINS=https://twojadomena.pl,https://www.twojadomena.pl
+
+# Baza danych PostgreSQL (produkcyjna):
+DATABASE_URL=postgres://adonis_user:TwojeBezpieczneHasloDB@localhost:5432/adonis_db
+# LUB poszczególne parametry:
+DB_NAME=adonis_db
+DB_USER=adonis_user
+DB_PASSWORD=TwojeBezpieczneHasloDB
+DB_HOST=localhost
+DB_PORT=5432
+
+# Kanały WebSocket (opcjonalnie Redis na produkcji):
+REDIS_URL=redis://127.0.0.1:6379/1
+
+--------------------------------------------------------------------------------
+B) FRONTEND WEB (React + Vite):
+--------------------------------------------------------------------------------
+W katalogu `frontend/` przed zbudowaniem wersji produkcyjnej (`npm run build`):
+
+1. Jeśli frontend i backend są serwowane przez Nginx pod tą samą domeną (ZALECANE):
+   - Zapytania API idą relatywnie: `/api/...` (nie trzeba nic zmieniać w kodzie).
+   - Nginx przekierowuje ścieżki `/api/` i `/ws/` do Daphne na porcie 8000.
+2. Jeśli API jest na innej poddomenie (np. https://api.twojadomena.pl):
+   - W pliku `frontend/.env.production` wpisz:
+     VITE_API_URL=https://api.twojadomena.pl/api/
+     VITE_WS_URL=wss://api.twojadomena.pl/ws/chat/
+3. Zbuduj produkcyjną paczkę:
+   cd frontend
+   npm install
+   npm run build
+   Wynikowy folder `frontend/dist/` wrzuć na serwer (np. do `/var/www/adonis/dist/`).
+
+--------------------------------------------------------------------------------
+C) APLIKACJA ANDROID (Kotlin):
+--------------------------------------------------------------------------------
+W kodzie aplikacji Android adres produkcyjny definiuje plik:
+android/app/src/main/java/com/adonis/app/data/api/AdonisApiClient.kt
+
+Odszukaj stałą:
+const val ONLINE_BASE_URL = "https://twojadomena.pl/api/"
+oraz adres WebSocket:
+const val ONLINE_WS_URL = "wss://twojadomena.pl/ws/chat/"
+
+
+================================================================================
+2. WYMAGANIA SERWERA
+================================================================================
+- System: Ubuntu 22.04 LTS lub 24.04 LTS (x86_64 lub ARM64).
+- Minimum: 1-2 rdzenie CPU, 2 GB RAM (zalecane 4 GB dla komfortowej pracy), 20 GB dysku SSD.
+- Zainstalowane pakiety: Python 3.12+, PostgreSQL, Nginx, Certbot (darmowy certyfikat SSL).
+
+
+================================================================================
+3. INSTALACJA KROK PO KROKU NA UBUNTU
+================================================================================
+
+KROK 1: Aktualizacja systemu i instalacja wymaganych narzędzi
+--------------------------------------------------------------------------------
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y python3 python3-pip python3-venv postgresql postgresql-contrib nginx certbot python3-certbot-nginx git curl ufw
+
+KROK 2: Utworzenie bazy danych PostgreSQL
+--------------------------------------------------------------------------------
+sudo -u postgres psql
+(w konsoli PostgreSQL wykonaj poniższe polecenia):
+
+CREATE DATABASE adonis_db;
+CREATE USER adonis_user WITH PASSWORD 'TwojeSilneHasloBazy123!';
+GRANT ALL PRIVILEGES ON DATABASE adonis_db TO adonis_user;
+ALTER DATABASE adonis_db OWNER TO adonis_user;
+\q
+
+KROK 3: Wgranie projektu i instalacja zależności Python
+--------------------------------------------------------------------------------
+sudo mkdir -p /var/www/adonis
+sudo chown -R $USER:$USER /var/www/adonis
+
+# Skopiuj pliki projektu do /var/www/adonis
+cd /var/www/adonis
+
+# Utwórz środowisko wirtualne:
+python3 -m venv venv
+source venv/bin/activate
+
+# Zainstaluj zależności:
+pip install --upgrade pip
+pip install -r requirements.txt
+pip install psycopg2-binary daphne
+
+KROK 4: Konfiguracja pliku .env i inicjalizacja bazy
+--------------------------------------------------------------------------------
+Utwórz plik `/var/www/adonis/.env` zgodnie z sekcją 1A powyżej.
+
+# Zastosuj migracje bazy danych:
+python manage.py migrate
+
+# Wgraj bazę startową 125 przepisów fitness i produktów:
+python manage.py seed_recipes
+
+# Zbierz pliki statyczne Django:
+python manage.py collectstatic --noinput
+
+# Utwórz konto administratora (superusera):
+python manage.py createsuperuser
+
+KROK 5: Zbudowanie frontendu Web (React)
+--------------------------------------------------------------------------------
+# Zainstaluj Node.js (wersja 20 LTS):
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+cd /var/www/adonis/frontend
+npm install
+npm run build
+# Zbudowane pliki HTML/CSS/JS znajdą się w /var/www/adonis/frontend/dist
+
+KROK 6: Konfiguracja usługi systemd dla Daphne (Serwer ASGI)
+--------------------------------------------------------------------------------
+Utwórz plik usługi:
+sudo nano /etc/systemd/system/adonis.service
+
+Wklej poniższą zawartość:
+
+[Unit]
+Description=Adonis Daphne ASGI Service
+After=network.target postgresql.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/adonis
+EnvironmentFile=/var/www/adonis/.env
+ExecStart=/var/www/adonis/venv/bin/daphne -b 127.0.0.1 -p 8000 adonis_backend.asgi:application
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
+Aktywuj i uruchom usługę:
+sudo chown -R www-data:www-data /var/www/adonis
+sudo systemctl daemon-reload
+sudo systemctl enable adonis
+sudo systemctl start adonis
+sudo systemctl status adonis
+
+
+================================================================================
+4. BEZPIECZNA KONFIGURACJA NGINX + SSL (HTTPS & WSS)
+================================================================================
+
+KROK 1: Utwórz konfigurację Nginx
+--------------------------------------------------------------------------------
+sudo nano /etc/nginx/sites-available/adonis
+
+Wklej poniższą konfigurację:
+
+server {
+    listen 80;
+    server_name twojadomena.pl www.twojadomena.pl;
+
+    # Przekierowanie całego ruchu HTTP na HTTPS:
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name twojadomena.pl www.twojadomena.pl;
+
+    # Certyfikaty SSL (zostaną uzupełnione automatycznie przez Certbot):
+    # ssl_certificate /etc/letsencrypt/live/twojadomena.pl/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/twojadomena.pl/privkey.pem;
+
+    # Nagłówki bezpieczeństwa:
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+    # Maksymalny rozmiar wysyłanych plików (np. zdjęcia potraw):
+    client_max_body_size 25M;
+
+    # 1. Frontend Web (React SPA)
+    root /var/www/adonis/frontend/dist;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 2. Pliki statyczne Django (Admin / Swagger)
+    location /static/ {
+        alias /var/www/adonis/static/;
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+    }
+
+    # 3. Zapytania API Django Ninja oraz Panel Admina
+    location ~ ^/(api|admin) {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 90;
+    }
+
+    # 4. WebSockets (Czat w czasie rzeczywistym)
+    location /ws/ {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+    }
+}
+
+Aktywuj stronę w Nginx:
+sudo ln -s /etc/nginx/sites-available/adonis /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+
+KROK 2: Wygenerowanie bezpłatnego certyfikatu SSL (Let's Encrypt)
+--------------------------------------------------------------------------------
+sudo certbot --nginx -d twojadomena.pl -d www.twojadomena.pl
+(Certbot automatycznie doda konfigurację SSL do pliku Nginx i ustawi autoodnawianie).
+
+
+================================================================================
+5. ZAPORA SIECIOWA (FIREWALL UFW)
+================================================================================
+Aby zabezpieczyć serwer przed nieautoryzowanym dostępem:
+
+sudo ufw allow 22/tcp    # SSH
+sudo ufw allow 80/tcp    # HTTP
+sudo ufw allow 443/tcp   # HTTPS
+sudo ufw enable
+sudo ufw status
+
+
+================================================================================
+6. REGULARNE KOPIE ZAPASOWE CO 7 DNI (BACKUP BAZY DANYCH)
+================================================================================
+Utwórz skrypt automatycznego backupu bazy PostgreSQL co 7 dni (raz w tygodniu):
+sudo nano /usr/local/bin/backup_adonis.sh
+
+Zawartość skryptu:
+#!/bin/bash
+BACKUP_DIR="/var/backups/adonis"
+mkdir -p $BACKUP_DIR
+DATE=$(date +"%Y%m%d_%H%M%S")
+PGPASSWORD="TwojeSilneHasloBazy123!" pg_dump -U adonis_user -h localhost adonis_db | gzip > $BACKUP_DIR/adonis_db_$DATE.sql.gz
+# Usuwaj kopie starsze niż 60 dni:
+find $BACKUP_DIR -type f -name "*.sql.gz" -mtime +60 -delete
+
+Nadaj uprawnienia do wykonania:
+sudo chmod +x /usr/local/bin/backup_adonis.sh
+
+Dodaj do crona (uruchamianie co 7 dni - w każdą niedzielę o 3:00 w nocy):
+sudo crontab -e
+0 3 * * 0 /usr/local/bin/backup_adonis.sh
+
+
+================================================================================
+7. ALTERNATYWA: SZYBKIE WDROŻENIE PRZEZ DOCKER COMPOSE
+================================================================================
+Jeśli wolisz uruchomić aplikację w kontenerach Docker:
+1. Zainstaluj Dockera:
+   curl -fsSL https://get.docker.com | sh
+   sudo usermod -aG docker $USER
+2. Skonfiguruj plik `.env`
+3. Uruchom cały stos (PostgreSQL + Adonis Daphne):
+   docker compose up -d --build
+4. Skonfiguruj Nginx na hoście do przekazywania ruchu na port 8000 kontenera.
+
+
+================================================================================
+GRATULACJE!
+System ADONIS fit & eat ver. 1.0 działa w bezpiecznym trybie produkcyjnym.
+W razie jakichkolwiek pytań lub potrzeby wsparcia pisz na: slavosmm@gmail.com
+================================================================================

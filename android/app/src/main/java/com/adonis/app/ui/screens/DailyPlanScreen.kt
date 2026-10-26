@@ -1,0 +1,813 @@
+package com.adonis.app.ui.screens
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.adonis.app.data.api.AdonisApiService
+import com.adonis.app.data.api.TokenManager
+import com.adonis.app.data.model.*
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
+
+@Composable
+fun DailyPlanScreen(
+    apiService: AdonisApiService,
+    tokenManager: TokenManager
+) {
+    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    val displayFormat = SimpleDateFormat("EEEE, d MMMM yyyy", Locale("pl", "PL"))
+    
+    val currentCalendar = remember { mutableStateOf(Calendar.getInstance()) }
+    val selectedDateStr = remember { derivedStateOf { sdf.format(currentCalendar.value.time) } }
+    val displayDateStr = remember { derivedStateOf { displayFormat.format(currentCalendar.value.time).replaceFirstChar { it.uppercase() } } }
+
+    val todayCalendar = remember { Calendar.getInstance() }
+    val isToday = remember(currentCalendar.value) {
+        val c = currentCalendar.value
+        val t = Calendar.getInstance()
+        c.get(Calendar.YEAR) == t.get(Calendar.YEAR) && c.get(Calendar.DAY_OF_YEAR) == t.get(Calendar.DAY_OF_YEAR)
+    }
+
+    var planResponse by remember { mutableStateOf<DailyMealPlanResponse?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+    
+    // Recommendations banner & history dialog
+    var officialRecommendations by remember { mutableStateOf<String?>(null) }
+    var isRecBannerDismissed by remember { mutableStateOf(tokenManager.isRecBannerDismissed()) }
+    var showRecHistoryDialog by remember { mutableStateOf(false) }
+    var recHistoryList by remember { mutableStateOf<List<PatientRecommendation>>(emptyList()) }
+    var isRecHistoryLoading by remember { mutableStateOf(false) }
+
+    // Dialogs: Scaler & Recipe Info Details & Load Package
+    var scalingMeal by remember { mutableStateOf<PlannedMeal?>(null) }
+    var scaledResult by remember { mutableStateOf<ScaledRecipeResponse?>(null) }
+    var selectedPortions by remember { mutableStateOf(1.5) }
+
+    var infoRecipe by remember { mutableStateOf<Recipe?>(null) }
+
+    // Gotowe pakiety jadłospisów
+    var showLoadPackageDialog by remember { mutableStateOf(false) }
+    var packagesList by remember { mutableStateOf<List<DietPlanTemplate>>(emptyList()) }
+    var isPackagesLoading by remember { mutableStateOf(false) }
+    var packageActionStatus by remember { mutableStateOf<String?>(null) }
+
+    val scope = rememberCoroutineScope()
+
+    fun loadPlan() {
+        scope.launch {
+            isLoading = true
+            try {
+                planResponse = apiService.getDailyPlan(targetDate = selectedDateStr.value)
+            } catch (_: Exception) {
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    fun openPackagesDialog() {
+        showLoadPackageDialog = true
+        scope.launch {
+            isPackagesLoading = true
+            packageActionStatus = null
+            try {
+                packagesList = apiService.getDietTemplates()
+            } catch (_: Exception) {
+            } finally {
+                isPackagesLoading = false
+            }
+        }
+    }
+
+    // Load user recommendations once
+    LaunchedEffect(Unit) {
+        try {
+            val meData = apiService.getMe()
+            val profile = meData["profile"] as? Map<*, *>
+            val rec = profile?.get("official_recommendations") as? String
+            officialRecommendations = rec
+        } catch (_: Exception) {}
+    }
+
+    LaunchedEffect(selectedDateStr.value) {
+        loadPlan()
+    }
+
+    fun openRecommendationsHistory() {
+        showRecHistoryDialog = true
+        scope.launch {
+            isRecHistoryLoading = true
+            try {
+                recHistoryList = apiService.getMyRecommendationsHistory()
+            } catch (_: Exception) {
+            } finally {
+                isRecHistoryLoading = false
+            }
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        // Górny pasek akcji: Załaduj jadłospis + Historia zaleceń
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedButton(
+                onClick = { openPackagesDialog() },
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+            ) {
+                Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Załaduj gotowy jadłospis", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            }
+
+            if (isRecBannerDismissed && !officialRecommendations.isNullOrBlank()) {
+                TextButton(
+                    onClick = { openRecommendationsHistory() },
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Icon(Icons.Default.Assignment, contentDescription = null, modifier = Modifier.size(15.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Zalecenia", fontSize = 11.sp)
+                }
+            }
+        }
+
+        // Top Date Navigation Row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = {
+                val cal = Calendar.getInstance().apply {
+                    time = currentCalendar.value.time
+                    add(Calendar.DAY_OF_YEAR, -1)
+                }
+                currentCalendar.value = cal
+            }) {
+                Icon(Icons.Default.ChevronLeft, contentDescription = "Poprzedni dzień")
+            }
+
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = displayDateStr.value,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (isToday) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(4.dp),
+                        modifier = Modifier.padding(top = 2.dp)
+                    ) {
+                        Text(
+                            text = "Dzisiaj",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
+                        )
+                    }
+                } else {
+                    TextButton(
+                        onClick = { currentCalendar.value = Calendar.getInstance() },
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text("← Wróć do dzisiaj", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
+
+            IconButton(onClick = {
+                val cal = Calendar.getInstance().apply {
+                    time = currentCalendar.value.time
+                    add(Calendar.DAY_OF_YEAR, 1)
+                }
+                currentCalendar.value = cal
+            }) {
+                Icon(Icons.Default.ChevronRight, contentDescription = "Następny dzień")
+            }
+        }
+
+        // Recommendations Banner (with dismiss 'X' and history button)
+        if (!isRecBannerDismissed && !officialRecommendations.isNullOrBlank()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Icon(
+                                Icons.Default.Assignment,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Zalecenia Dietetyka",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+
+                        IconButton(
+                            onClick = {
+                                tokenManager.setRecBannerDismissed(true)
+                                isRecBannerDismissed = true
+                            },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Zamknij zalecenia",
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = officialRecommendations ?: "",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(top = 4.dp, bottom = 6.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(
+                            onClick = { openRecommendationsHistory() },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Historia zaleceń", fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+            return
+        }
+
+        planResponse?.let { plan ->
+            // Macro summary card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text("Kalorie", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${plan.totalCalories.toInt()} kcal", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
+                    }
+                    Column {
+                        Text("Białko", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${plan.totalProteinG}g", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
+                    Column {
+                        Text("Tłuszcz", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${plan.totalFatG}g", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
+                    Column {
+                        Text("Węglowodany", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${plan.totalCarbsG}g", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
+                }
+            }
+
+            if (plan.meals.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = plan.notes ?: "Brak posiłków zaplanowanych na ten dzień.",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(plan.meals) { meal ->
+                        MealItemCard(
+                            meal = meal,
+                            onToggle = {
+                                scope.launch {
+                                    apiService.toggleMealCompleted(meal.id)
+                                    loadPlan()
+                                }
+                            },
+                            onInfoClick = {
+                                infoRecipe = meal.recipe
+                            },
+                            onScaleClick = {
+                                scalingMeal = meal
+                                scope.launch {
+                                    try {
+                                        scaledResult = apiService.scaleRecipe(meal.recipe.id, selectedPortions)
+                                    } catch (_: Exception) {}
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        // 1. Portion Scaler Dialog
+        scalingMeal?.let { meal ->
+            AlertDialog(
+                onDismissRequest = { scalingMeal = null },
+                title = { Text("Skaluj Porcje: ${meal.recipe.title}") },
+                text = {
+                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                        Text("Wybierz porcję:")
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 8.dp)) {
+                            listOf(1.0, 1.5, 2.0).forEach { p ->
+                                Button(
+                                    onClick = {
+                                        selectedPortions = p
+                                        scope.launch {
+                                            scaledResult = apiService.scaleRecipe(meal.recipe.id, p)
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (selectedPortions == p) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                ) {
+                                    Text("${p}x")
+                                }
+                            }
+                        }
+
+                        scaledResult?.let { res ->
+                            Text(
+                                "Łącznie: ${res.totalCalories.toInt()} kcal (B: ${res.totalProteinG}g, T: ${res.totalFatG}g, W: ${res.totalCarbsG}g)",
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text("Przeliczona gramatura z Lidla/Biedronki/Kauflandu:", fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                            res.ingredients.forEach { ing ->
+                                Text("• ${ing.productName} (${ing.store}): ${ing.scaledAmount} ${ing.unit}", fontSize = 12.sp)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { scalingMeal = null }) {
+                        Text("Zamknij")
+                    }
+                }
+            )
+        }
+
+        // 2. Recipe Info / Details Dialog with photo & prep time
+        infoRecipe?.let { recipe ->
+            AlertDialog(
+                onDismissRequest = { infoRecipe = null },
+                title = {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = recipe.title,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = { infoRecipe = null }) {
+                            Icon(Icons.Default.Close, contentDescription = "Zamknij")
+                        }
+                    }
+                },
+                text = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        // Recipe Photo
+                        if (!recipe.imageUrl.isNullOrBlank()) {
+                            AsyncImage(
+                                model = recipe.imageUrl,
+                                contentDescription = recipe.title,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(180.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                        }
+
+                        // Meta details: prep time & category
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text(
+                                    text = "⏱️ ${recipe.prepTimeMinutes} min",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+
+                            Surface(
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text(
+                                    text = recipe.category,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Nutrition values
+                        Text(
+                            text = "${recipe.calories.toInt()} kcal  •  B: ${recipe.proteinG}g  •  T: ${recipe.fatG}g  •  W: ${recipe.carbsG}g",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Ingredients list
+                        if (!recipe.ingredients.isNullOrEmpty()) {
+                            Text("Składniki:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            recipe.ingredients.forEach { ing ->
+                                Text(
+                                    text = "• ${ing.product.name} — ${ing.amountG} ${ing.unit} (${ing.product.store})",
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(vertical = 1.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                        }
+
+                        // Step-by-step instructions
+                        Text("Sposób przygotowania:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text(
+                            text = recipe.instructions ?: "Brak szczegółowego opisu przygotowania.",
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(onClick = { infoRecipe = null }) {
+                        Text("Gotowe")
+                    }
+                }
+            )
+        }
+
+        // 3. Recommendations History Dialog
+        if (showRecHistoryDialog) {
+            AlertDialog(
+                onDismissRequest = { showRecHistoryDialog = false },
+                title = { Text("Historia zaleceń dietetyka") },
+                text = {
+                    if (isRecHistoryLoading) {
+                        Box(modifier = Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    } else if (recHistoryList.isEmpty()) {
+                        Text("Brak wpisów w historii zaleceń.", fontSize = 13.sp)
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 350.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(recHistoryList) { rec ->
+                                Card(
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(modifier = Modifier.padding(10.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = rec.title.ifBlank { "Zalecenie" },
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp
+                                            )
+                                            Text(
+                                                text = rec.createdAt.take(10),
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        if (!rec.dietitianName.isNullOrBlank()) {
+                                            Text(
+                                                text = "Dietetyk: ${rec.dietitianName}",
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.padding(vertical = 2.dp)
+                                            )
+                                        }
+                                        Text(text = rec.content, fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showRecHistoryDialog = false }) {
+                        Text("Zamknij")
+                    }
+                }
+            )
+        }
+
+        // 4. Load Diet Package Dialog
+        if (showLoadPackageDialog) {
+            AlertDialog(
+                onDismissRequest = { showLoadPackageDialog = false },
+                title = { Text("Załaduj gotowy jadłospis") },
+                text = {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        packageActionStatus?.let { msg ->
+                            Text(
+                                text = msg,
+                                color = if (msg.startsWith("Pomyślnie")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                fontSize = 12.sp,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                        }
+
+                        if (isPackagesLoading) {
+                            Box(modifier = Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
+                            }
+                        } else if (packagesList.isEmpty()) {
+                            Text("Brak gotowych szablonów jadłospisów w bazie.", fontSize = 13.sp)
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth().heightIn(max = 380.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(packagesList) { pkg ->
+                                    Card(
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = pkg.name,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 14.sp,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                Surface(
+                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                                    shape = RoundedCornerShape(4.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "${pkg.targetCalories} kcal",
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                            }
+
+                                            if (pkg.category.isNotBlank()) {
+                                                Text(
+                                                    text = "Kategoria: ${pkg.category}",
+                                                    fontSize = 11.sp,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    modifier = Modifier.padding(vertical = 2.dp)
+                                                )
+                                            }
+
+                                            if (!pkg.description.isNullOrBlank()) {
+                                                Text(
+                                                    text = pkg.description,
+                                                    fontSize = 12.sp,
+                                                    modifier = Modifier.padding(top = 2.dp, bottom = 6.dp)
+                                                )
+                                            }
+
+                                            Button(
+                                                onClick = {
+                                                    scope.launch {
+                                                        isPackagesLoading = true
+                                                        try {
+                                                            val res = apiService.loadDietPackage(
+                                                                PatientLoadPackageRequest(
+                                                                    templateId = pkg.id,
+                                                                    startDate = selectedDateStr.value
+                                                                )
+                                                            )
+                                                            val msg = (res["message"] as? String) ?: "Pakiet załadowany"
+                                                            packageActionStatus = msg
+                                                            loadPlan()
+                                                            showLoadPackageDialog = false
+                                                        } catch (e: Exception) {
+                                                            packageActionStatus = "Błąd: ${e.message}"
+                                                        } finally {
+                                                            isPackagesLoading = false
+                                                        }
+                                                    }
+                                                },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                contentPadding = PaddingValues(vertical = 4.dp)
+                                            ) {
+                                                Text("Wybierz i zastosuj od ${selectedDateStr.value}", fontSize = 12.sp)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showLoadPackageDialog = false }) {
+                        Text("Anuluj")
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun MealItemCard(
+    meal: PlannedMeal,
+    onToggle: () -> Unit,
+    onInfoClick: () -> Unit,
+    onScaleClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onInfoClick() }
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = meal.mealType,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+
+                    // Prep time display
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = "⏱️ ${meal.recipe.prepTimeMinutes} min",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+
+                TextButton(onClick = onToggle) {
+                    Text(if (meal.isCompleted) "✓ Zjedzone" else "Oznacz zjedzone", fontSize = 12.sp)
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = meal.recipe.title,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    modifier = Modifier.weight(1f)
+                )
+
+                IconButton(
+                    onClick = onInfoClick,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = "Szczegóły przepisu",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            Text(
+                text = "${meal.recipe.calories.toInt()} kcal | B: ${meal.recipe.proteinG}g, T: ${meal.recipe.fatG}g, W: ${meal.recipe.carbsG}g",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = onScaleClick,
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(vertical = 6.dp)
+            ) {
+                Icon(Icons.Default.Calculate, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Przelicz porcje w locie (np. 1.5x)", fontSize = 12.sp)
+            }
+        }
+    }
+}
+

@@ -1,0 +1,68 @@
+PROJEKT: Wieloplatformowa Aplikacja Dietetyczna wspomagająca odchudzanie o nazwie "Adonis"
+KLIENT: Aplikacja Webowa (Desktop) + Dedykowana Aplikacja Mobilna na Androida
+BACKEND: Python (FastAPI lub Django - do wyboru przez IDE pod kątem stabilności API i wygody panelu admina)
+ŚRODOWISKO DEWELOPERSKIE: Komputer z Windows 11 (Architektura x86_64)
+ŚRODOWISKO PRODUKCYJNE: Serwer Ubuntu (Architektura ARM / aarch64)
+
+ZBUDUJ I WYGENERUJ KOMPLETNĄ APLIKACJĘ OD A DO Z (STRUKTURA, KOD, BAZA DANYCH, TESTY). Zastosuj podejście modułowe i napisz pełny, produkcyjny kod bez uproszczeń, pustych komentarzy typu "# implementacja tutaj" czy sekcji z wielokropkami.
+
+---
+
+### ETAP 1: ARCHITEKTURA ARCHITEKTONICZNA, KONTENERYZACJA I ARCHITEKTURA MULTI-ARCH
+1. Skonfiguruj backend jako czyste, bezstanowe (stateless) API obsługujące aplikację webową oraz mobilną jednocześnie, z wbudowaną obsługą WebSockets do komunikacji.
+2. Przygotuj plik Dockerfile zoptymalizowany pod wieloarchitektoniczność (multi-stage multi-arch build przy użyciu Buildx). Kod musi bez żadnych zmian budować się i testować lokalnie na Windows 11 (x86_64), a produkcyjnie działać natywnie na serwerze Ubuntu ARM64.
+3. Przygotuj plik docker-compose.yml uruchamiający aplikację w Pythonie oraz bazę danych PostgreSQL.
+4. Logowanie i Autoryzacja: Zaimplementuj tradycyjne logowanie przez E-mail/Login i Hasło. Po udanej weryfikacji serwer generuje bezpieczny token (np. JWT):
+   - Dla przeglądarek (Web) token ma być zapisywany i przesyłany w bezpiecznych ciasteczkach z flagami HttpOnly, Secure, SameSite=Lax (ochrona przed XSS).
+   - Dla aplikacji na Androida API musi akceptować i weryfikować ten sam token przesyłany w nagłówku "Authorization: Bearer <token>". Token pozwala na automatyczne logowanie w tle przy otwarciu aplikacji.
+
+---
+
+### ETAP 2: ROLE, UPRAWNIENIA I KONTROLA DOSTĘPU (RBAC)
+Stwórz precyzyjną strukturę użytkowników i uprawnień dla trzech ról:
+1. Administrator: Pełny dostęp techniczny, zarządzenie kontami użytkowników i dietetyków, wgląd w logi systemowe.
+2. Dietetyk (Dostęp głównie przez przeglądarkę na komputerze):
+   - Zarządzanie swoimi pacjentami, ustalanie dla nich ilości posiłków, limitów kalorycznych oraz celów makroskładników (białko, tłuszcze, węglowodany).
+   - Przypisywanie pacjentom gotowych planów i szablonów jadłospisów (aby nie układać diety od zera).
+   - Wgląd w historię pomiarów pacjentów, możliwość wprowadzania korekt i ręcznej edycji wagi oraz parametrów wpisanych przez użytkowników. Każda taka zmiana ze strony dietetyka musi automatycznie generować wpis w historii zmian (Audit Log) z informacją: kto zmienił, kiedy i jaka była stara wartość.
+   - Osobny, dedykowany panel deweloperski do przesyłania oficjalnych zaleceń dietetycznych pacjentowi.
+   - Tworzenie, edycja i sporadyczne dodawanie nowych przepisów do bazy.
+3. Użytkownik / Pacjent (Pełny dostęp przez przeglądarkę na komputerze oraz dedykowaną, natywną aplikację na Androida):
+   - Podgląd swojego jadłospisu na dany dzień, czytanie zaleceń od dietetyka.
+   - Wprowadzanie codziennych parametrów (waga, obwody), generowanie listy zakupów, czat z dietetykiem.
+
+---
+
+### ETAP 3: BAZA STARTOWA PRZEPISÓW (PRE-POPULATED DATABASE) ORAZ PRODUKTY LIDL / BIEDRONKA
+1. Aplikacja NIE MOŻE uruchomić się jako czysta i pusta. Zaprogramuj automatyczny skrypt inicjalizacyjny (Seed Script), który przy pierwszym uruchomieniu wgra do bazy danych:
+   - Gotowy zestaw minimum 100-200 zróżnicowanych przepisów fitness (śniadania, obiady, kolacje, przekąski) ukierunkowanych na redukcję masy ciała.
+   - Każdy przepis musi zawierać nazwę, pełną instrukcję przygotowania krok po kroku, porcje, kalorie oraz dokładne makroskładniki (białko, tłuszcze, węglowodany).
+2. Sercem bazy danych są produkty z polskich dyskontów: Wszystkie przepisy w bazie startowej muszą opierać się na realnych produktach dostępnych w sieciach Lidl i Biedronka (np. Skyr Pilos, Twaróg chudy Delikate, pierś z kurczaka Rzeźnik, produkty Vemondo itp.).
+3. Zaimplementuj integrację (usługę w Pythonie pobierającą dane przez httpx) z bezpłatnym Open Food Facts API, filtrując produkty po słowach kluczowych "Lidl" i "Biedronka" oraz ich markach własnych, aby aplikacja mogła odpytywać bazę produktów po polskich nazwach i kodach kreskowych w celu weryfikacji ich makroskładników na 100g.
+
+---
+
+### ETAP 4: INTELIGENTNA LOGIKA BIZNESOWA (SKALOWANIE I LISTA ZAKUPÓW)
+1. Automatyczne skalowanie porcji dań: Przepisy w bazie mają określoną wagę. Jeśli użytkownik lub dietetyk zmieni liczbę porcji w jadłospisie (np. z 1 porcji na 1.5 porcji, bo gotuje na półtora dnia), system musi w locie matematycznie przeliczyć gramaturę wszystkich składników, całkowitą kaloryczność oraz makroskładniki dania.
+2. Inteligentna lista zakupów: Użytkownik ma możliwość wygenerowania listy zakupów na podstawie zaznaczonych przez siebie dni (np. od poniedziałku do piątku) oraz konkretnych rodzajów posiłków. Algorytm na backendzie musi:
+   - Agregować (sumować) powtarzające się produkty. Jeśli ten sam produkt z Biedronki lub Lidla (np. Pierś z kurczaka) występuje w 3 różnych przepisach w wybranym okresie, system musi połączyć je w jedną pozycję i zsumować ich wagę.
+   - Udostępnić dla każdej pozycji stan logiczny "is_skipped / bought", umożliwiając użytkownikowi łatwe odznaczenie i pominięcie składników, które ma już kupione lub posiada w lodówce.
+
+---
+
+### ETAP 5: KOMUNIKACJA W CZASIE RZECZYWISTYM (CZAT)
+1. Zaimplementuj moduł wewnętrznych wiadomości oparty na protokole WebSockets, umożliwiający natychmiastową, dwukierunkową komunikację tekstową między zalogowanym dietetykiem a jego przypisanym pacjentem.
+2. Każda wysłana wiadomość musi być natychmiast asynchronicznie zapisywana w bazie danych PostgreSQL, zapewniając pełną historię rozmowy na komputerze i w aplikacji mobilnej.
+3. System musi obsługiwać synchronizację statusów oraz umożliwiać przesyłanie krótkich powiadomień wewnątrz aplikacji, gdy dietetyk zaktualizuje zalecenia lub odpisze na czacie.
+
+---
+
+### ETAP 6: SYSTEM TESTÓW I WALIDACJA DZIAŁANIA
+Wygeneruj kompletny katalog testowy `/tests/` wykorzystujący biblioteki `pytest` i `pytest-asyncio`. Testy muszą automatycznie weryfikować:
+1. Poprawność generowania i akceptowania tokenów uwierzytelniających (warstwa cookie dla Web oraz warstwa nagłówka Bearer dla Androida).
+2. Matematyczną poprawność algorytmu inteligentnej listy zakupów (prawidłowe łączenie wag identycznych produktów z Lidla/Biedronki oraz poprawne działanie funkcji pomijania posiadanych składników).
+3. Stabilność przeliczania kalorii i makroskładników przy dynamicznym skalowaniu porcji potraw w locie.
+
+LOKALIZACJA: Cała architektura kodu, nazwy zmiennych, klas i adresów URL (endpointów API) muszą być napisane w standardowym języku angielskim programistycznym. Jednak wszystkie dane użytkowe wyświetlane klientowi, bazy danych, nazwy posiłków ("Śniadanie", "Obiad", "Kolacja"), marki własne oraz gotowe przepisy w bazie startowej muszą być w 100% w języku polskim.
+
+Rozpocznij generowanie aplikacji Adonis od struktury katalogów i pierwszego etapu teraz.
