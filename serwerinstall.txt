@@ -281,9 +281,9 @@ sudo ufw status
 
 
 ================================================================================
-6. REGULARNE KOPIE ZAPASOWE CO 7 DNI (BACKUP BAZY DANYCH)
+6. REGULARNE KOPIE ZAPASOWE (BACKUP CODZIENNIE, RETENCJA 7 DNI)
 ================================================================================
-Utwórz skrypt automatycznego backupu bazy PostgreSQL co 7 dni (raz w tygodniu):
+Utwórz skrypt automatycznego backupu bazy PostgreSQL raz na dobę:
 sudo nano /usr/local/bin/backup_adonis.sh
 
 Zawartość skryptu:
@@ -292,15 +292,15 @@ BACKUP_DIR="/var/backups/adonis"
 mkdir -p $BACKUP_DIR
 DATE=$(date +"%Y%m%d_%H%M%S")
 PGPASSWORD="TwojeSilneHasloBazy123!" pg_dump -U adonis_user -h localhost adonis_db | gzip > $BACKUP_DIR/adonis_db_$DATE.sql.gz
-# Usuwaj kopie starsze niż 60 dni:
-find $BACKUP_DIR -type f -name "*.sql.gz" -mtime +60 -delete
+# Usuwaj kopie starsze niż 7 dni (przechowywanie kopii przez 7 dni):
+find $BACKUP_DIR -type f -name "*.sql.gz" -mtime +7 -delete
 
 Nadaj uprawnienia do wykonania:
 sudo chmod +x /usr/local/bin/backup_adonis.sh
 
-Dodaj do crona (uruchamianie co 7 dni - w każdą niedzielę o 3:00 w nocy):
+Dodaj do crona (uruchamianie codziennie o 3:00 w nocy):
 sudo crontab -e
-0 3 * * 0 /usr/local/bin/backup_adonis.sh
+0 3 * * * /usr/local/bin/backup_adonis.sh
 
 
 ================================================================================
