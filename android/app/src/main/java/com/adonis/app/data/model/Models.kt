@@ -36,6 +36,14 @@ data class LoginRequest(
     val password: String
 )
 
+data class RegisterRequest(
+    val email: String,
+    val password: String,
+    @SerializedName("first_name") val firstName: String = "",
+    @SerializedName("last_name") val lastName: String = "",
+    val role: String = "patient"
+)
+
 data class Product(
     val id: Int,
     val name: String,

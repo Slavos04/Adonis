@@ -1,9 +1,10 @@
 package com.adonis.app.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,11 +14,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.adonis.app.data.api.AdonisApiClient
 import com.adonis.app.data.api.AdonisApiService
 import com.adonis.app.data.api.TokenManager
 import com.adonis.app.data.model.ForgotPasswordRequest
 import com.adonis.app.data.model.LoginRequest
+import com.adonis.app.data.model.RegisterRequest
 import com.adonis.app.data.model.ResetPasswordRequest
 import com.adonis.app.ui.components.AppInfoDialog
 import kotlinx.coroutines.launch
@@ -28,14 +29,17 @@ fun LoginScreen(
     tokenManager: TokenManager,
     onLoginSuccess: () -> Unit
 ) {
+    var isRegisterMode by remember { mutableStateOf(false) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
+
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var infoMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     var showAppInfo by remember { mutableStateOf(false) }
-    var showServerDialog by remember { mutableStateOf(false) }
-    var serverUrlInput by remember { mutableStateOf(tokenManager.getServerUrl()) }
 
     // Dialog resetu hasła
     var showForgotDialog by remember { mutableStateOf(false) }
@@ -43,18 +47,28 @@ fun LoginScreen(
     var resetTokenInput by remember { mutableStateOf("") }
     var resetNewPasswordInput by remember { mutableStateOf("") }
     var resetConfirmPasswordInput by remember { mutableStateOf("") }
-    var resetStep by remember { mutableStateOf(1) } // 1: podaj email, 2: wpisz token i nowe hasło
+    var resetStep by remember { mutableStateOf(1) }
     var resetStatusMessage by remember { mutableStateOf<String?>(null) }
     var isResetLoading by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
 
     fun doLogin(loginEmail: String, loginPass: String) {
+        val cleanEmail = loginEmail.trim()
+        if (cleanEmail.isBlank()) {
+            errorMessage = "Podaj adres e-mail."
+            return
+        }
+        if (loginPass.isBlank()) {
+            errorMessage = "Podaj hasło."
+            return
+        }
+
         isLoading = true
         errorMessage = null
         scope.launch {
             try {
-                val res = apiService.login(LoginRequest(loginEmail.trim(), loginPass))
+                val res = apiService.login(LoginRequest(cleanEmail, loginPass))
                 tokenManager.saveToken(
                     token = res.token,
                     email = res.user.email,
@@ -69,9 +83,68 @@ fun LoginScreen(
                 errorMessage = if (msg.contains("401") || msg.contains("Unauthorized") || msg.contains("400")) {
                     "Błąd logowania: nieprawidłowy e-mail lub hasło."
                 } else if (msg.contains("Failed to connect") || msg.contains("timeout") || msg.contains("Unable to resolve host") || msg.contains("Connection refused")) {
-                    "Błąd połączenia z serwerem (${AdonisApiClient.baseUrl}). Sprawdź internet lub skonfiguruj adres w Serwer API poniżej."
+                    "Błąd połączenia z serwerem. Sprawdź połączenie internetowe."
                 } else {
                     "Błąd logowania: $msg"
+                }
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    fun doRegister() {
+        val cleanEmail = email.trim()
+        val cleanFirst = firstName.trim()
+        val cleanLast = lastName.trim()
+
+        if (cleanFirst.isBlank()) {
+            errorMessage = "Podaj swoje imię."
+            return
+        }
+        if (cleanEmail.isBlank()) {
+            errorMessage = "Podaj adres e-mail."
+            return
+        }
+        if (password.length < 6) {
+            errorMessage = "Hasło musi mieć co najmniej 6 znaków."
+            return
+        }
+        if (password != confirmPassword) {
+            errorMessage = "Hasła nie są identyczne."
+            return
+        }
+
+        isLoading = true
+        errorMessage = null
+        scope.launch {
+            try {
+                val res = apiService.register(
+                    RegisterRequest(
+                        email = cleanEmail,
+                        password = password,
+                        firstName = cleanFirst,
+                        lastName = cleanLast,
+                        role = "patient"
+                    )
+                )
+                tokenManager.saveToken(
+                    token = res.token,
+                    email = res.user.email,
+                    role = res.user.role,
+                    firstName = res.user.firstName,
+                    lastName = res.user.lastName,
+                    userId = res.user.id
+                )
+                onLoginSuccess()
+            } catch (e: Exception) {
+                val msg = e.localizedMessage ?: e.message ?: ""
+                errorMessage = if (msg.contains("istnieje") || msg.contains("400")) {
+                    "Konto o podanym adresie e-mail już istnieje."
+                } else if (msg.contains("Failed to connect") || msg.contains("timeout") || msg.contains("Unable to resolve host") || msg.contains("Connection refused")) {
+                    "Błąd połączenia z serwerem. Sprawdź połączenie internetowe."
+                } else {
+                    "Błąd rejestracji: $msg"
                 }
             } finally {
                 isLoading = false
@@ -82,6 +155,7 @@ fun LoginScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -98,7 +172,15 @@ fun LoginScreen(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.secondary,
             letterSpacing = 2.sp,
-            modifier = Modifier.padding(bottom = 24.dp)
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        Text(
+            text = if (isRegisterMode) "Rejestracja nowego pacjenta" else "Logowanie do konta pacjenta",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 16.dp)
         )
 
         errorMessage?.let {
@@ -127,101 +209,120 @@ fun LoginScreen(
             }
         }
 
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Adres E-mail") },
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-            singleLine = true
-        )
+        if (isRegisterMode) {
+            // Formularz rejestracji pacjenta
+            OutlinedTextField(
+                value = firstName,
+                onValueChange = { firstName = it },
+                label = { Text("Twoje imię *") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                singleLine = true
+            )
 
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Hasło") },
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-            singleLine = true
-        )
+            OutlinedTextField(
+                value = lastName,
+                onValueChange = { lastName = it },
+                label = { Text("Nazwisko (opcjonalnie)") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                singleLine = true
+            )
 
-        TextButton(
-            onClick = { showForgotDialog = true },
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            Text("Nie pamiętasz hasła? Resetuj hasło", fontSize = 12.sp)
-        }
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Adres E-mail *") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                singleLine = true
+            )
 
-        Button(
-            onClick = { doLogin(email, password) },
-            modifier = Modifier.fillMaxWidth().height(50.dp),
-            enabled = !isLoading
-        ) {
-            Text(if (isLoading) "Logowanie..." else "Zaloguj się")
-        }
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Hasło (min. 6 znaków) *") },
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                singleLine = true
+            )
 
-        Spacer(modifier = Modifier.height(14.dp))
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it },
+                label = { Text("Powtórz hasło *") },
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
+                singleLine = true
+            )
 
-        // Przyciski szybkiego logowania demo
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-            shape = RoundedCornerShape(10.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Button(
+                onClick = { doRegister() },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                enabled = !isLoading
             ) {
-                Text(
-                    text = "Konta demonstracyjne (1-kliknięcie):",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = {
-                            email = "pacjent@adonis.app"
-                            password = "Pacjent123!"
-                            doLogin("pacjent@adonis.app", "Pacjent123!")
-                        },
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
-                    ) {
-                        Text("Pacjent", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    }
+                Text(if (isLoading) "Rejestrowanie..." else "Zarejestruj konto pacjenta")
+            }
 
-                    OutlinedButton(
-                        onClick = {
-                            email = "dietetyk@adonis.app"
-                            password = "Dietetyk123!"
-                            doLogin("dietetyk@adonis.app", "Dietetyk123!")
-                        },
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
-                    ) {
-                        Text("Dietetyk", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    }
+            Spacer(modifier = Modifier.height(12.dp))
 
-                    OutlinedButton(
-                        onClick = {
-                            email = "admin@adonis.app"
-                            password = "Admin123!"
-                            doLogin("admin@adonis.app", "Admin123!")
-                        },
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
-                    ) {
-                        Text("Admin", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    }
+            TextButton(
+                onClick = {
+                    isRegisterMode = false
+                    errorMessage = null
+                    infoMessage = null
                 }
+            ) {
+                Text("Masz już konto? Zaloguj się", fontSize = 13.sp)
+            }
+        } else {
+            // Formularz logowania
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Adres E-mail") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                singleLine = true
+            )
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Hasło") },
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                singleLine = true
+            )
+
+            TextButton(
+                onClick = { showForgotDialog = true },
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text("Nie pamiętasz hasła? Resetuj hasło", fontSize = 12.sp)
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Button(
+                onClick = { doLogin(email, password) },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                enabled = !isLoading
+            ) {
+                Text(if (isLoading) "Logowanie..." else "Zaloguj się")
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            OutlinedButton(
+                onClick = {
+                    isRegisterMode = true
+                    errorMessage = null
+                    infoMessage = null
+                },
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) {
+                Text("Nie masz konta? Zarejestruj się jako pacjent", fontSize = 13.sp)
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -229,19 +330,8 @@ fun LoginScreen(
         ) {
             TextButton(onClick = { showAppInfo = true }) {
                 Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(6.dp))
                 Text("O aplikacji", fontSize = 12.sp)
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            TextButton(onClick = {
-                serverUrlInput = tokenManager.getServerUrl()
-                showServerDialog = true
-            }) {
-                Icon(Icons.Default.Dns, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Serwer API", fontSize = 12.sp)
             }
         }
 
@@ -413,69 +503,5 @@ fun LoginScreen(
         if (showAppInfo) {
             AppInfoDialog(onDismissRequest = { showAppInfo = false })
         }
-
-        if (showServerDialog) {
-            AlertDialog(
-                onDismissRequest = { showServerDialog = false },
-                title = { Text("Konfiguracja serwera API", fontWeight = FontWeight.Bold) },
-                text = {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Text(
-                            text = "Aktualny adres serwera backendu:",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        OutlinedTextField(
-                            value = serverUrlInput,
-                            onValueChange = { serverUrlInput = it },
-                            label = { Text("Adres URL API") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = { serverUrlInput = AdonisApiClient.ONLINE_BASE_URL },
-                                modifier = Modifier.weight(1f),
-                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp)
-                            ) {
-                                Text("Produkcja", fontSize = 11.sp)
-                            }
-                            OutlinedButton(
-                                onClick = { serverUrlInput = AdonisApiClient.LOCAL_BASE_URL },
-                                modifier = Modifier.weight(1f),
-                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp)
-                            ) {
-                                Text("Lokalny", fontSize = 11.sp)
-                            }
-                        }
-                    }
-                },
-                confirmButton = {
-                    Button(onClick = {
-                        val clean = serverUrlInput.trim()
-                        if (clean.isNotBlank()) {
-                            tokenManager.saveServerUrl(clean)
-                            AdonisApiClient.updateBaseUrl(clean)
-                            infoMessage = "Zaktualizowano serwer na: ${AdonisApiClient.baseUrl}"
-                        }
-                        showServerDialog = false
-                    }) {
-                        Text("Zapisz")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showServerDialog = false }) {
-                        Text("Anuluj")
-                    }
-                }
-            )
-        }
     }
 }
-

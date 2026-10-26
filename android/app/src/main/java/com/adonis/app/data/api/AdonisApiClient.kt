@@ -16,6 +16,9 @@ interface AdonisApiService {
     @POST("auth/login")
     suspend fun login(@Body request: LoginRequest): AuthResponse
 
+    @POST("auth/register")
+    suspend fun register(@Body request: RegisterRequest): AuthResponse
+
     @GET("auth/me")
     suspend fun getMe(): Map<String, Any>
 

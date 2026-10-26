@@ -401,11 +401,6 @@ fun SettingsScreen(
                     Text("O aplikacji ADONIS fit & eat", fontSize = 12.sp)
                 }
                 Text(
-                    text = "Serwer API: ${AdonisApiClient.baseUrl}",
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
-                Text(
                     text = "ver. 1.0 (Produkcyjna)",
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
