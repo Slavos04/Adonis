@@ -19,7 +19,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.adonis.app.data.api.AdonisApiClient
 import com.adonis.app.data.api.AdonisApiService
+import com.adonis.app.data.api.TokenManager
 import com.adonis.app.data.model.ChangePasswordRequest
 import com.adonis.app.data.model.UserNotificationSettings
 import com.adonis.app.ui.components.AppInfoDialog
@@ -29,6 +31,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     apiService: AdonisApiService,
+    tokenManager: TokenManager? = null,
     onClose: () -> Unit,
     onLogout: () -> Unit
 ) {
@@ -398,9 +401,14 @@ fun SettingsScreen(
                     Text("O aplikacji ADONIS fit & eat", fontSize = 12.sp)
                 }
                 Text(
-                    text = "ver. 1.0 (Produkcyjna)",
+                    text = "Serwer API: ${AdonisApiClient.baseUrl}",
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+                Text(
+                    text = "ver. 1.0 (Produkcyjna)",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
                 )
             }
         }

@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.adonis.app.data.api.AdonisApiClient
 import com.adonis.app.data.api.AdonisApiService
 import com.adonis.app.data.api.TokenManager
 import com.adonis.app.data.model.ChatMessage
@@ -70,7 +71,7 @@ fun ChatScreen(
     val activePartner = partners.find { it.partnerId == selectedPartnerId } ?: partners.firstOrNull()
 
     val wsClient = remember(token) {
-        AdonisWebSocketClient(token = token).apply { connect() }
+        AdonisWebSocketClient(serverUrl = AdonisApiClient.getWebSocketUrl(), token = token).apply { connect() }
     }
 
     // Pobieranie listy konwersacji i aktualizacja partnerów

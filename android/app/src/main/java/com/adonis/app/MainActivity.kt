@@ -56,6 +56,7 @@ class MainActivity : ComponentActivity() {
                         if (showSettings) {
                             SettingsScreen(
                                 apiService = apiService,
+                                tokenManager = tokenManager,
                                 onClose = {
                                     currentTheme = tokenManager.getTheme()
                                     showSettings = false

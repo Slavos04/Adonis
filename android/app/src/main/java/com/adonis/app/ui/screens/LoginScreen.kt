@@ -1,7 +1,9 @@
 package com.adonis.app.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -11,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.adonis.app.data.api.AdonisApiClient
 import com.adonis.app.data.api.AdonisApiService
 import com.adonis.app.data.api.TokenManager
 import com.adonis.app.data.model.ForgotPasswordRequest
@@ -31,6 +34,8 @@ fun LoginScreen(
     var infoMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     var showAppInfo by remember { mutableStateOf(false) }
+    var showServerDialog by remember { mutableStateOf(false) }
+    var serverUrlInput by remember { mutableStateOf(tokenManager.getServerUrl()) }
 
     // Dialog resetu hasła
     var showForgotDialog by remember { mutableStateOf(false) }
@@ -49,7 +54,7 @@ fun LoginScreen(
         errorMessage = null
         scope.launch {
             try {
-                val res = apiService.login(LoginRequest(loginEmail, loginPass))
+                val res = apiService.login(LoginRequest(loginEmail.trim(), loginPass))
                 tokenManager.saveToken(
                     token = res.token,
                     email = res.user.email,
@@ -60,13 +65,13 @@ fun LoginScreen(
                 )
                 onLoginSuccess()
             } catch (e: Exception) {
-                val msg = e.localizedMessage ?: ""
+                val msg = e.localizedMessage ?: e.message ?: ""
                 errorMessage = if (msg.contains("401") || msg.contains("Unauthorized") || msg.contains("400")) {
-                    "Błąd logowania. Wpisz poprawne dane."
-                } else if (msg.contains("Failed to connect") || msg.contains("timeout") || msg.contains("Unable to resolve host")) {
-                    "Błąd połączenia z serwerem. Sprawdź połączenie internetowe."
+                    "Błąd logowania: nieprawidłowy e-mail lub hasło."
+                } else if (msg.contains("Failed to connect") || msg.contains("timeout") || msg.contains("Unable to resolve host") || msg.contains("Connection refused")) {
+                    "Błąd połączenia z serwerem (${AdonisApiClient.baseUrl}). Sprawdź internet lub skonfiguruj adres w Serwer API poniżej."
                 } else {
-                    "Błąd logowania. Wpisz poprawne dane."
+                    "Błąd logowania: $msg"
                 }
             } finally {
                 isLoading = false
@@ -135,7 +140,7 @@ fun LoginScreen(
             onValueChange = { password = it },
             label = { Text("Hasło") },
             visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
             singleLine = true
         )
 
@@ -154,7 +159,69 @@ fun LoginScreen(
             Text(if (isLoading) "Logowanie..." else "Zaloguj się")
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Przyciski szybkiego logowania demo
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            shape = RoundedCornerShape(10.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Konta demonstracyjne (1-kliknięcie):",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            email = "pacjent@adonis.app"
+                            password = "Pacjent123!"
+                            doLogin("pacjent@adonis.app", "Pacjent123!")
+                        },
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                    ) {
+                        Text("Pacjent", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            email = "dietetyk@adonis.app"
+                            password = "Dietetyk123!"
+                            doLogin("dietetyk@adonis.app", "Dietetyk123!")
+                        },
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                    ) {
+                        Text("Dietetyk", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            email = "admin@adonis.app"
+                            password = "Admin123!"
+                            doLogin("admin@adonis.app", "Admin123!")
+                        },
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                    ) {
+                        Text("Admin", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -163,7 +230,18 @@ fun LoginScreen(
             TextButton(onClick = { showAppInfo = true }) {
                 Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("O aplikacji ADONIS", fontSize = 12.sp)
+                Text("O aplikacji", fontSize = 12.sp)
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            TextButton(onClick = {
+                serverUrlInput = tokenManager.getServerUrl()
+                showServerDialog = true
+            }) {
+                Icon(Icons.Default.Dns, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Serwer API", fontSize = 12.sp)
             }
         }
 
@@ -171,7 +249,7 @@ fun LoginScreen(
             text = "ADONIS fit & eat • ver. 1.0",
             fontSize = 11.sp,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
-            modifier = Modifier.padding(top = 2.dp, bottom = 16.dp)
+            modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
         )
 
         // Dialog resetu hasła
@@ -334,6 +412,69 @@ fun LoginScreen(
 
         if (showAppInfo) {
             AppInfoDialog(onDismissRequest = { showAppInfo = false })
+        }
+
+        if (showServerDialog) {
+            AlertDialog(
+                onDismissRequest = { showServerDialog = false },
+                title = { Text("Konfiguracja serwera API", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            text = "Aktualny adres serwera backendu:",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        OutlinedTextField(
+                            value = serverUrlInput,
+                            onValueChange = { serverUrlInput = it },
+                            label = { Text("Adres URL API") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = { serverUrlInput = AdonisApiClient.ONLINE_BASE_URL },
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp)
+                            ) {
+                                Text("Produkcja", fontSize = 11.sp)
+                            }
+                            OutlinedButton(
+                                onClick = { serverUrlInput = AdonisApiClient.LOCAL_BASE_URL },
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp)
+                            ) {
+                                Text("Lokalny", fontSize = 11.sp)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(onClick = {
+                        val clean = serverUrlInput.trim()
+                        if (clean.isNotBlank()) {
+                            tokenManager.saveServerUrl(clean)
+                            AdonisApiClient.updateBaseUrl(clean)
+                            infoMessage = "Zaktualizowano serwer na: ${AdonisApiClient.baseUrl}"
+                        }
+                        showServerDialog = false
+                    }) {
+                        Text("Zapisz")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showServerDialog = false }) {
+                        Text("Anuluj")
+                    }
+                }
+            )
         }
     }
 }

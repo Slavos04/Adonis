@@ -67,7 +67,15 @@ class TokenManager(context: Context) {
         prefs.edit().clear().apply()
     }
 
-    fun getServerUrl(): String = prefs.getString("server_url", "") ?: ""
+    fun getServerUrl(): String {
+        val saved = prefs.getString("server_url", "") ?: ""
+        if (saved.isBlank() || saved.contains("trycloudflare.com") || saved.contains("10.0.2.2")) {
+            val prod = "https://adonis.slavosmm.duckdns.org/api/"
+            saveServerUrl(prod)
+            return prod
+        }
+        return saved
+    }
 
     fun saveServerUrl(url: String) {
         prefs.edit().putString("server_url", url).apply()

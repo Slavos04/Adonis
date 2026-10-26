@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import okhttp3.*
 
 class AdonisWebSocketClient(
-    private val serverUrl: String = "ws://10.0.2.2:8000/ws/chat/",
+    private val serverUrl: String = "wss://adonis.slavosmm.duckdns.org/ws/chat/",
     private val token: String
 ) : WebSocketListener() {
 

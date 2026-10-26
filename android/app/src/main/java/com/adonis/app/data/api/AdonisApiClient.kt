@@ -1,6 +1,7 @@
 package com.adonis.app.data.api
 
 import com.adonis.app.data.model.*
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
@@ -168,6 +169,22 @@ interface AdonisApiService {
     ): DietPlanTemplate
 }
 
+class DynamicHostInterceptor : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        var request = chain.request()
+        val currentBaseUrl = AdonisApiClient.baseUrl.toHttpUrlOrNull()
+        if (currentBaseUrl != null) {
+            val newUrl = request.url.newBuilder()
+                .scheme(currentBaseUrl.scheme)
+                .host(currentBaseUrl.host)
+                .port(currentBaseUrl.port)
+                .build()
+            request = request.newBuilder().url(newUrl).build()
+        }
+        return chain.proceed(request)
+    }
+}
+
 class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val original = chain.request()
@@ -182,10 +199,10 @@ class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
 }
 
 object AdonisApiClient {
-    const val ONLINE_BASE_URL: String = "https://prospective-ate-definitely-read.trycloudflare.com/api/"
+    const val ONLINE_BASE_URL: String = "https://adonis.slavosmm.duckdns.org/api/"
     const val LOCAL_BASE_URL: String = "http://10.0.2.2:8000/api/"
 
-    var baseUrl: String = LOCAL_BASE_URL
+    var baseUrl: String = ONLINE_BASE_URL
 
     fun updateBaseUrl(newUrl: String) {
         var clean = newUrl.trim()
@@ -195,10 +212,23 @@ object AdonisApiClient {
         baseUrl = clean
     }
 
+    fun getWebSocketUrl(): String {
+        val base = baseUrl.trimEnd('/')
+        val wsBase = when {
+            base.startsWith("https://") -> base.replaceFirst("https://", "wss://")
+            base.startsWith("http://") -> base.replaceFirst("http://", "ws://")
+            else -> "wss://$base"
+        }
+        val rootWs = if (wsBase.endsWith("/api")) wsBase.removeSuffix("/api") else wsBase
+        return "$rootWs/ws/chat/"
+    }
+
     fun create(tokenManager: TokenManager): AdonisApiService {
         val saved = tokenManager.getServerUrl()
         if (saved.isNotBlank()) {
             updateBaseUrl(saved)
+        } else {
+            updateBaseUrl(ONLINE_BASE_URL)
         }
 
         val logging = HttpLoggingInterceptor().apply {
@@ -206,6 +236,7 @@ object AdonisApiClient {
         }
 
         val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(DynamicHostInterceptor())
             .addInterceptor(AuthInterceptor(tokenManager))
             .addInterceptor(logging)
             .connectTimeout(15, TimeUnit.SECONDS)
