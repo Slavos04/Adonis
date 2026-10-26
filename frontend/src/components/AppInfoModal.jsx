@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flame, Info, Mail, CheckCircle, ShieldCheck, Smartphone, Sparkles, X } from 'lucide-react';
+import { Flame, Info, Mail, CheckCircle, ShieldCheck, Smartphone, Sparkles, X, Download } from 'lucide-react';
 
 export function AppInfoModal({ isOpen, onClose }) {
   if (!isOpen) return null;
@@ -108,6 +108,66 @@ export function AppInfoModal({ isOpen, onClose }) {
             <Smartphone size={16} color="var(--accent-emerald)" style={{ flexShrink: 0 }} />
             <span>Dostęp przez przeglądarkę WWW oraz natywną aplikację mobilną na system Android.</span>
           </div>
+        </div>
+
+        {/* Android APK Download Section */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.08) 100%)',
+            border: '1px solid var(--accent-emerald)',
+            borderRadius: '14px',
+            padding: '1rem 1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            marginBottom: '1.25rem',
+            boxShadow: '0 4px 15px rgba(16,185,129,0.1)',
+            flexWrap: 'wrap'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <div
+              style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '12px',
+                background: 'rgba(16,185,129,0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}
+            >
+              <Smartphone size={24} color="var(--accent-emerald)" />
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-main)' }}>
+                Aplikacja mobilna na telefon
+              </div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                Pakiet instalacyjny Android (.APK v1.0 &bull; 11.5 MB)
+              </div>
+            </div>
+          </div>
+          <a
+            href="/Adonis-fit-and-eat-v1.0.apk"
+            download="Adonis-fit-and-eat-v1.0.apk"
+            className="btn btn-primary btn-sm"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              whiteSpace: 'nowrap',
+              textDecoration: 'none',
+              padding: '0.55rem 1.1rem',
+              borderRadius: '10px'
+            }}
+          >
+            <Download size={16} /> Pobierz APK
+          </a>
         </div>
 
         {/* Contact info card */}

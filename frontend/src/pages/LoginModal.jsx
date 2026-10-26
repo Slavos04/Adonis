@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Flame, Lock, Mail, UserCheck, Shield, KeyRound, ArrowLeft, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { Flame, Lock, Mail, UserCheck, Shield, KeyRound, ArrowLeft, CheckCircle2, Eye, EyeOff, Smartphone, Download } from 'lucide-react';
 import { authApi } from '../api/client';
 
 export function LoginModal({ onLoginSuccess }) {
@@ -286,6 +286,31 @@ export function LoginModal({ onLoginSuccess }) {
           </button>
         </div>
       )}
+
+      {/* Pobieranie aplikacji mobilnej APK */}
+      <div style={{ textAlign: 'center', marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border-subtle)' }}>
+        <a
+          href="/Adonis-fit-and-eat-v1.0.apk"
+          download="Adonis-fit-and-eat-v1.0.apk"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            color: 'var(--accent-emerald)',
+            fontSize: '0.84rem',
+            fontWeight: 700,
+            textDecoration: 'none',
+            padding: '0.55rem 1.1rem',
+            borderRadius: '10px',
+            background: 'rgba(16,185,129,0.1)',
+            border: '1px solid rgba(16,185,129,0.25)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <Smartphone size={16} /> Pobierz aplikację na telefon (.APK)
+        </a>
+      </div>
     </div>
   );
 }
