@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -33,11 +34,15 @@ fun DailyPlanScreen(
     tokenManager: TokenManager
 ) {
     val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    val displayFormat = SimpleDateFormat("EEEE, d MMMM yyyy", Locale("pl", "PL"))
+    val shortDateSdf = SimpleDateFormat("d.MM", Locale.getDefault())
     
     val currentCalendar = remember { mutableStateOf(Calendar.getInstance()) }
     val selectedDateStr = remember { derivedStateOf { sdf.format(currentCalendar.value.time) } }
-    val displayDateStr = remember { derivedStateOf { displayFormat.format(currentCalendar.value.time).replaceFirstChar { it.uppercase() } } }
+    val displayDateStr = remember {
+        derivedStateOf {
+            "${getShortDayOfWeek(currentCalendar.value)}, ${shortDateSdf.format(currentCalendar.value.time)}"
+        }
+    }
 
     val todayCalendar = remember { Calendar.getInstance() }
     val isToday = remember(currentCalendar.value) {
@@ -47,6 +52,7 @@ fun DailyPlanScreen(
     }
 
     var planResponse by remember { mutableStateOf<DailyMealPlanResponse?>(null) }
+    var userSettings by remember { mutableStateOf<UserNotificationSettings?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     
     // Recommendations banner & history dialog
@@ -97,13 +103,17 @@ fun DailyPlanScreen(
         }
     }
 
-    // Load user recommendations once
+    // Load user recommendations & settings once
     LaunchedEffect(Unit) {
         try {
             val meData = apiService.getMe()
             val profile = meData["profile"] as? Map<*, *>
             val rec = profile?.get("official_recommendations") as? String
             officialRecommendations = rec
+        } catch (_: Exception) {}
+
+        try {
+            userSettings = apiService.getSettings()
         } catch (_: Exception) {}
     }
 
@@ -143,7 +153,7 @@ fun DailyPlanScreen(
             ) {
                 Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Załaduj gotowy jadłospis", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Text("Załaduj jadłospis", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
 
             if (isRecBannerDismissed && !officialRecommendations.isNullOrBlank()) {
@@ -310,20 +320,73 @@ fun DailyPlanScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        Text("Kalorie", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("${plan.totalCalories.toInt()} kcal", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("Cal", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${plan.totalCalories.toInt()} kcal", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.primary)
                     }
                     Column {
-                        Text("Białko", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("B", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("${plan.totalProteinG}g", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     }
                     Column {
-                        Text("Tłuszcz", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("T", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("${plan.totalFatG}g", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     }
                     Column {
-                        Text("Węglowodany", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("W", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("${plan.totalCarbsG}g", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
+                }
+            }
+
+            // Upcoming Meal Reminder Banner
+            val upcomingMeal = remember(plan.meals, isToday) {
+                if (isToday) plan.meals.firstOrNull { !it.isCompleted } else null
+            }
+            if (upcomingMeal != null) {
+                val time = getMealTime(upcomingMeal.mealType, userSettings)
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.NotificationsActive,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Zbliża się czas na posiłek!",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = "${formatShortMealType(upcomingMeal.mealType)} ($time) • Czy jadłeś?",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                scope.launch {
+                                    apiService.toggleMealCompleted(upcomingMeal.id)
+                                    loadPlan()
+                                }
+                            },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = "Zjedzone",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             }
@@ -348,6 +411,7 @@ fun DailyPlanScreen(
                     items(plan.meals) { meal ->
                         MealItemCard(
                             meal = meal,
+                            mealTime = getMealTime(meal.mealType, userSettings),
                             onToggle = {
                                 scope.launch {
                                     apiService.toggleMealCompleted(meal.id)
@@ -600,7 +664,7 @@ fun DailyPlanScreen(
         if (showLoadPackageDialog) {
             AlertDialog(
                 onDismissRequest = { showLoadPackageDialog = false },
-                title = { Text("Załaduj gotowy jadłospis") },
+                title = { Text("Pakiety diet od dietetyka") },
                 text = {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         packageActionStatus?.let { msg ->
@@ -617,7 +681,11 @@ fun DailyPlanScreen(
                                 CircularProgressIndicator()
                             }
                         } else if (packagesList.isEmpty()) {
-                            Text("Brak gotowych szablonów jadłospisów w bazie.", fontSize = 13.sp)
+                            Text(
+                                text = "Brak pakietów diet przesłanych przez Twojego dietetyka. Skontaktuj się ze swoim dietetykiem na czacie, aby otrzymać spersonalizowany pakiet diety.",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         } else {
                             LazyColumn(
                                 modifier = Modifier.fillMaxWidth().heightIn(max = 380.dp),
@@ -718,16 +786,20 @@ fun DailyPlanScreen(
 @Composable
 fun MealItemCard(
     meal: PlannedMeal,
+    mealTime: String = "12:00",
     onToggle: () -> Unit,
     onInfoClick: () -> Unit,
     onScaleClick: () -> Unit
 ) {
+    val shortMealName = formatShortMealType(meal.mealType)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onInfoClick() }
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            // Górny wiersz: Nazwa posiłku + Godzina + Czas przygotowania + Ikonka info ("i") + Radio/Ptaszek zjedzone
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -735,79 +807,141 @@ fun MealItemCard(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = meal.mealType,
+                        text = shortMealName,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
+                        fontSize = 13.sp
                     )
 
-                    // Prep time display
+                    // Stała godzina posiłku (np. 🕗 08:00)
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = "🕗 $mealTime",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                        )
+                    }
+
+                    // Czas przygotowania
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceVariant,
                         shape = RoundedCornerShape(4.dp)
                     ) {
                         Text(
-                            text = "⏱️ ${meal.recipe.prepTimeMinutes} min",
-                            fontSize = 11.sp,
+                            text = "⏱️ ${meal.recipe.prepTimeMinutes}m",
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
+                    }
+
+                    // Ikonka "i" w kółeczku przeniesiona do góry obok czasu przygotowania
+                    IconButton(
+                        onClick = onInfoClick,
+                        modifier = Modifier.size(22.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "Szczegóły przepisu",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
 
-                TextButton(onClick = onToggle) {
-                    Text(if (meal.isCompleted) "✓ Zjedzone" else "Oznacz zjedzone", fontSize = 12.sp)
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = meal.recipe.title,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    modifier = Modifier.weight(1f)
-                )
-
+                // Radiobox / ptaszek do oznaczania zjedzonego
                 IconButton(
-                    onClick = onInfoClick,
-                    modifier = Modifier.size(28.dp)
+                    onClick = onToggle,
+                    modifier = Modifier.size(30.dp)
                 ) {
                     Icon(
-                        Icons.Default.Info,
-                        contentDescription = "Szczegóły przepisu",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
+                        imageVector = if (meal.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                        contentDescription = if (meal.isCompleted) "Zjedzone" else "Oznacz zjedzone",
+                        tint = if (meal.isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
 
+            // Tytuł przepisu - zmniejszona czcionka, mieści się w 2 wersach
             Text(
-                text = "${meal.recipe.calories.toInt()} kcal | B: ${meal.recipe.proteinG}g, T: ${meal.recipe.fatG}g, W: ${meal.recipe.carbsG}g",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                text = meal.recipe.title,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 18.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            // Makroskładniki z symbolami Cal, B, T, W
+            Text(
+                text = "Cal: ${meal.recipe.calories.toInt()} kcal  •  B: ${meal.recipe.proteinG}g  •  T: ${meal.recipe.fatG}g  •  W: ${meal.recipe.carbsG}g",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+            )
 
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Przelicz porcje (zmienione z "Przelicz porcje w locie")
             OutlinedButton(
                 onClick = onScaleClick,
                 modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(vertical = 6.dp)
+                contentPadding = PaddingValues(vertical = 4.dp)
             ) {
-                Icon(Icons.Default.Calculate, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Calculate, contentDescription = null, modifier = Modifier.size(15.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Przelicz porcje w locie (np. 1.5x)", fontSize = 12.sp)
+                Text("Przelicz porcje", fontSize = 12.sp)
             }
         }
+    }
+}
+
+fun getShortDayOfWeek(cal: Calendar): String {
+    return when (cal.get(Calendar.DAY_OF_WEEK)) {
+        Calendar.MONDAY -> "Pn"
+        Calendar.TUESDAY -> "Wt"
+        Calendar.WEDNESDAY -> "Śr"
+        Calendar.THURSDAY -> "Cz"
+        Calendar.FRIDAY -> "Pt"
+        Calendar.SATURDAY -> "Sb"
+        Calendar.SUNDAY -> "Nd"
+        else -> ""
+    }
+}
+
+fun formatShortMealType(mealType: String): String {
+    val t = mealType.lowercase().trim()
+    return when {
+        t == "śniadanie" -> "Śniad."
+        t == "drugie śniadanie" || t.contains("drugie") -> "II Śniad."
+        t == "obiad" -> "Obiad"
+        t == "podwieczorek" || t == "przekąska" || t.contains("przekąsk") -> "Przek."
+        t == "kolacja" -> "Kolacja"
+        else -> mealType
+    }
+}
+
+fun getMealTime(mealType: String, settings: UserNotificationSettings?): String {
+    val t = mealType.lowercase()
+    return when {
+        t.contains("śniadanie") && !t.contains("drugie") -> settings?.mealTimeBreakfast ?: "08:00"
+        t.contains("drugie") -> settings?.mealTimeSecondBreakfast ?: "11:00"
+        t.contains("obiad") -> settings?.mealTimeLunch ?: "14:00"
+        t.contains("przekąsk") || t.contains("podwieczor") -> settings?.mealTimeSnack ?: "17:00"
+        t.contains("kolacj") -> settings?.mealTimeDinner ?: "20:00"
+        else -> "12:00"
     }
 }
 

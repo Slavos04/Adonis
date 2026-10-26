@@ -134,6 +134,7 @@ def register(request, payload: RegisterSchema, response: HttpResponse):
             current_weight=75.0,
             target_weight=70.0,
             height=175.0,
+            gender=getattr(payload, 'gender', 'male') or 'male',
             daily_calories_goal=2000,
             protein_goal_g=140.0,
             fat_goal_g=60.0,
@@ -212,6 +213,8 @@ def update_patient_profile(request, patient_id: int, payload: PatientProfileUpda
         profile.target_weight = payload.target_weight
     if payload.height is not None:
         profile.height = payload.height
+    if payload.gender is not None:
+        profile.gender = payload.gender
     if payload.daily_calories_goal is not None:
         profile.daily_calories_goal = payload.daily_calories_goal
     if payload.protein_goal_g is not None:
@@ -266,6 +269,8 @@ def update_my_profile(request, payload: PatientProfileUpdateSchema):
         profile.current_weight = payload.current_weight
     if payload.target_weight is not None:
         profile.target_weight = payload.target_weight
+    if payload.gender is not None:
+        profile.gender = payload.gender
     profile.save()
 
     return {
@@ -560,18 +565,33 @@ def get_user_settings(request):
         "notify_recommendations": settings.notify_recommendations,
         "notify_chat_messages": settings.notify_chat_messages,
         "notify_upcoming_meals": settings.notify_upcoming_meals,
+        "meal_time_breakfast": settings.meal_time_breakfast,
+        "meal_time_second_breakfast": settings.meal_time_second_breakfast,
+        "meal_time_lunch": settings.meal_time_lunch,
+        "meal_time_snack": settings.meal_time_snack,
+        "meal_time_dinner": settings.meal_time_dinner,
         "app_theme": settings.app_theme,
     }
 
 @router.put("/settings", response=UserNotificationSettingsSchema, auth=JWTAuth())
 def update_user_settings(request, payload: UserNotificationSettingsSchema):
-    """Aktualizuje suwaki powiadomień oraz motyw aplikacji."""
+    """Aktualizuje suwaki powiadomień, godziny posiłków oraz motyw aplikacji."""
     user = request.auth_user
     settings, _ = UserNotificationSettings.objects.get_or_create(user=user)
     settings.notify_new_diet_plan = payload.notify_new_diet_plan
     settings.notify_recommendations = payload.notify_recommendations
     settings.notify_chat_messages = payload.notify_chat_messages
     settings.notify_upcoming_meals = payload.notify_upcoming_meals
+    if payload.meal_time_breakfast:
+        settings.meal_time_breakfast = payload.meal_time_breakfast
+    if payload.meal_time_second_breakfast:
+        settings.meal_time_second_breakfast = payload.meal_time_second_breakfast
+    if payload.meal_time_lunch:
+        settings.meal_time_lunch = payload.meal_time_lunch
+    if payload.meal_time_snack:
+        settings.meal_time_snack = payload.meal_time_snack
+    if payload.meal_time_dinner:
+        settings.meal_time_dinner = payload.meal_time_dinner
     settings.app_theme = payload.app_theme
     settings.save()
     return {
@@ -579,6 +599,11 @@ def update_user_settings(request, payload: UserNotificationSettingsSchema):
         "notify_recommendations": settings.notify_recommendations,
         "notify_chat_messages": settings.notify_chat_messages,
         "notify_upcoming_meals": settings.notify_upcoming_meals,
+        "meal_time_breakfast": settings.meal_time_breakfast,
+        "meal_time_second_breakfast": settings.meal_time_second_breakfast,
+        "meal_time_lunch": settings.meal_time_lunch,
+        "meal_time_snack": settings.meal_time_snack,
+        "meal_time_dinner": settings.meal_time_dinner,
         "app_theme": settings.app_theme,
     }
 

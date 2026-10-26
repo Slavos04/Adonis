@@ -131,13 +131,11 @@ fun MeasurementsScreen(apiService: AdonisApiService) {
                     )
                 }
 
-                Button(
+                FilledTonalIconButton(
                     onClick = { showAddDialog = true },
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    modifier = Modifier.size(36.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Dodaj", fontSize = 12.sp)
+                    Icon(Icons.Default.Add, contentDescription = "Dodaj pomiar")
                 }
             }
         }
@@ -176,35 +174,41 @@ fun MeasurementsScreen(apiService: AdonisApiService) {
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(12.dp)
                     ) {
-                        Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(text = m.date, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            if (!m.notes.isNullOrBlank()) {
-                                Text(
-                                    text = m.notes,
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+
+                            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Waga: ", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("${m.weight} kg", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                                }
+                                m.waistCm?.let { waist ->
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("Talia: ", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text("${waist} cm", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFF59E0B))
+                                    }
+                                }
                             }
                         }
 
-                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text("Waga", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("${m.weight} kg", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
-                            }
-                            m.waistCm?.let { waist ->
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Text("Talia", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text("${waist} cm", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFF59E0B))
-                                }
-                            }
+                        // Item 17: Notes on a new line so it never wraps/squashes values
+                        if (!m.notes.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "📝 ${m.notes}",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
                         }
                     }
                 }

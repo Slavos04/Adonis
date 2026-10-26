@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { dietPlansApi, measurementsApi, chatApi } from '../api/client';
+import { dietPlansApi, measurementsApi, chatApi, authApi } from '../api/client';
 import { PortionScalerModal } from '../components/PortionScalerModal';
 import RecommendationsHistoryModal from '../components/RecommendationsHistoryModal';
 import { MonthlyMeasurementChart } from '../components/MonthlyMeasurementChart';
@@ -95,9 +95,22 @@ export function PatientDashboard() {
     loadDailyPlan();
   }, [selectedDate]);
 
+  const [mealSettings, setMealSettings] = useState(null);
+
   useEffect(() => {
     loadMeasurements();
+    authApi.getSettings().then(setMealSettings).catch(() => {});
   }, []);
+
+  const getMealTime = (mealType) => {
+    const t = (mealType || '').toLowerCase();
+    if (t.includes('śniadanie') && !t.includes('drugie')) return mealSettings?.meal_time_breakfast || '08:00';
+    if (t.includes('drugie')) return mealSettings?.meal_time_second_breakfast || '11:00';
+    if (t.includes('obiad')) return mealSettings?.meal_time_lunch || '14:00';
+    if (t.includes('przekąsk') || t.includes('podwieczor')) return mealSettings?.meal_time_snack || '17:00';
+    if (t.includes('kolacj')) return mealSettings?.meal_time_dinner || '20:00';
+    return '12:00';
+  };
 
   async function loadWeeklyPlan() {
     try {
@@ -709,6 +722,9 @@ export function PatientDashboard() {
                       <div>
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
                           <span className="badge badge-emerald">{meal.meal_type}</span>
+                          <span style={{ fontSize: '0.78rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'rgba(16,185,129,0.12)', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: 700, border: '1px solid rgba(16,185,129,0.25)' }}>
+                            <Clock size={12} /> {getMealTime(meal.meal_type)}
+                          </span>
                           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                             Porcja: <strong>{meal.portions}x</strong>
                           </span>

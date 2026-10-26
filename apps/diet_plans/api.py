@@ -448,8 +448,23 @@ def serialize_template(t: DietPlanTemplate) -> dict:
 
 @router.get("/templates", response=List[DietPlanTemplateOutSchema], auth=JWTAuth())
 def list_diet_templates(request, category: Optional[str] = None):
-    """Pobiera listę szablonów i pakietów diet z historią przypisań do pacjentów."""
-    qs = DietPlanTemplate.objects.prefetch_related('assignments__patient', 'assignments__dietitian').all().order_by('-created_at')
+    """
+    Pobiera listę szablonów i pakietów diet.
+    Dla pacjenta: zwraca WYŁĄCZNIE pakiety diet przesłane mu przez dietetyka (stare i nowo przesłane).
+    Dla dietetyka i admina: zwraca wszystkie szablony.
+    """
+    current_user = request.auth_user
+    if current_user.role == UserRole.PATIENT:
+        # Pacjent widzi tylko pakiety przesłane mu przez dietetyka
+        assigned_template_ids = DietPlanTemplateAssignment.objects.filter(
+            patient=current_user,
+            dietitian__isnull=False
+        ).values_list('template_id', flat=True).distinct()
+        qs = DietPlanTemplate.objects.filter(id__in=assigned_template_ids)
+    else:
+        qs = DietPlanTemplate.objects.all()
+
+    qs = qs.prefetch_related('assignments__patient', 'assignments__dietitian').order_by('-created_at')
     if category:
         qs = qs.filter(category__icontains=category)
     return [serialize_template(t) for t in qs]
@@ -558,6 +573,15 @@ def patient_load_package(request, payload: PatientLoadPackageSchema):
     if not template:
         raise HttpError(404, "Nie znaleziono wybranego pakietu diety.")
 
+    if current_user.role == UserRole.PATIENT:
+        is_assigned_by_dietitian = DietPlanTemplateAssignment.objects.filter(
+            patient=current_user,
+            template=template,
+            dietitian__isnull=False
+        ).exists()
+        if not is_assigned_by_dietitian:
+            raise HttpError(403, "Dostęp zablokowany. Możesz załadować wyłącznie pakiety diet przesłane przez Twojego dietetyka.")
+
     # Domyślny start_date: jeśli brak, weź poniedziałek bieżącego tygodnia
     start_date = payload.start_date
     if not start_date:
@@ -569,7 +593,7 @@ def patient_load_package(request, payload: PatientLoadPackageSchema):
         patient=current_user,
         start_date=start_date,
         dietitian=template.dietitian,
-        notes=f"Pakiet '{template.name}' załadowany samodzielnie przez pacjenta"
+        notes=f"Pakiet '{template.name}' załadowany przez pacjenta"
     )
 
     Notification.objects.create(

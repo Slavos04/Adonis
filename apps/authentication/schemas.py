@@ -12,6 +12,7 @@ class RegisterSchema(Schema):
     username: Optional[str] = None
     first_name: Optional[str] = ""
     last_name: Optional[str] = ""
+    gender: Optional[str] = "male"  # male | female
     role: Optional[str] = "patient"  # patient | dietitian | admin
 
 class UserOutSchema(Schema):
@@ -46,6 +47,7 @@ class PatientProfileUpdateSchema(Schema):
     current_weight: Optional[float] = None
     target_weight: Optional[float] = None
     height: Optional[float] = None
+    gender: Optional[str] = None
     daily_calories_goal: Optional[int] = None
     protein_goal_g: Optional[float] = None
     fat_goal_g: Optional[float] = None
@@ -86,6 +88,11 @@ class UserNotificationSettingsSchema(Schema):
     notify_recommendations: bool = True
     notify_chat_messages: bool = True
     notify_upcoming_meals: bool = True
+    meal_time_breakfast: str = "08:00"
+    meal_time_second_breakfast: str = "11:00"
+    meal_time_lunch: str = "14:00"
+    meal_time_snack: str = "17:00"
+    meal_time_dinner: str = "20:00"
     app_theme: str = "emerald"
 
 class ChangePasswordSchema(Schema):

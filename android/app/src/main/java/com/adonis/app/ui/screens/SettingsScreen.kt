@@ -47,6 +47,16 @@ fun SettingsScreen(
     var notifyChat by remember { mutableStateOf(true) }
     var notifyMeal by remember { mutableStateOf(true) }
 
+    // Godziny posiłków
+    var mealBreakfast by remember { mutableStateOf("08:00") }
+    var mealSecondBreakfast by remember { mutableStateOf("11:00") }
+    var mealLunch by remember { mutableStateOf("14:00") }
+    var mealSnack by remember { mutableStateOf("17:00") }
+    var mealDinner by remember { mutableStateOf("20:00") }
+
+    // Płeć
+    var userGender by remember { mutableStateOf("male") }
+
     // Motyw
     var selectedTheme by remember { mutableStateOf("system") }
 
@@ -66,8 +76,18 @@ fun SettingsScreen(
                 notifyChat = s.notifyChatMessages
                 notifyMeal = s.notifyUpcomingMeals
                 selectedTheme = s.appTheme
-            } catch (_: Exception) {
-            } finally {
+                mealBreakfast = s.mealTimeBreakfast
+                mealSecondBreakfast = s.mealTimeSecondBreakfast
+                mealLunch = s.mealTimeLunch
+                mealSnack = s.mealTimeSnack
+                mealDinner = s.mealTimeDinner
+            } catch (_: Exception) {}
+
+            try {
+                val me = apiService.getMyProfile()
+                me.profile?.gender?.let { if (it.isNotBlank()) userGender = it }
+            } catch (_: Exception) {}
+            finally {
                 isLoading = false
             }
         }
@@ -82,9 +102,17 @@ fun SettingsScreen(
                         notifyRecommendations = notifyRec,
                         notifyChatMessages = notifyChat,
                         notifyUpcomingMeals = notifyMeal,
-                        appTheme = theme
+                        appTheme = theme,
+                        mealTimeBreakfast = mealBreakfast,
+                        mealTimeSecondBreakfast = mealSecondBreakfast,
+                        mealTimeLunch = mealLunch,
+                        mealTimeSnack = mealSnack,
+                        mealTimeDinner = mealDinner
                     )
                 )
+                try {
+                    apiService.updateMyProfile(com.adonis.app.data.model.PatientProfileUpdateRequest(gender = userGender))
+                } catch (_: Exception) {}
                 statusMessage = "Ustawienia zapisane"
                 isError = false
             } catch (e: Exception) {
@@ -212,6 +240,103 @@ fun SettingsScreen(
                             saveSettings()
                         }
                     )
+                }
+            }
+
+            // SEKCJA 1b: Harmonogram posiłków (Godziny) - Item 5
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.AccessTime, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Harmonogram posiłków", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
+                    Text(
+                        "Ustaw godziny swoich posiłków. Aplikacja wyświetli je w jadłospisie i przypomni o porze posiłku.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
+                    )
+
+                    val mealRows = listOf(
+                        Triple("Śniadanie", mealBreakfast) { v: String -> mealBreakfast = v },
+                        Triple("II Śniadanie", mealSecondBreakfast) { v: String -> mealSecondBreakfast = v },
+                        Triple("Obiad", mealLunch) { v: String -> mealLunch = v },
+                        Triple("Przekąska", mealSnack) { v: String -> mealSnack = v },
+                        Triple("Kolacja", mealDinner) { v: String -> mealDinner = v }
+                    )
+
+                    mealRows.forEach { (label, value, onValChange) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(label, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            OutlinedTextField(
+                                value = value,
+                                onValueChange = onValChange,
+                                singleLine = true,
+                                modifier = Modifier.width(100.dp),
+                                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = { saveSettings() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Zapisz godziny posiłków", fontSize = 13.sp)
+                    }
+                }
+            }
+
+            // SEKCJA 1c: Dane profilu (Płeć) - Item 15
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Dane profilu: Płeć", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
+                    Text(
+                        "Płeć jest kluczowa do prawidłowego wyliczenia norm metabolicznych i zapotrzebowania kalorycznego.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp, bottom = 10.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        FilterChip(
+                            selected = userGender == "male",
+                            onClick = {
+                                userGender = "male"
+                                saveSettings()
+                            },
+                            label = { Text("👨 Mężczyzna", fontSize = 12.sp) }
+                        )
+                        FilterChip(
+                            selected = userGender == "female",
+                            onClick = {
+                                userGender = "female"
+                                saveSettings()
+                            },
+                            label = { Text("👩 Kobieta", fontSize = 12.sp) }
+                        )
+                    }
                 }
             }
 

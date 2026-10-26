@@ -129,6 +129,23 @@ def list_conversations(request):
     received_from = ChatMessage.objects.filter(receiver=user).values_list('sender_id', flat=True)
     partner_ids = set(list(sent_to) + list(received_from))
 
+    if user.role == UserRole.PATIENT:
+        # Pacjent widzi swoich dietetyków oraz administratorów
+        dietitians = User.objects.filter(role=UserRole.DIETITIAN, is_active=True).values_list('id', flat=True)
+        admins = User.objects.filter(role=UserRole.ADMIN, is_active=True).values_list('id', flat=True)
+        partner_ids.update(dietitians)
+        partner_ids.update(admins)
+    elif user.role == UserRole.DIETITIAN:
+        # Dietetyk widzi pacjentów oraz administratorów
+        patients = User.objects.filter(role=UserRole.PATIENT, is_active=True).values_list('id', flat=True)
+        admins = User.objects.filter(role=UserRole.ADMIN, is_active=True).values_list('id', flat=True)
+        partner_ids.update(patients)
+        partner_ids.update(admins)
+    elif user.role == UserRole.ADMIN:
+        # Administrator widzi wszystkich aktywnych dietetyków i pacjentów
+        others = User.objects.filter(is_active=True).exclude(id=user.id).values_list('id', flat=True)
+        partner_ids.update(others)
+
     conversations = []
     for pid in partner_ids:
         partner = User.objects.filter(id=pid).first()
@@ -151,5 +168,6 @@ def list_conversations(request):
             "unread_count": unread,
         })
 
-    conversations.sort(key=lambda x: x['last_message_at'] or "", reverse=True)
+    from datetime import datetime, timezone
+    conversations.sort(key=lambda x: x['last_message_at'] or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
     return conversations

@@ -17,6 +17,7 @@ export function LoginModal({ onLoginSuccess }) {
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [gender, setGender] = useState('female');
   const [role, setRole] = useState('patient');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -57,7 +58,7 @@ export function LoginModal({ onLoginSuccess }) {
     setLoading(true);
     try {
       if (isRegister) {
-        await register({ email, password, first_name: firstName, last_name: lastName, role });
+        await register({ email, password, first_name: firstName, last_name: lastName, role, gender });
       } else {
         await login(email, password);
       }
@@ -210,16 +211,29 @@ export function LoginModal({ onLoginSuccess }) {
                 </div>
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Rola</label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  style={{ width: '100%', background: '#1f2937', border: '1px solid var(--border-subtle)', color: '#fff', padding: '0.6rem 0.85rem', borderRadius: '8px' }}
-                >
-                  <option value="patient">Pacjent</option>
-                  <option value="dietitian">Dietetyk</option>
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Rola</label>
+                  <select
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    style={{ width: '100%', background: '#1f2937', border: '1px solid var(--border-subtle)', color: '#fff', padding: '0.6rem 0.85rem', borderRadius: '8px' }}
+                  >
+                    <option value="patient">Pacjent</option>
+                    <option value="dietitian">Dietetyk</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Płeć</label>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    style={{ width: '100%', background: '#1f2937', border: '1px solid var(--border-subtle)', color: '#fff', padding: '0.6rem 0.85rem', borderRadius: '8px' }}
+                  >
+                    <option value="female">Kobieta</option>
+                    <option value="male">Mężczyzna</option>
+                  </select>
+                </div>
               </div>
             </>
           )}

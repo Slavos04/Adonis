@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Settings, Bell, Lock, Palette, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Settings, Bell, Lock, Palette, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 import { authApi } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
@@ -15,6 +15,13 @@ export function SettingsModal({ isOpen, onClose }) {
   const [notifyRecommendations, setNotifyRecommendations] = useState(true);
   const [notifyChatMessages, setNotifyChatMessages] = useState(true);
   const [notifyMealReminders, setNotifyMealReminders] = useState(true);
+
+  // Meal Hours
+  const [mealTimeBreakfast, setMealTimeBreakfast] = useState('08:00');
+  const [mealTimeSecondBreakfast, setMealTimeSecondBreakfast] = useState('11:00');
+  const [mealTimeLunch, setMealTimeLunch] = useState('14:00');
+  const [mealTimeSnack, setMealTimeSnack] = useState('17:00');
+  const [mealTimeDinner, setMealTimeDinner] = useState('20:00');
 
   // Change password
   const [oldPassword, setOldPassword] = useState('');
@@ -41,12 +48,17 @@ export function SettingsModal({ isOpen, onClose }) {
     setLoading(true);
     try {
       const data = await authApi.getSettings();
-      setNotifyDietPlan(data.notify_diet_plan);
-      setNotifyRecommendations(data.notify_recommendations);
-      setNotifyChatMessages(data.notify_chat_messages);
-      setNotifyMealReminders(data.notify_meal_reminders);
-      if (data.theme && data.theme !== theme) {
-        setTheme(data.theme);
+      setNotifyDietPlan(data.notify_new_diet_plan ?? data.notify_diet_plan ?? true);
+      setNotifyRecommendations(data.notify_recommendations ?? true);
+      setNotifyChatMessages(data.notify_chat_messages ?? true);
+      setNotifyMealReminders(data.notify_upcoming_meals ?? data.notify_meal_reminders ?? true);
+      if (data.meal_time_breakfast) setMealTimeBreakfast(data.meal_time_breakfast);
+      if (data.meal_time_second_breakfast) setMealTimeSecondBreakfast(data.meal_time_second_breakfast);
+      if (data.meal_time_lunch) setMealTimeLunch(data.meal_time_lunch);
+      if (data.meal_time_snack) setMealTimeSnack(data.meal_time_snack);
+      if (data.meal_time_dinner) setMealTimeDinner(data.meal_time_dinner);
+      if (data.app_theme && data.app_theme !== theme) {
+        setTheme(data.app_theme);
       }
     } catch (_) {
       // Domyślne wartości pozostają
@@ -60,11 +72,16 @@ export function SettingsModal({ isOpen, onClose }) {
     setter(newVal);
 
     const payload = {
-      notify_diet_plan: key === 'diet_plan' ? newVal : notifyDietPlan,
+      notify_new_diet_plan: key === 'diet_plan' ? newVal : notifyDietPlan,
       notify_recommendations: key === 'recommendations' ? newVal : notifyRecommendations,
       notify_chat_messages: key === 'chat' ? newVal : notifyChatMessages,
-      notify_meal_reminders: key === 'meal' ? newVal : notifyMealReminders,
-      theme,
+      notify_upcoming_meals: key === 'meal' ? newVal : notifyMealReminders,
+      meal_time_breakfast: mealTimeBreakfast,
+      meal_time_second_breakfast: mealTimeSecondBreakfast,
+      meal_time_lunch: mealTimeLunch,
+      meal_time_snack: mealTimeSnack,
+      meal_time_dinner: mealTimeDinner,
+      app_theme: theme,
     };
 
     try {
@@ -75,15 +92,49 @@ export function SettingsModal({ isOpen, onClose }) {
     }
   }
 
+  async function handleMealTimeSave(field, val) {
+    if (field === 'breakfast') setMealTimeBreakfast(val);
+    if (field === 'second_breakfast') setMealTimeSecondBreakfast(val);
+    if (field === 'lunch') setMealTimeLunch(val);
+    if (field === 'snack') setMealTimeSnack(val);
+    if (field === 'dinner') setMealTimeDinner(val);
+
+    const payload = {
+      notify_new_diet_plan: notifyDietPlan,
+      notify_recommendations: notifyRecommendations,
+      notify_chat_messages: notifyChatMessages,
+      notify_upcoming_meals: notifyMealReminders,
+      meal_time_breakfast: field === 'breakfast' ? val : mealTimeBreakfast,
+      meal_time_second_breakfast: field === 'second_breakfast' ? val : mealTimeSecondBreakfast,
+      meal_time_lunch: field === 'lunch' ? val : mealTimeLunch,
+      meal_time_snack: field === 'snack' ? val : mealTimeSnack,
+      meal_time_dinner: field === 'dinner' ? val : mealTimeDinner,
+      app_theme: theme,
+    };
+
+    try {
+      await authApi.updateSettings(payload);
+      setSettingsMsg('Godzina posiłku została zapisana.');
+      setTimeout(() => setSettingsMsg(null), 2500);
+    } catch (err) {
+      setSettingsError(err.message || 'Nie udało się zapisać godziny.');
+    }
+  }
+
   async function handleThemeChange(newTheme) {
     setTheme(newTheme);
     try {
       await authApi.updateSettings({
-        notify_diet_plan: notifyDietPlan,
+        notify_new_diet_plan: notifyDietPlan,
         notify_recommendations: notifyRecommendations,
         notify_chat_messages: notifyChatMessages,
-        notify_meal_reminders: notifyMealReminders,
-        theme: newTheme,
+        notify_upcoming_meals: notifyMealReminders,
+        meal_time_breakfast: mealTimeBreakfast,
+        meal_time_second_breakfast: mealTimeSecondBreakfast,
+        meal_time_lunch: mealTimeLunch,
+        meal_time_snack: mealTimeSnack,
+        meal_time_dinner: mealTimeDinner,
+        app_theme: newTheme,
       });
     } catch (_) {}
   }
@@ -232,6 +283,55 @@ export function SettingsModal({ isOpen, onClose }) {
                     />
                   </span>
                 </label>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Sekcja: Harmonogram i godziny posiłków */}
+        <div style={{ marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+            <Clock size={18} color="var(--accent-emerald)" />
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>Harmonogram posiłków</h3>
+          </div>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '-0.5rem', marginBottom: '1rem' }}>
+            Ustal stałe godziny swoich posiłków. O tych porach otrzymasz powiadomienie przypominające.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
+            {[
+              { id: 'breakfast', label: 'Śniadanie', val: mealTimeBreakfast },
+              { id: 'second_breakfast', label: 'II Śniadanie', val: mealTimeSecondBreakfast },
+              { id: 'lunch', label: 'Obiad', val: mealTimeLunch },
+              { id: 'snack', label: 'Przekąska', val: mealTimeSnack },
+              { id: 'dinner', label: 'Kolacja', val: mealTimeDinner },
+            ].map((m) => (
+              <div
+                key={m.id}
+                style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '10px',
+                  padding: '0.75rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.35rem',
+                }}
+              >
+                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{m.label}</span>
+                <input
+                  type="time"
+                  value={m.val}
+                  onChange={(e) => handleMealTimeSave(m.id, e.target.value)}
+                  style={{
+                    background: '#1f2937',
+                    border: '1px solid var(--border-subtle)',
+                    color: '#fff',
+                    padding: '0.4rem 0.5rem',
+                    borderRadius: '6px',
+                    fontSize: '0.9rem',
+                    fontWeight: 700,
+                  }}
+                />
               </div>
             ))}
           </div>

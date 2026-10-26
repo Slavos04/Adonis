@@ -117,7 +117,12 @@ fun ChatScreen(
 
             val list = map.values.toList()
             partners = list
-            if (selectedPartnerId == 0 && list.isNotEmpty()) {
+            if (initialTargetUserId == null && list.isNotEmpty()) {
+                val withUnread = list.find { it.unreadCount > 0 }
+                val withMsg = list.find { !it.lastMessage.isNullOrBlank() }
+                val target = withUnread ?: withMsg ?: list.first()
+                selectedPartnerId = target.partnerId
+            } else if (selectedPartnerId == 0 && list.isNotEmpty()) {
                 selectedPartnerId = list.first().partnerId
             }
         } catch (_: Exception) {}
@@ -130,13 +135,15 @@ fun ChatScreen(
 
     // Załaduj historię wiadomości przy zmianie rozmówcy
     LaunchedEffect(selectedPartnerId) {
-        try {
-            val history = apiService.getChatHistory(otherUserId = selectedPartnerId)
-            messages = history
-            if (history.isNotEmpty()) {
-                listState.animateScrollToItem(history.size - 1)
-            }
-        } catch (_: Exception) {}
+        if (selectedPartnerId > 0) {
+            try {
+                val history = apiService.getChatHistory(otherUserId = selectedPartnerId)
+                messages = history
+                if (history.isNotEmpty()) {
+                    listState.scrollToItem(history.size - 1)
+                }
+            } catch (_: Exception) {}
+        }
     }
 
     // Odbiór wiadomości przez WebSocket na żywo
@@ -359,7 +366,12 @@ fun ChatScreen(
                         textInput = ""
                         val targetId = selectedPartnerId
 
-                        // Wysyłanie przez WebSocket
+                        // Wysyłanie przez REST i WebSocket
+                        scope.launch {
+                            try {
+                                apiService.sendMessage(mapOf("receiver_id" to targetId, "content" to content))
+                            } catch (_: Exception) {}
+                        }
                         wsClient.sendMessage(receiverId = targetId, content = content)
 
                         // Lokalna aktualizacja widoku

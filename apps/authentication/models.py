@@ -159,6 +159,11 @@ class UserNotificationSettings(models.Model):
     notify_recommendations = models.BooleanField(_('powiadomienia o zaleceniach dietetyka'), default=True)
     notify_chat_messages = models.BooleanField(_('powiadomienia o nowych wiadomościach w czacie'), default=True)
     notify_upcoming_meals = models.BooleanField(_('powiadomienia o zbliżających się posiłkach'), default=True)
+    meal_time_breakfast = models.CharField(_('godzina śniadania'), max_length=5, default="08:00")
+    meal_time_second_breakfast = models.CharField(_('godzina drugiego śniadania'), max_length=5, default="11:00")
+    meal_time_lunch = models.CharField(_('godzina obiadu'), max_length=5, default="14:00")
+    meal_time_snack = models.CharField(_('godzina przekąski'), max_length=5, default="17:00")
+    meal_time_dinner = models.CharField(_('godzina kolacji'), max_length=5, default="20:00")
     app_theme = models.CharField(_('motyw aplikacji'), max_length=30, default='emerald')
     updated_at = models.DateTimeField(auto_now=True)
 

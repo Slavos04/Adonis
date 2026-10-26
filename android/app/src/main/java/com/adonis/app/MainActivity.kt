@@ -3,13 +3,17 @@ package com.adonis.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -73,19 +77,28 @@ class MainActivity : ComponentActivity() {
                                 topBar = {
                                     TopAppBar(
                                         title = {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                            Column(
+                                                verticalArrangement = Arrangement.Center,
+                                                modifier = Modifier.padding(vertical = 4.dp)
                                             ) {
-                                                Column(
-                                                    verticalArrangement = Arrangement.Center
+                                                // Wiersz 1: Nowe Logo (A z liściem) + ADONIS + fit & eat
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                                 ) {
+                                                    Image(
+                                                        painter = painterResource(id = R.drawable.app_logo),
+                                                        contentDescription = "Logo Adonis",
+                                                        modifier = Modifier
+                                                            .size(24.dp)
+                                                            .clip(RoundedCornerShape(6.dp))
+                                                    )
                                                     Text(
                                                         text = "ADONIS",
                                                         fontWeight = FontWeight.Black,
-                                                        fontSize = 18.sp,
+                                                        fontSize = 17.sp,
                                                         color = MaterialTheme.colorScheme.primary,
-                                                        lineHeight = 18.sp
+                                                        lineHeight = 17.sp
                                                     )
                                                     Text(
                                                         text = "fit & eat",
@@ -96,34 +109,33 @@ class MainActivity : ComponentActivity() {
                                                     )
                                                 }
 
-                                                // Role & User Name Badge
-                                                Surface(
-                                                    color = if (isDietitian) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                                                    shape = MaterialTheme.shapes.small
-                                                ) {
+                                                // Wiersz 2 (nowy wiersz): Imię i nazwisko pacjenta / dietetyka
+                                                val fullName = tokenManager.getUserFullName()
+                                                if (fullName.isNotBlank()) {
                                                     Row(
                                                         verticalAlignment = Alignment.CenterVertically,
-                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                                        modifier = Modifier.padding(top = 2.dp)
                                                     ) {
                                                         if (isDietitian) {
                                                             Icon(
                                                                 Icons.Default.VerifiedUser,
                                                                 contentDescription = null,
-                                                                modifier = Modifier.size(14.dp),
+                                                                modifier = Modifier.size(12.dp),
                                                                 tint = MaterialTheme.colorScheme.primary
                                                             )
-                                                            Spacer(modifier = Modifier.width(4.dp))
+                                                            Spacer(modifier = Modifier.width(3.dp))
                                                             Text(
-                                                                text = "Dietetyk: ${tokenManager.getUserFullName()}",
-                                                                fontSize = 12.sp,
+                                                                text = "Dietetyk: $fullName",
+                                                                fontSize = 11.sp,
                                                                 fontWeight = FontWeight.Bold,
-                                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                                                color = MaterialTheme.colorScheme.primary
                                                             )
                                                         } else {
                                                             Text(
-                                                                text = tokenManager.getUserFullName(),
-                                                                fontSize = 12.sp,
-                                                                fontWeight = FontWeight.SemiBold
+                                                                text = fullName,
+                                                                fontSize = 11.sp,
+                                                                fontWeight = FontWeight.Medium,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant
                                                             )
                                                         }
                                                     }

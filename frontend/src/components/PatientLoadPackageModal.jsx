@@ -90,10 +90,10 @@ export function PatientLoadPackageModal({ isOpen, onClose, onPackageLoaded, init
             </div>
             <div>
               <h2 style={{ fontSize: '1.3rem', fontWeight: 800, margin: 0 }}>
-                Samodzielne Ładowanie Pakietu Diety
+                Pakiety Diet od Dietetyka
               </h2>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-                Wybierz gotowy pakiet diety i wdróż go do swojego kalendarza od wybranej daty
+                Wybierz pakiet diety przesłany przez Twojego dietetyka i wdróż go do kalendarza
               </p>
             </div>
           </div>
@@ -217,6 +217,11 @@ export function PatientLoadPackageModal({ isOpen, onClose, onPackageLoaded, init
             {loading ? (
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                 Ładowanie dostępnych pakietów...
+              </div>
+            ) : templates.length === 0 ? (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)' }}>
+                <p style={{ fontWeight: 700, color: '#fff', fontSize: '1rem', marginBottom: '0.5rem' }}>Brak pakietów diet od dietetyka</p>
+                <p style={{ fontSize: '0.85rem', maxWidth: '500px', margin: '0 auto' }}>Twój dietetyk nie przesłał Ci jeszcze żadnego pakietu diety. Gdy dietetyk prześle Ci pakiet, pojawi się on w tym miejscu i będziesz mógł wdrożyć go na dowolny tydzień.</p>
               </div>
             ) : filteredTemplates.length === 0 ? (
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>

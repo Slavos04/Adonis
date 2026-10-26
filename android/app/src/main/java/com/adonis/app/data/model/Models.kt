@@ -16,6 +16,7 @@ data class PatientProfile(
     @SerializedName("current_weight") val currentWeight: Double,
     @SerializedName("target_weight") val targetWeight: Double,
     val height: Double,
+    val gender: String = "female",
     @SerializedName("daily_calories_goal") val dailyCaloriesGoal: Int,
     @SerializedName("protein_goal_g") val proteinGoalG: Double,
     @SerializedName("fat_goal_g") val fatGoalG: Double,
@@ -41,6 +42,7 @@ data class RegisterRequest(
     val password: String,
     @SerializedName("first_name") val firstName: String = "",
     @SerializedName("last_name") val lastName: String = "",
+    val gender: String = "male",
     val role: String = "patient"
 )
 
@@ -188,6 +190,11 @@ data class UserNotificationSettings(
     @SerializedName("notify_recommendations") val notifyRecommendations: Boolean = true,
     @SerializedName("notify_chat_messages") val notifyChatMessages: Boolean = true,
     @SerializedName("notify_upcoming_meals") val notifyUpcomingMeals: Boolean = true,
+    @SerializedName("meal_time_breakfast") val mealTimeBreakfast: String = "08:00",
+    @SerializedName("meal_time_second_breakfast") val mealTimeSecondBreakfast: String = "11:00",
+    @SerializedName("meal_time_lunch") val mealTimeLunch: String = "14:00",
+    @SerializedName("meal_time_snack") val mealTimeSnack: String = "17:00",
+    @SerializedName("meal_time_dinner") val mealTimeDinner: String = "20:00",
     @SerializedName("app_theme") val appTheme: String = "emerald"
 )
 
@@ -229,6 +236,7 @@ data class PatientProfileUpdateRequest(
     @SerializedName("current_weight") val currentWeight: Double? = null,
     @SerializedName("target_weight") val targetWeight: Double? = null,
     val height: Double? = null,
+    val gender: String? = null,
     @SerializedName("daily_calories_goal") val dailyCaloriesGoal: Int? = null,
     @SerializedName("protein_goal_g") val proteinGoalG: Double? = null,
     @SerializedName("fat_goal_g") val fatGoalG: Double? = null,

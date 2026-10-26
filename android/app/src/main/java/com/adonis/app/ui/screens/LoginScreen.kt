@@ -1,18 +1,19 @@
 package com.adonis.app.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -20,6 +21,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.adonis.app.R
 import com.adonis.app.data.api.AdonisApiService
 import com.adonis.app.data.api.TokenManager
 import com.adonis.app.data.model.ForgotPasswordRequest
@@ -41,6 +43,7 @@ fun LoginScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
+    var selectedGender by remember { mutableStateOf("female") }
 
     // Toggle widoczności haseł ("oczko")
     var passwordVisible by remember { mutableStateOf(false) }
@@ -141,6 +144,7 @@ fun LoginScreen(
                         password = cleanPass,
                         firstName = cleanFirst,
                         lastName = cleanLast,
+                        gender = selectedGender,
                         role = "patient"
                     )
                 )
@@ -176,9 +180,17 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        Image(
+            painter = painterResource(id = R.drawable.app_logo),
+            contentDescription = "Logo Adonis",
+            modifier = Modifier
+                .size(72.dp)
+                .clip(RoundedCornerShape(16.dp))
+        )
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = "ADONIS",
-            fontSize = 34.sp,
+            fontSize = 32.sp,
             fontWeight = FontWeight.ExtraBold,
             color = MaterialTheme.colorScheme.primary
         )
@@ -192,8 +204,8 @@ fun LoginScreen(
         )
 
         Text(
-            text = if (isRegisterMode) "Rejestracja nowego pacjenta" else "Logowanie do konta pacjenta",
-            fontSize = 15.sp,
+            text = if (isRegisterMode) "Rejestracja" else "Logowanie",
+            fontSize = 16.sp,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 16.dp)
@@ -248,6 +260,37 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
                 singleLine = true
             )
+
+            Text(
+                text = "Płeć:",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.Start).padding(bottom = 4.dp)
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                FilterChip(
+                    selected = selectedGender == "female",
+                    onClick = { selectedGender = "female" },
+                    label = { Text("Kobieta") },
+                    leadingIcon = if (selectedGender == "female") {
+                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    } else null,
+                    modifier = Modifier.weight(1f)
+                )
+                FilterChip(
+                    selected = selectedGender == "male",
+                    onClick = { selectedGender = "male" },
+                    label = { Text("Mężczyzna") },
+                    leadingIcon = if (selectedGender == "male") {
+                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    } else null,
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
             OutlinedTextField(
                 value = email,
@@ -381,7 +424,7 @@ fun LoginScreen(
                 },
                 modifier = Modifier.fillMaxWidth().height(48.dp)
             ) {
-                Text("Nie masz konta? Zarejestruj się jako pacjent", fontSize = 13.sp)
+                Text("Nie masz konta? Zarejestruj się.", fontSize = 13.sp)
             }
         }
 

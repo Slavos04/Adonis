@@ -148,7 +148,79 @@ fun WeightAndWaistChartCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            // Przełącznik serii wykresu - bezpośrednio pod tytułem
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp)
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                FilterChip(
+                    selected = chartMode == "both",
+                    onClick = { chartMode = "both" },
+                    label = { Text("Oba wykresy", fontSize = 11.sp) }
+                )
+                FilterChip(
+                    selected = chartMode == "weight",
+                    onClick = { chartMode = "weight" },
+                    label = { Text("Waga (kg)", fontSize = 11.sp) }
+                )
+                FilterChip(
+                    selected = chartMode == "bmi",
+                    onClick = { chartMode = "bmi" },
+                    label = { Text("Wskaźnik BMI", fontSize = 11.sp) }
+                )
+                FilterChip(
+                    selected = chartMode == "waist",
+                    onClick = { chartMode = "waist" },
+                    label = { Text("Talia (cm)", fontSize = 11.sp) }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Rysowanie wykresu na Canvas - widoczne od razu pod tytułem!
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                    .padding(8.dp)
+            ) {
+                MeasurementsCanvasPlot(
+                    measurements = sorted,
+                    mode = chartMode,
+                    patientHeight = validHeight,
+                    primaryColor = primaryColor,
+                    waistColor = waistColor,
+                    bmiColor = bmiPlotColor
+                )
+            }
+
+            // Oś dat (najstarsza i najnowsza)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp, bottom = 12.dp, start = 8.dp, end = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = first.date,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.outline
+                )
+                Text(
+                    text = "${sorted.size} pomiarów",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.outline
+                )
+                Text(
+                    text = latest.date,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
 
             // Wiersz 1: Waga i Talia
             Row(
@@ -290,7 +362,7 @@ fun WeightAndWaistChartCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Belka informacyjna: Prawidłowy poziom BMI i waga referencyjna
+            // Belka informacyjna: Prawidłowy poziom BMI (wartość w nowym wierszu - Item 16)
             Surface(
                 shape = RoundedCornerShape(10.dp),
                 color = Color(0xFF10B981).copy(alpha = 0.10f),
@@ -309,19 +381,18 @@ fun WeightAndWaistChartCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "Poziom prawidłowy BMI: ",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "18.5 – 24.9 (Norma WHO)",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF10B981)
-                            )
-                        }
+                        Text(
+                            text = "Poziom prawidłowy BMI:",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "18.5 – 24.9 (Norma WHO)",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF10B981)
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "Waga prawidłowa dla ${validHeight.toInt()} cm: ${String.format(Locale.US, "%.1f", minNormalWeight)} – ${String.format(Locale.US, "%.1f", maxNormalWeight)} kg",
                             fontSize = 10.sp,
@@ -330,59 +401,6 @@ fun WeightAndWaistChartCard(
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Przełącznik serii
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                FilterChip(
-                    selected = chartMode == "both",
-                    onClick = { chartMode = "both" },
-                    label = { Text("Oba wykresy", fontSize = 11.sp) }
-                )
-                FilterChip(
-                    selected = chartMode == "weight",
-                    onClick = { chartMode = "weight" },
-                    label = { Text("Waga (kg)", fontSize = 11.sp) }
-                )
-                FilterChip(
-                    selected = chartMode == "bmi",
-                    onClick = { chartMode = "bmi" },
-                    label = { Text("Wskaźnik BMI", fontSize = 11.sp) }
-                )
-                FilterChip(
-                    selected = chartMode == "waist",
-                    onClick = { chartMode = "waist" },
-                    label = { Text("Talia (cm)", fontSize = 11.sp) }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Rysowanie wykresu na Canvas
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(190.dp)
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-                    .padding(8.dp)
-            ) {
-                MeasurementsCanvasPlot(
-                    measurements = sorted,
-                    mode = chartMode,
-                    patientHeight = validHeight,
-                    primaryColor = primaryColor,
-                    waistColor = waistColor,
-                    bmiColor = bmiPlotColor
-                )
-            }
-
-            // Oś dat (najstarsza i najnowsza)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
