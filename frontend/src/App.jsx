@@ -8,6 +8,7 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { RecipeBrowser } from './pages/RecipeBrowser';
 import { ShoppingListWidget } from './components/ShoppingListWidget';
 import { ChatWidget } from './components/ChatWidget';
+import { APP_VERSION } from './version';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -109,7 +110,7 @@ function MainLayout() {
         background: 'var(--footer-bg)',
         transition: 'background 0.3s ease'
       }}>
-        ADONIS fit &amp; eat &copy; 2026 &bull; Multi-arch Docker Ready (x86_64 / ARM64) &bull; Web &amp; Native Android &bull; ver. 1.0
+        ADONIS fit &amp; eat &copy; 2026 &bull; Multi-arch Docker Ready (x86_64 / ARM64) &bull; Web &amp; Native Android &bull; ver. {APP_VERSION}
       </footer>
     </div>
   );

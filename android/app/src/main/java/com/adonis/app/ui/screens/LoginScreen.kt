@@ -442,7 +442,7 @@ fun LoginScreen(
         }
 
         Text(
-            text = "ADONIS fit & eat • ver. 1.0",
+            text = "ADONIS fit & eat • ver. 1.1",
             fontSize = 11.sp,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
             modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)

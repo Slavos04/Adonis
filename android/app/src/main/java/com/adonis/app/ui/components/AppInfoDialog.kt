@@ -57,7 +57,7 @@ fun AppInfoDialog(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "Wersja 1.0 • Produkcyjna",
+                        text = "Wersja 1.1 • Produkcyjna",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,

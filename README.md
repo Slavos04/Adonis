@@ -1,4 +1,4 @@
-# ADONIS fit & eat (ver. 1.0)
+# ADONIS fit & eat (ver. 1.1)
 ### Kompleksowy System Dietetyczny, Zarządzania Jadłospisami i Monitorowania Sylwetki (Web & Android)
 
 **ADONIS fit & eat** to produkcyjny, zaawansowany system dietetyczny wspomagający trwałą i bezpieczną redukcję masy ciała oraz bieżącą współpracę pacjenta z wykwalifikowanym dietetykiem. Aplikacja łączy w sobie intuicyjny interfejs webowy (React/Vite), wydajny asynchroniczny backend (Django Ninja + WebSockets) oraz w pełni natywną aplikację mobilną na system Android (Kotlin + Jetpack Compose).
