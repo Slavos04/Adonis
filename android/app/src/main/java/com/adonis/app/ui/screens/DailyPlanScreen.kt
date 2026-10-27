@@ -572,8 +572,11 @@ fun DailyPlanScreen(
                         if (!recipe.ingredients.isNullOrEmpty()) {
                             Text("Składniki:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             recipe.ingredients.forEach { ing ->
+                                val genderInfo = if (ing.amountFemaleG != null && ing.amountMaleG != null) {
+                                    " (👩 ${ing.amountFemaleG.toInt()}g | 👨 ${ing.amountMaleG.toInt()}g)"
+                                } else ""
                                 Text(
-                                    text = "• ${ing.product.name} — ${ing.amountG} ${ing.unit} (${ing.product.store})",
+                                    text = "• ${ing.product.name} — ${ing.amountG} ${ing.unit}$genderInfo (${ing.product.store})",
                                     fontSize = 12.sp,
                                     modifier = Modifier.padding(vertical = 1.dp)
                                 )
@@ -717,6 +720,30 @@ fun DailyPlanScreen(
                                                         fontSize = 11.sp,
                                                         fontWeight = FontWeight.Bold,
                                                         color = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    )
+                                                }
+
+                                                val genderBadge = when(pkg.targetGender) {
+                                                    "female" -> "👩 Kobieta"
+                                                    "male" -> "👨 Mężczyzna"
+                                                    else -> "🥗 Dla każdego"
+                                                }
+                                                val genderColor = when(pkg.targetGender) {
+                                                    "female" -> Color(0xFFF472B6)
+                                                    "male" -> Color(0xFF60A5FA)
+                                                    else -> Color(0xFF34D399)
+                                                }
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Surface(
+                                                    color = genderColor.copy(alpha = 0.15f),
+                                                    shape = RoundedCornerShape(4.dp)
+                                                ) {
+                                                    Text(
+                                                        text = genderBadge,
+                                                        fontSize = 10.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = genderColor,
                                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                                     )
                                                 }

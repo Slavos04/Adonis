@@ -5,7 +5,7 @@ from datetime import date, timedelta
 from apps.authentication.models import UserRole, PatientProfile
 from apps.recipes.models import Product, Recipe, RecipeIngredient, StoreChoice, MealCategory
 from apps.recipes.fixtures_data import PRODUCTS_CATALOG, generate_fitness_recipes
-from apps.diet_plans.models import DailyMealPlan, PlannedMeal, DietPlanTemplate
+from apps.diet_plans.models import DailyMealPlan, PlannedMeal, DietPlanTemplate, DietPlanTemplateAssignment
 from apps.measurements.models import Measurement, MeasurementAuditLog
 
 User = get_user_model()
@@ -58,13 +58,14 @@ class Command(BaseCommand):
         patient_user.assigned_dietitian = dietitian_user
         patient_user.save()
 
-        # Profil pacjenta
+        # Profil pacjenta (Mężczyzna)
         profile, _ = PatientProfile.objects.get_or_create(
             user=patient_user,
             defaults={
                 'current_weight': Decimal('85.5'),
                 'target_weight': Decimal('75.0'),
                 'height': Decimal('180.0'),
+                'gender': 'male',
                 'daily_calories_goal': 2100,
                 'protein_goal_g': Decimal('150.0'),
                 'fat_goal_g': Decimal('65.0'),
@@ -73,8 +74,43 @@ class Command(BaseCommand):
                 'official_recommendations': '1. Regularne posiłki co 3.5h.\n2. Minimum 2.5 l wody.\n3. Pilnowanie gramatury mięsa i ryżu.',
             }
         )
+        profile.gender = 'male'
+        profile.save()
 
-        self.stdout.write(self.style.SUCCESS("[OK] Utworzono konta testowe (admin@adonis.app, dietetyk@adonis.app, pacjent@adonis.app)"))
+        # Pacjentka testowa (Kobieta)
+        pacjentka_user, _ = User.objects.get_or_create(
+            email='pacjentka@adonis.app',
+            defaults={
+                'username': 'pacjentka',
+                'first_name': 'Anna',
+                'last_name': 'Nowak',
+                'role': UserRole.PATIENT,
+                'assigned_dietitian': dietitian_user
+            }
+        )
+        pacjentka_user.set_password('Pacjent123!')
+        pacjentka_user.assigned_dietitian = dietitian_user
+        pacjentka_user.save()
+
+        pacjentka_profile, _ = PatientProfile.objects.get_or_create(
+            user=pacjentka_user,
+            defaults={
+                'current_weight': Decimal('62.0'),
+                'target_weight': Decimal('58.0'),
+                'height': Decimal('168.0'),
+                'gender': 'female',
+                'daily_calories_goal': 1600,
+                'protein_goal_g': Decimal('110.0'),
+                'fat_goal_g': Decimal('50.0'),
+                'carbs_goal_g': Decimal('180.0'),
+                'meals_per_day': 4,
+                'official_recommendations': '1. Picie minimum 2 l wody mineralnej dziennie.\n2. Lekkostrawne kolacje do 19:30.',
+            }
+        )
+        pacjentka_profile.gender = 'female'
+        pacjentka_profile.save()
+
+        self.stdout.write(self.style.SUCCESS("[OK] Utworzono konta testowe (admin@adonis.app, dietetyk@adonis.app, pacjent@adonis.app [Mężczyzna], pacjentka@adonis.app [Kobieta])"))
 
         # 2. Baza produktów Lidl i Biedronka
         products_map = {}
@@ -125,16 +161,26 @@ class Command(BaseCommand):
             for ing_name, amount in r_data["ingredients"]:
                 prod = products_map.get(ing_name)
                 if prod:
+                    amt_base = float(amount)
+                    amt_f = round(amt_base * 0.82 / 5.0) * 5.0
+                    if amt_f < 5.0 and amt_base >= 5.0:
+                        amt_f = 5.0
+                    amt_m = round(amt_base * 1.18 / 5.0) * 5.0
+                    if amt_m < 5.0 and amt_base >= 5.0:
+                        amt_m = 5.0
+
                     RecipeIngredient.objects.create(
                         recipe=recipe,
                         product=prod,
-                        amount_g=Decimal(str(amount)),
+                        amount_g=Decimal(str(amt_base)),
+                        amount_female_g=Decimal(str(amt_f)),
+                        amount_male_g=Decimal(str(amt_m)),
                         unit=prod.unit
                     )
             recipe.recalculate_macros_from_ingredients()
             created_recipes_count += 1
 
-        self.stdout.write(self.style.SUCCESS(f"[OK] Zaktualizowano i przeliczono makroskładniki dla {created_recipes_count} przepisów ze zdjęciami"))
+        self.stdout.write(self.style.SUCCESS(f"[OK] Zaktualizowano i przeliczono makroskładniki (z podziałem na płeć) dla {created_recipes_count} przepisów ze zdjęciami"))
 
         # 4. Przykładowy 7-dniowy jadłospis dla pacjenta
         all_breakfasts = list(Recipe.objects.filter(category=MealCategory.BREAKFAST))
@@ -171,18 +217,18 @@ class Command(BaseCommand):
         # 5. Pakiety i Szablony Diet (Dla Dietetyka)
         days_names = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota", "Niedziela"]
 
-        def build_template_days(b_list, s_list, l_list, d_list):
+        def build_template_days(b_list, s_list, l_list, d_list, portion_mult=1.0):
             days = []
             for i in range(7):
                 meals = []
                 if b_list:
-                    meals.append({"meal_type": MealCategory.BREAKFAST, "recipe_id": b_list[i % len(b_list)].id, "portions": 1.0})
+                    meals.append({"meal_type": MealCategory.BREAKFAST, "recipe_id": b_list[i % len(b_list)].id, "portions": portion_mult})
                 if s_list:
-                    meals.append({"meal_type": MealCategory.SECOND_BREAKFAST, "recipe_id": s_list[i % len(s_list)].id, "portions": 1.0})
+                    meals.append({"meal_type": MealCategory.SECOND_BREAKFAST, "recipe_id": s_list[i % len(s_list)].id, "portions": portion_mult})
                 if l_list:
-                    meals.append({"meal_type": MealCategory.LUNCH, "recipe_id": l_list[i % len(l_list)].id, "portions": 1.0})
+                    meals.append({"meal_type": MealCategory.LUNCH, "recipe_id": l_list[i % len(l_list)].id, "portions": portion_mult})
                 if d_list:
-                    meals.append({"meal_type": MealCategory.DINNER, "recipe_id": d_list[i % len(d_list)].id, "portions": 1.0})
+                    meals.append({"meal_type": MealCategory.DINNER, "recipe_id": d_list[i % len(d_list)].id, "portions": portion_mult})
                 days.append({
                     "day_number": i + 1,
                     "day_name": days_names[i],
@@ -206,7 +252,7 @@ class Command(BaseCommand):
         cu_l = [r for r in all_lunches if any(k in r.title.lower() for k in ['białym ryżem', 'purée', 'pergaminie'])]
         cu_d = [r for r in all_dinners if any(k in r.title.lower() for k in ['dyni', 'marchewki', 'ryżu'])]
 
-        # Tworzenie szablonów pakietów diet
+        # Przepisy WZJG bez laktozy
         all_snacks = list(Recipe.objects.filter(category=MealCategory.SNACK))
         wzjg_lf_b = [r for r in all_breakfasts if '(wzjg)' in r.title.lower()]
         wzjg_lf_s = [r for r in all_second if '(wzjg)' in r.title.lower()]
@@ -214,20 +260,20 @@ class Command(BaseCommand):
         wzjg_lf_sn = [r for r in all_snacks if '(wzjg)' in r.title.lower()]
         wzjg_lf_d = [r for r in all_dinners if '(wzjg)' in r.title.lower()]
 
-        def build_template_days_5(b_list, s_list, l_list, sn_list, d_list):
+        def build_template_days_5(b_list, s_list, l_list, sn_list, d_list, portion_mult=1.0):
             days = []
             for i in range(7):
                 meals = []
                 if b_list:
-                    meals.append({"meal_type": MealCategory.BREAKFAST, "recipe_id": b_list[i % len(b_list)].id, "portions": 1.0})
+                    meals.append({"meal_type": MealCategory.BREAKFAST, "recipe_id": b_list[i % len(b_list)].id, "portions": portion_mult})
                 if s_list:
-                    meals.append({"meal_type": MealCategory.SECOND_BREAKFAST, "recipe_id": s_list[i % len(s_list)].id, "portions": 1.0})
+                    meals.append({"meal_type": MealCategory.SECOND_BREAKFAST, "recipe_id": s_list[i % len(s_list)].id, "portions": portion_mult})
                 if l_list:
-                    meals.append({"meal_type": MealCategory.LUNCH, "recipe_id": l_list[i % len(l_list)].id, "portions": 1.0})
+                    meals.append({"meal_type": MealCategory.LUNCH, "recipe_id": l_list[i % len(l_list)].id, "portions": portion_mult})
                 if sn_list:
-                    meals.append({"meal_type": MealCategory.SNACK, "recipe_id": sn_list[i % len(sn_list)].id, "portions": 1.0})
+                    meals.append({"meal_type": MealCategory.SNACK, "recipe_id": sn_list[i % len(sn_list)].id, "portions": portion_mult})
                 if d_list:
-                    meals.append({"meal_type": MealCategory.DINNER, "recipe_id": d_list[i % len(d_list)].id, "portions": 1.0})
+                    meals.append({"meal_type": MealCategory.DINNER, "recipe_id": d_list[i % len(d_list)].id, "portions": portion_mult})
                 days.append({
                     "day_number": i + 1,
                     "day_name": days_names[i],
@@ -235,79 +281,179 @@ class Command(BaseCommand):
                 })
             return days
 
-        DietPlanTemplate.objects.update_or_create(
-            name="Dieta dla osób z WZJG z nabiałem bez laktozy (Colitis ulcerosa)",
+        templates_list = []
+
+        # --- PAKIETY DLA KOBIET (target_gender='female') ---
+        t_f1, _ = DietPlanTemplate.objects.update_or_create(
+            name="[KOBIETA] Dieta Redukcyjna 1500 kcal",
             defaults={
                 "dietitian": dietitian_user,
-                "category": "Colitis ulcerosa - Bez laktozy",
-                "description": "Specjalistyczny 7-dniowy jadłospis dla pacjentów z wrzodziejącym zapaleniem jelita grubego (WZJG), w którym tradycyjny nabiał zastąpiono produktami bezlaktozowymi (mleko, twaróg, serek wiejski, kefir, jogurt bez laktozy). Potrawy lekkostrawne, o obniżonej zawartości błonnika nierozpuszczalnego, wspierające gojenie śluzówki jelit bez fermentacji i wzdęć.",
-                "target_calories": 2000,
-                "meals_per_day": 5,
-                "days_data": build_template_days_5(wzjg_lf_b or cu_b or all_breakfasts, wzjg_lf_s or cu_s or all_second, wzjg_lf_l or cu_l or all_lunches, wzjg_lf_sn or all_snacks, wzjg_lf_d or cu_d or all_dinners)
+                "category": "Dieta redukcyjna",
+                "target_gender": "female",
+                "description": "Zbilansowany jadłospis redukcyjny dedykowany dla kobiet z porcjami dostosowanymi do niższego zapotrzebowania energetycznego (1500 kcal). Bogaty w warzywa, pełnoziarniste produkty i lekkie źródła białka.",
+                "target_calories": 1500,
+                "meals_per_day": 4,
+                "days_data": build_template_days(all_breakfasts[:7], all_second[:7], all_lunches[:7], all_dinners[:7], portion_mult=0.85)
             }
         )
+        templates_list.append((t_f1, "female"))
 
-        DietPlanTemplate.objects.update_or_create(
-            name="Dieta lekkostrawna (regeneracyjna)",
+        t_f2, _ = DietPlanTemplate.objects.update_or_create(
+            name="[KOBIETA] Dieta Lekkostrawna 1600 kcal",
             defaults={
                 "dietitian": dietitian_user,
                 "category": "Dieta lekkostrawna",
-                "description": "Zrównoważony, łagodny jadłospis oparty na gotowaniu na parze i duszeniu, nieobciążający żołądka ani jelit.",
-                "target_calories": 1900,
+                "target_gender": "female",
+                "description": "Łagodna, regeneracyjna dieta dla kobiet oparta na gotowaniu na parze i duszeniu. Nie obciąża żołądka, wspomaga witalność i lekkość po posiłkach.",
+                "target_calories": 1600,
                 "meals_per_day": 4,
-                "days_data": build_template_days(lek_b or all_breakfasts, lek_s or all_second, lek_l or all_lunches, lek_d or all_dinners)
+                "days_data": build_template_days(lek_b or all_breakfasts, lek_s or all_second, lek_l or all_lunches, lek_d or all_dinners, portion_mult=0.85)
             }
         )
+        templates_list.append((t_f2, "female"))
 
-        DietPlanTemplate.objects.update_or_create(
+        t_f3, _ = DietPlanTemplate.objects.update_or_create(
+            name="[KOBIETA] Dieta WZJG / Colitis Ulcerosa (Bez Laktozy) 1650 kcal",
+            defaults={
+                "dietitian": dietitian_user,
+                "category": "Colitis ulcerosa - Bez laktozy",
+                "target_gender": "female",
+                "description": "Specjalistyczny 5-posiłkowy jadłospis dla kobiet z wrzodziejącym zapaleniem jelita grubego z nabiałem bezlaktozowym. Ograniczony błonnik nierozpuszczalny, łagodne posiłki chroniące śluzówkę jelit.",
+                "target_calories": 1650,
+                "meals_per_day": 5,
+                "days_data": build_template_days_5(wzjg_lf_b or cu_b or all_breakfasts, wzjg_lf_s or cu_s or all_second, wzjg_lf_l or cu_l or all_lunches, wzjg_lf_sn or all_snacks, wzjg_lf_d or cu_d or all_dinners, portion_mult=0.85)
+            }
+        )
+        templates_list.append((t_f3, "female"))
+
+        t_f4, _ = DietPlanTemplate.objects.update_or_create(
+            name="[KOBIETA] Pakiet Fit & Active 1750 kcal",
+            defaults={
+                "dietitian": dietitian_user,
+                "category": "Dieta zbilansowana",
+                "target_gender": "female",
+                "description": "Energetyczny pakiet dla aktywnych kobiet uprawiających fitness, bieganie lub jogę. Zapewnia optymalną regenerację i stabilny poziom cukru we krwi.",
+                "target_calories": 1750,
+                "meals_per_day": 4,
+                "days_data": build_template_days(all_breakfasts, all_second, all_lunches, all_dinners, portion_mult=0.9)
+            }
+        )
+        templates_list.append((t_f4, "female"))
+
+        # --- PAKIETY DLA MĘŻCZYZN (target_gender='male') ---
+        t_m1, _ = DietPlanTemplate.objects.update_or_create(
+            name="[MĘŻCZYZNA] Dieta Redukcyjna 2000 kcal",
+            defaults={
+                "dietitian": dietitian_user,
+                "category": "Dieta redukcyjna",
+                "target_gender": "male",
+                "description": "Męski jadłospis redukcyjny z powiększoną gramaturą chudego mięsa i ryb (2000 kcal). Skutecznie spala tkankę tłuszczową bez utraty wypracowanej tkanki mięśniowej.",
+                "target_calories": 2000,
+                "meals_per_day": 4,
+                "days_data": build_template_days(all_breakfasts[:7], all_second[:7], all_lunches[:7], all_dinners[:7], portion_mult=1.15)
+            }
+        )
+        templates_list.append((t_m1, "male"))
+
+        t_m2, _ = DietPlanTemplate.objects.update_or_create(
+            name="[MĘŻCZYZNA] Dieta Lekkostrawna 2100 kcal",
+            defaults={
+                "dietitian": dietitian_user,
+                "category": "Dieta lekkostrawna",
+                "target_gender": "male",
+                "description": "Regeneracyjna dieta lekkostrawna dla mężczyzn. Zapewnia wysoką gęstość odżywczą i 2100 kcal przy maksymalnym oszczędzaniu układu pokarmowego.",
+                "target_calories": 2100,
+                "meals_per_day": 4,
+                "days_data": build_template_days(lek_b or all_breakfasts, lek_s or all_second, lek_l or all_lunches, lek_d or all_dinners, portion_mult=1.15)
+            }
+        )
+        templates_list.append((t_m2, "male"))
+
+        t_m3, _ = DietPlanTemplate.objects.update_or_create(
+            name="[MĘŻCZYZNA] Dieta WZJG / Colitis Ulcerosa (Bez Laktozy) 2150 kcal",
+            defaults={
+                "dietitian": dietitian_user,
+                "category": "Colitis ulcerosa - Bez laktozy",
+                "target_gender": "male",
+                "description": "Specjalistyczny 5-posiłkowy jadłospis bezlaktozowy dla mężczyzn z WZJG (2150 kcal). Większe porcje białka bezlaktozowego wspomagają regenerację.",
+                "target_calories": 2150,
+                "meals_per_day": 5,
+                "days_data": build_template_days_5(wzjg_lf_b or cu_b or all_breakfasts, wzjg_lf_s or cu_s or all_second, wzjg_lf_l or cu_l or all_lunches, wzjg_lf_sn or all_snacks, wzjg_lf_d or cu_d or all_dinners, portion_mult=1.15)
+            }
+        )
+        templates_list.append((t_m3, "male"))
+
+        t_m4, _ = DietPlanTemplate.objects.update_or_create(
+            name="[MĘŻCZYZNA] Pakiet Wysokobiałkowy Siła & Masa 2400 kcal",
+            defaults={
+                "dietitian": dietitian_user,
+                "category": "Dieta wysokobiałkowa",
+                "target_gender": "male",
+                "description": "Maksymalna budowa formy fizycznej: ponad 170g pełnowartościowego białka dziennie, węglowodany złożone i 2400 kcal dla aktywnych mężczyzn.",
+                "target_calories": 2400,
+                "meals_per_day": 4,
+                "days_data": build_template_days(all_breakfasts, all_second, all_lunches, all_dinners, portion_mult=1.20)
+            }
+        )
+        templates_list.append((t_m4, "male"))
+
+        # --- PAKIETY UNIWERSALNE (target_gender='all') ---
+        t_all1, _ = DietPlanTemplate.objects.update_or_create(
             name="Dieta płynna i półpłynna (odżywcza)",
             defaults={
                 "dietitian": dietitian_user,
                 "category": "Dieta płynna",
+                "target_gender": "all",
                 "description": "Aksamitne zupy kremy, odżywcze koktajle białkowe i gładkie musy dla pacjentów po zabiegach lub z trudnościami w połykaniu.",
                 "target_calories": 1850,
                 "meals_per_day": 4,
-                "days_data": build_template_days(plyn_b or all_breakfasts, plyn_s or all_second, plyn_l or all_lunches, plyn_d or all_dinners)
+                "days_data": build_template_days(plyn_b or all_breakfasts, plyn_s or all_second, plyn_l or all_lunches, plyn_d or all_dinners, portion_mult=1.0)
             }
         )
+        templates_list.append((t_all1, "all"))
 
-        DietPlanTemplate.objects.update_or_create(
+        t_all2, _ = DietPlanTemplate.objects.update_or_create(
             name="Dieta dla osób z Colitis ulcerosa (Wrzodziejące zapalenie jelita)",
             defaults={
                 "dietitian": dietitian_user,
                 "category": "Colitis ulcerosa",
+                "target_gender": "all",
                 "description": "Dieta łatwostrawna z ograniczeniem błonnika nierozpuszczalnego, bez pestek i skórki, bogata w przeciwzapalne kwasy Omega-3 i łagodne białko.",
                 "target_calories": 1950,
                 "meals_per_day": 4,
-                "days_data": build_template_days(cu_b or all_breakfasts, cu_s or all_second, cu_l or all_lunches, cu_d or all_dinners)
+                "days_data": build_template_days(cu_b or all_breakfasts, cu_s or all_second, cu_l or all_lunches, cu_d or all_dinners, portion_mult=1.0)
             }
         )
+        templates_list.append((t_all2, "all"))
 
-        DietPlanTemplate.objects.update_or_create(
-            name="Pakiet Redukcyjny 1800 kcal (Biedronka & Lidl)",
-            defaults={
-                "dietitian": dietitian_user,
-                "category": "Dieta niskokaloryczna",
-                "description": "Zbilansowana dieta z deficytem kalorycznym oparta na tanich i łatwo dostępnych produktach z dyskontów.",
-                "target_calories": 1800,
-                "meals_per_day": 4,
-                "days_data": build_template_days(all_breakfasts[:7], all_second[:7], all_lunches[:7], all_dinners[:7])
-            }
-        )
+        # Rejestracja przypisań pakietów do pacjentów według płci
+        start_d = today
+        end_d = today + timedelta(days=28)
+        for tpl, target_g in templates_list:
+            if target_g in ("female", "all"):
+                DietPlanTemplateAssignment.objects.get_or_create(
+                    template=tpl,
+                    patient=pacjentka_user,
+                    defaults={
+                        "dietitian": dietitian_user,
+                        "start_date": start_d,
+                        "end_date": end_d,
+                        "notes": f"Pakiet przesłany przez dietetyka dla pacjentki: {tpl.name}"
+                    }
+                )
+            if target_g in ("male", "all"):
+                DietPlanTemplateAssignment.objects.get_or_create(
+                    template=tpl,
+                    patient=patient_user,
+                    defaults={
+                        "dietitian": dietitian_user,
+                        "start_date": start_d,
+                        "end_date": end_d,
+                        "notes": f"Pakiet przesłany przez dietetyka dla pacjenta: {tpl.name}"
+                    }
+                )
 
-        DietPlanTemplate.objects.update_or_create(
-            name="Pakiet Wysokobiałkowy Fit 2200 kcal",
-            defaults={
-                "dietitian": dietitian_user,
-                "category": "Dieta wysokobiałkowa",
-                "description": "Bogaty w białko plan (powyżej 150g białka/dzień) do budowy beztłuszczowej masy mięśniowej i regeneracji.",
-                "target_calories": 2200,
-                "meals_per_day": 4,
-                "days_data": build_template_days(all_breakfasts, all_second, all_lunches, all_dinners)
-            }
-        )
-
-        self.stdout.write(self.style.SUCCESS("[OK] Utworzono i zaktualizowano gotowe pakiety diet (WZJG bez laktozy, Lekkostrawna, Płynna, Colitis ulcerosa, Redukcyjna, Wysokobiałkowa)"))
+        self.stdout.write(self.style.SUCCESS(f"[OK] Utworzono {len(templates_list)} dedykowanych pakietów diet z podziałem na płeć (Kobiety, Mężczyźni, Uniwersalne) i przypisano je do kont pacjentów!"))
 
 
         # 6. Pomiary i Audit Log

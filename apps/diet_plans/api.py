@@ -122,13 +122,27 @@ def serialize_daily_plan(plan: DailyMealPlan) -> dict:
     tot_f = 0.0
     tot_c = 0.0
 
+    # Płeć pacjenta do kalibracji wielkości porcji i makroskładników
+    patient_gender = 'all'
+    if hasattr(plan.patient, 'patient_profile') and plan.patient.patient_profile and plan.patient.patient_profile.gender:
+        patient_gender = plan.patient.patient_profile.gender.lower()
+
     for m in plan.meals.select_related('recipe').all():
         recipe = m.recipe
         multiplier = float(m.portions) / float(recipe.default_portions or 1.0)
-        cal = float(recipe.calories) * multiplier
-        p = float(recipe.protein_g) * multiplier
-        f = float(recipe.fat_g) * multiplier
-        c = float(recipe.carbs_g) * multiplier
+        
+        # Pobranie makro z uwzględnieniem płci pacjenta
+        if patient_gender in ('female', 'male'):
+            macros = recipe.get_macros_for_gender(patient_gender)
+            cal = float(macros['calories']) * multiplier
+            p = float(macros['protein_g']) * multiplier
+            f = float(macros['fat_g']) * multiplier
+            c = float(macros['carbs_g']) * multiplier
+        else:
+            cal = float(recipe.calories) * multiplier
+            p = float(recipe.protein_g) * multiplier
+            f = float(recipe.fat_g) * multiplier
+            c = float(recipe.carbs_g) * multiplier
 
         tot_cal += cal
         tot_p += p
@@ -137,6 +151,11 @@ def serialize_daily_plan(plan: DailyMealPlan) -> dict:
 
         ing_list = []
         for ing in recipe.ingredients.select_related('product').all():
+            base_amt = ing.get_amount_for_gender(patient_gender)
+            scaled_amt = round(base_amt * multiplier, 1)
+            f_amt = float(ing.amount_female_g) if ing.amount_female_g else round(float(ing.amount_g) * 0.82, 1)
+            m_amt = float(ing.amount_male_g) if ing.amount_male_g else round(float(ing.amount_g) * 1.18, 1)
+
             ing_list.append({
                 "id": ing.id,
                 "product": {
@@ -151,7 +170,9 @@ def serialize_daily_plan(plan: DailyMealPlan) -> dict:
                     "fat_per_100g": float(ing.product.fat_per_100g),
                     "carbs_per_100g": float(ing.product.carbs_per_100g),
                 },
-                "amount_g": round(float(ing.amount_g) * multiplier, 1),
+                "amount_g": scaled_amt,
+                "amount_female_g": round(f_amt * multiplier, 1),
+                "amount_male_g": round(m_amt * multiplier, 1),
                 "unit": ing.unit,
             })
 
@@ -172,6 +193,14 @@ def serialize_daily_plan(plan: DailyMealPlan) -> dict:
                 "protein_g": round(p, 1),
                 "fat_g": round(f, 1),
                 "carbs_g": round(c, 1),
+                "calories_female": round(float(recipe.calories_female) * multiplier, 1),
+                "calories_male": round(float(recipe.calories_male) * multiplier, 1),
+                "protein_female_g": round(float(recipe.protein_female_g) * multiplier, 1),
+                "protein_male_g": round(float(recipe.protein_male_g) * multiplier, 1),
+                "fat_female_g": round(float(recipe.fat_female_g) * multiplier, 1),
+                "fat_male_g": round(float(recipe.fat_male_g) * multiplier, 1),
+                "carbs_female_g": round(float(recipe.carbs_female_g) * multiplier, 1),
+                "carbs_male_g": round(float(recipe.carbs_male_g) * multiplier, 1),
                 "image_url": recipe.image_url,
                 "is_verified": recipe.is_verified,
                 "ingredients": ing_list,
@@ -438,6 +467,7 @@ def serialize_template(t: DietPlanTemplate) -> dict:
         "id": t.id,
         "name": t.name,
         "category": t.category,
+        "target_gender": t.target_gender,
         "description": t.description,
         "target_calories": t.target_calories,
         "meals_per_day": t.meals_per_day,
@@ -447,11 +477,12 @@ def serialize_template(t: DietPlanTemplate) -> dict:
     }
 
 @router.get("/templates", response=List[DietPlanTemplateOutSchema], auth=JWTAuth())
-def list_diet_templates(request, category: Optional[str] = None):
+def list_diet_templates(request, category: Optional[str] = None, target_gender: Optional[str] = None):
     """
     Pobiera listę szablonów i pakietów diet.
     Dla pacjenta: zwraca WYŁĄCZNIE pakiety diet przesłane mu przez dietetyka (stare i nowo przesłane).
     Dla dietetyka i admina: zwraca wszystkie szablony.
+    Opcjonalnie filtruje po kategorii oraz docelowej płci (target_gender).
     """
     current_user = request.auth_user
     if current_user.role == UserRole.PATIENT:
@@ -467,6 +498,8 @@ def list_diet_templates(request, category: Optional[str] = None):
     qs = qs.prefetch_related('assignments__patient', 'assignments__dietitian').order_by('-created_at')
     if category:
         qs = qs.filter(category__icontains=category)
+    if target_gender and target_gender != 'all':
+        qs = qs.filter(Q(target_gender=target_gender) | Q(target_gender='all'))
     return [serialize_template(t) for t in qs]
 
 @router.post("/templates", response=DietPlanTemplateOutSchema, auth=JWTAuth())
@@ -480,6 +513,7 @@ def create_diet_template(request, payload: DietPlanTemplateCreateSchema):
         dietitian=current_user,
         name=payload.name,
         category=payload.category,
+        target_gender=payload.target_gender or "all",
         description=payload.description or "",
         target_calories=payload.target_calories,
         meals_per_day=payload.meals_per_day,
@@ -500,6 +534,7 @@ def update_diet_template(request, template_id: int, payload: DietPlanTemplateCre
 
     template.name = payload.name
     template.category = payload.category
+    template.target_gender = payload.target_gender or "all"
     template.description = payload.description or ""
     template.target_calories = payload.target_calories
     template.meals_per_day = payload.meals_per_day

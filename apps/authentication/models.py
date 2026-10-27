@@ -79,6 +79,10 @@ class User(AbstractUser):
     def is_patient(self):
         return self.role == UserRole.PATIENT
 
+    @property
+    def profile(self):
+        return getattr(self, 'patient_profile', None)
+
 class PatientProfile(models.Model):
     user = models.OneToOneField(
         User,

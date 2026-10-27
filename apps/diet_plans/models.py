@@ -14,6 +14,13 @@ class DietPlanTemplate(models.Model):
         verbose_name=_('dietetyk')
     )
     target_calories = models.PositiveIntegerField(_('cel kalorii'), default=2000)
+    target_gender = models.CharField(
+        _('grupa docelowa (płeć)'),
+        max_length=20,
+        choices=[('all', 'Dla każdego'), ('female', 'Kobieta'), ('male', 'Mężczyzna')],
+        default='all',
+        db_index=True
+    )
     meals_per_day = models.PositiveSmallIntegerField(_('liczba posiłków na dzień'), default=4)
     days_data = models.JSONField(_('dane jadłospisu na 7 dni'), default=list)
     created_at = models.DateTimeField(auto_now_add=True)

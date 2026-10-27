@@ -81,6 +81,7 @@ class TemplateDayInputSchema(Schema):
 class DietPlanTemplateCreateSchema(Schema):
     name: str
     category: str = "Dieta redukcyjna"
+    target_gender: str = "all"
     description: Optional[str] = ""
     target_calories: int = 2000
     meals_per_day: int = 4
@@ -101,6 +102,7 @@ class DietPlanTemplateOutSchema(Schema):
     id: int
     name: str
     category: str
+    target_gender: str = "all"
     description: str
     target_calories: int
     meals_per_day: int

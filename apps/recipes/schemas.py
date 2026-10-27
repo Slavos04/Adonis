@@ -18,6 +18,8 @@ class RecipeIngredientOutSchema(Schema):
     id: int
     product: ProductOutSchema
     amount_g: float
+    amount_female_g: Optional[float] = None
+    amount_male_g: Optional[float] = None
     unit: str
 
 class RecipeOutSchema(Schema):
@@ -30,6 +32,14 @@ class RecipeOutSchema(Schema):
     protein_g: float
     fat_g: float
     carbs_g: float
+    calories_female: Optional[float] = None
+    calories_male: Optional[float] = None
+    protein_female_g: Optional[float] = None
+    protein_male_g: Optional[float] = None
+    fat_female_g: Optional[float] = None
+    fat_male_g: Optional[float] = None
+    carbs_female_g: Optional[float] = None
+    carbs_male_g: Optional[float] = None
     image_url: Optional[str] = None
     is_verified: bool
     instructions: Optional[str] = ""
@@ -47,6 +57,8 @@ class ScaledIngredientItemSchema(Schema):
     barcode: Optional[str] = None
     original_amount: float
     scaled_amount: float
+    amount_female_g: Optional[float] = None
+    amount_male_g: Optional[float] = None
     unit: str
     calories: float
     protein_g: float
@@ -84,6 +96,8 @@ class ProductCreateSchema(Schema):
 class RecipeIngredientInputSchema(Schema):
     product_id: int
     amount_g: float
+    amount_female_g: Optional[float] = None
+    amount_male_g: Optional[float] = None
     unit: Optional[str] = "g"
 
 class RecipeCreateSchema(Schema):

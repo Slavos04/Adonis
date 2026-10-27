@@ -6,10 +6,11 @@
 
 from decimal import Decimal, ROUND_HALF_UP
 
-def scale_recipe(recipe, target_portions: float) -> dict:
+def scale_recipe(recipe, target_portions: float, gender: str = 'all') -> dict:
     """
     Skaluje składniki, kalorie oraz makroskładniki (B, T, W) przepisu
-    w oparciu o współczynnik: mnożnik = porcje_docelowe / porcje_domyślne.
+    w oparciu o współczynnik: mnożnik = porcje_docelowe / porcje_domyślne
+    oraz uwzględniając docelową płeć (gender).
     """
     target = Decimal(str(target_portions))
     default = Decimal(str(recipe.default_portions))
@@ -29,7 +30,8 @@ def scale_recipe(recipe, target_portions: float) -> dict:
 
     # Przeliczenie składników
     for item in recipe.ingredients.select_related('product').all():
-        raw_amount = Decimal(str(item.amount_g)) * multiplier
+        base_g = item.get_amount_for_gender(gender)
+        raw_amount = Decimal(str(base_g)) * multiplier
         scaled_amount = raw_amount.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
         
         # Obliczenie makro dla danej przeskalowanej ilości składnika
@@ -57,6 +59,8 @@ def scale_recipe(recipe, target_portions: float) -> dict:
             "barcode": item.product.barcode,
             "original_amount": float(item.amount_g),
             "scaled_amount": float(scaled_amount),
+            "amount_female_g": float(item.amount_female_g) if item.amount_female_g else round(float(item.amount_g) * 0.82, 1),
+            "amount_male_g": float(item.amount_male_g) if item.amount_male_g else round(float(item.amount_g) * 1.18, 1),
             "unit": item.unit,
             "calories": float(ing_cal.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)),
             "protein_g": float(ing_prot.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)),

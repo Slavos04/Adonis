@@ -63,6 +63,8 @@ data class RecipeIngredient(
     val id: Int,
     val product: Product,
     @SerializedName("amount_g") val amountG: Double,
+    @SerializedName("amount_female_g") val amountFemaleG: Double? = null,
+    @SerializedName("amount_male_g") val amountMaleG: Double? = null,
     val unit: String
 )
 
@@ -217,6 +219,7 @@ data class DietPlanTemplate(
     val id: Int,
     val name: String,
     val category: String,
+    @SerializedName("target_gender") val targetGender: String? = "all",
     val description: String?,
     @SerializedName("target_calories") val targetCalories: Int,
     @SerializedName("meals_per_day") val mealsPerDay: Int

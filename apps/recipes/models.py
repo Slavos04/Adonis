@@ -92,6 +92,58 @@ class Recipe(models.Model):
         self.carbs_g = round(total_c, 1)
         self.save(update_fields=['calories', 'protein_g', 'fat_g', 'carbs_g'])
 
+    def get_macros_for_gender(self, gender: str = 'all') -> dict:
+        """Oblicza kalorie i makroskładniki (B/T/W) uwzględniając podział na płeć."""
+        total_cal = 0.0
+        total_p = 0.0
+        total_f = 0.0
+        total_c = 0.0
+        for item in self.ingredients.select_related('product').all():
+            amt = item.get_amount_for_gender(gender)
+            factor = amt / 100.0
+            total_cal += float(item.product.calories_per_100g) * factor
+            total_p += float(item.product.protein_per_100g) * factor
+            total_f += float(item.product.fat_per_100g) * factor
+            total_c += float(item.product.carbs_per_100g) * factor
+        return {
+            'calories': round(total_cal, 1),
+            'protein_g': round(total_p, 1),
+            'fat_g': round(total_f, 1),
+            'carbs_g': round(total_c, 1),
+        }
+
+    @property
+    def calories_female(self):
+        return self.get_macros_for_gender('female')['calories']
+
+    @property
+    def calories_male(self):
+        return self.get_macros_for_gender('male')['calories']
+
+    @property
+    def protein_female_g(self):
+        return self.get_macros_for_gender('female')['protein_g']
+
+    @property
+    def protein_male_g(self):
+        return self.get_macros_for_gender('male')['protein_g']
+
+    @property
+    def fat_female_g(self):
+        return self.get_macros_for_gender('female')['fat_g']
+
+    @property
+    def fat_male_g(self):
+        return self.get_macros_for_gender('male')['fat_g']
+
+    @property
+    def carbs_female_g(self):
+        return self.get_macros_for_gender('female')['carbs_g']
+
+    @property
+    def carbs_male_g(self):
+        return self.get_macros_for_gender('male')['carbs_g']
+
 class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
         Recipe,
@@ -105,7 +157,9 @@ class RecipeIngredient(models.Model):
         related_name='recipe_usages',
         verbose_name=_('produkt')
     )
-    amount_g = models.DecimalField(_('ilość (g / ml)'), max_digits=7, decimal_places=2)
+    amount_g = models.DecimalField(_('ilość bazowa (g / ml)'), max_digits=7, decimal_places=2)
+    amount_female_g = models.DecimalField(_('ilość dla kobiet (g / ml)'), max_digits=7, decimal_places=2, null=True, blank=True)
+    amount_male_g = models.DecimalField(_('ilość dla mężczyzn (g / ml)'), max_digits=7, decimal_places=2, null=True, blank=True)
     unit = models.CharField(_('jednostka'), max_length=20, default='g')
 
     class Meta:
@@ -114,3 +168,14 @@ class RecipeIngredient(models.Model):
 
     def __str__(self):
         return f"{self.product.name} - {self.amount_g} {self.unit}"
+
+    def get_amount_for_gender(self, gender: str = 'all') -> float:
+        """Zwraca gramaturę składnika dopasowaną do płci pacjenta."""
+        g = (gender or '').lower()
+        if g in ('female', 'kobieta', 'k'):
+            if self.amount_female_g is not None and self.amount_female_g > 0:
+                return float(self.amount_female_g)
+        elif g in ('male', 'mężczyzna', 'mezczyzna', 'm'):
+            if self.amount_male_g is not None and self.amount_male_g > 0:
+                return float(self.amount_male_g)
+        return float(self.amount_g)

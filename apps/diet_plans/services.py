@@ -26,6 +26,10 @@ def generate_smart_shopping_list(
 
     product_totals: Dict[int, Dict[str, Any]] = {}
 
+    patient_gender = 'all'
+    if hasattr(patient, 'patient_profile') and patient.patient_profile and patient.patient_profile.gender:
+        patient_gender = patient.patient_profile.gender.lower()
+
     for plan in plans:
         for meal in plan.meals.all():
             if meal_types and meal.meal_type not in meal_types:
@@ -35,7 +39,8 @@ def generate_smart_shopping_list(
 
             for ing in meal.recipe.ingredients.all():
                 prod = ing.product
-                needed_amount = Decimal(str(ing.amount_g)) * multiplier
+                base_g = ing.get_amount_for_gender(patient_gender)
+                needed_amount = Decimal(str(base_g)) * multiplier
 
                 if prod.id not in product_totals:
                     product_totals[prod.id] = {

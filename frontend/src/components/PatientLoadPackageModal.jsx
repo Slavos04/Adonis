@@ -8,6 +8,7 @@ export function PatientLoadPackageModal({ isOpen, onClose, onPackageLoaded, init
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
   const [startDate, setStartDate] = useState(initialStartDate || new Date().toISOString().split('T')[0]);
   const [search, setSearch] = useState('');
+  const [selectedGender, setSelectedGender] = useState('all'); // 'all', 'female', 'male'
   const [selectedCategory, setSelectedCategory] = useState('Wszystkie');
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -39,10 +40,11 @@ export function PatientLoadPackageModal({ isOpen, onClose, onPackageLoaded, init
 
   const filteredTemplates = templates.filter(t => {
     const matchesCat = selectedCategory === 'Wszystkie' || t.category === selectedCategory;
+    const matchesGender = selectedGender === 'all' || t.target_gender === selectedGender || t.target_gender === 'all';
     const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase()) ||
       (t.description || '').toLowerCase().includes(search.toLowerCase()) ||
       (t.category || '').toLowerCase().includes(search.toLowerCase());
-    return matchesCat && matchesSearch;
+    return matchesCat && matchesGender && matchesSearch;
   });
 
   async function handleLoadPackage(e) {
@@ -179,6 +181,35 @@ export function PatientLoadPackageModal({ isOpen, onClose, onPackageLoaded, init
               </div>
             </div>
 
+            {/* Pigułki filtrowania po płci */}
+            <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.65rem' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', alignSelf: 'center', marginRight: '0.2rem' }}>Płeć:</span>
+              {[
+                { id: 'all', label: 'Wszystkie' },
+                { id: 'female', label: '👩 Kobiety' },
+                { id: 'male', label: '👨 Mężczyźni' }
+              ].map(g => (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => setSelectedGender(g.id)}
+                  style={{
+                    fontSize: '0.78rem',
+                    padding: '0.3rem 0.75rem',
+                    borderRadius: '8px',
+                    border: selectedGender === g.id ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.08)',
+                    cursor: 'pointer',
+                    background: selectedGender === g.id ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.03)',
+                    color: selectedGender === g.id ? '#34d399' : '#cbd5e1',
+                    fontWeight: selectedGender === g.id ? 800 : 500,
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+
             {/* Pigułki kategorii */}
             <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', paddingBottom: '0.3rem' }}>
               {categories.map(cat => (
@@ -230,6 +261,12 @@ export function PatientLoadPackageModal({ isOpen, onClose, onPackageLoaded, init
             ) : (
               filteredTemplates.map(tpl => {
                 const isSelected = selectedTemplateId === tpl.id;
+                const genderBadge = tpl.target_gender === 'female' 
+                  ? { label: '👩 Kobieta', bg: 'rgba(236, 72, 153, 0.15)', color: '#f472b6', border: '1px solid rgba(236, 72, 153, 0.3)' }
+                  : tpl.target_gender === 'male'
+                  ? { label: '👨 Mężczyzna', bg: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)' }
+                  : { label: '🥗 Dla każdego', bg: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' };
+
                 return (
                   <div
                     key={tpl.id}
@@ -247,12 +284,17 @@ export function PatientLoadPackageModal({ isOpen, onClose, onPackageLoaded, init
                     }}
                   >
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
-                        <span className="badge badge-emerald" style={{ fontSize: '0.7rem' }}>
-                          {tpl.category}
-                        </span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem', gap: '0.4rem', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                          <span className="badge badge-emerald" style={{ fontSize: '0.68rem' }}>
+                            {tpl.category}
+                          </span>
+                          <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.45rem', borderRadius: '4px', background: genderBadge.bg, color: genderBadge.color, border: genderBadge.border, fontWeight: 700 }}>
+                            {genderBadge.label}
+                          </span>
+                        </div>
                         {isSelected && (
-                          <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--accent-emerald)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                          <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--accent-emerald)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
                             <Check size={13} />
                           </div>
                         )}

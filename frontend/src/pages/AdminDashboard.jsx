@@ -2128,6 +2128,7 @@ export function AdminDashboard() {
                     <tr>
                       <SortableTh colKey="id" label="ID" currentSort={sortConfig} onSort={handleSort} />
                       <SortableTh colKey="name" label="Nazwa" currentSort={sortConfig} onSort={handleSort} />
+                      <SortableTh colKey="target_gender" label="Płeć" currentSort={sortConfig} onSort={handleSort} />
                       <SortableTh colKey="category" label="Kategoria" currentSort={sortConfig} onSort={handleSort} />
                       <SortableTh colKey="target_calories" label="Cel kcal" currentSort={sortConfig} onSort={handleSort} />
                       <SortableTh colKey="meals_per_day" label="Posiłki/dzień" currentSort={sortConfig} onSort={handleSort} />
@@ -2143,6 +2144,15 @@ export function AdminDashboard() {
                           <tr>
                             <td style={{ color: 'var(--text-dim)', fontSize: '0.78rem' }}>#{t.id}</td>
                             <td style={{ fontWeight: 600, fontSize: '0.87rem' }}>{t.name}</td>
+                            <td>
+                              {t.target_gender === 'female' ? (
+                                <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: 'rgba(236,72,153,0.15)', color: '#f472b6', fontWeight: 700 }}>👩 Kobieta</span>
+                              ) : t.target_gender === 'male' ? (
+                                <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: 'rgba(59,130,246,0.15)', color: '#60a5fa', fontWeight: 700 }}>👨 Mężczyzna</span>
+                              ) : (
+                                <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: 'rgba(16,185,129,0.15)', color: '#34d399', fontWeight: 700 }}>🥗 Dla każdego</span>
+                              )}
+                            </td>
                             <td>
                               <span style={{ background: 'var(--accent-emerald-glow)', color: 'var(--accent-emerald)', padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem' }}>
                                 {t.category}

@@ -44,9 +44,9 @@ def get_recipe_detail(request, recipe_id: int):
     return recipe
 
 @router.get("/{recipe_id}/scale", response=ScaledRecipeOutSchema, auth=None)
-def scale_recipe_portions(request, recipe_id: int, portions: float = 1.0):
+def scale_recipe_portions(request, recipe_id: int, portions: float = 1.0, gender: Optional[str] = "all"):
     """
-    Automatyczne skalowanie porcji dań w locie.
+    Automatyczne skalowanie porcji dań w locie z uwzględnieniem docelowej płci (gender).
     Matematycznie przelicza gramaturę składników, całkowitą kaloryczność i makroskładniki (białko, tłuszcze, węglowodany).
     """
     recipe = Recipe.objects.prefetch_related('ingredients__product').filter(id=recipe_id).first()
@@ -56,7 +56,7 @@ def scale_recipe_portions(request, recipe_id: int, portions: float = 1.0):
     if portions <= 0:
         raise HttpError(400, "Liczba porcji musi być większa od 0.")
 
-    scaled_data = scale_recipe(recipe, portions)
+    scaled_data = scale_recipe(recipe, portions, gender=gender or "all")
     return scaled_data
 
 @router.get("/products/list", response=List[ProductOutSchema], auth=None)
