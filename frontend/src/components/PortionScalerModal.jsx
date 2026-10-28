@@ -197,6 +197,11 @@ export function PortionScalerModal({ recipeId, initialPortions = 1.0, onClose })
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#10b981' }}>
                       {item.scaled_amount} {item.unit}
+                      {item.kitchen_measure && (
+                        <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#a7f3d0', marginLeft: '0.45rem' }}>
+                          ({item.kitchen_measure})
+                        </span>
+                      )}
                     </div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '2px' }}>
                       👩 K: <strong style={{ color: '#f472b6' }}>{item.amount_female_g || Math.round(item.original_amount * 0.82)} {item.unit}</strong> | 👨 M: <strong style={{ color: '#60a5fa' }}>{item.amount_male_g || Math.round(item.original_amount * 1.18)} {item.unit}</strong>

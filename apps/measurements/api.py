@@ -179,3 +179,18 @@ def list_audit_logs(request, patient_id: Optional[int] = None):
             "created_at": log.created_at,
         })
     return logs
+
+@router.delete("/{measurement_id}", auth=JWTAuth())
+def delete_measurement(request, measurement_id: int):
+    """Usuwa wskazany pomiar pacjenta."""
+    user = request.auth_user
+    qs = Measurement.objects.filter(id=measurement_id)
+    if user.role == UserRole.PATIENT:
+        qs = qs.filter(patient=user)
+    elif user.role == UserRole.DIETITIAN:
+        qs = qs.filter(patient__assigned_dietitian=user)
+    m = qs.first()
+    if not m:
+        raise HttpError(404, "Nie znaleziono pomiaru lub brak uprawnień.")
+    m.delete()
+    return {"message": "Pomiar został usunięty."}

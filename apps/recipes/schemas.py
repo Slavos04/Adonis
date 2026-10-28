@@ -21,6 +21,7 @@ class RecipeIngredientOutSchema(Schema):
     amount_female_g: Optional[float] = None
     amount_male_g: Optional[float] = None
     unit: str
+    kitchen_measure: Optional[str] = ""
 
 class RecipeOutSchema(Schema):
     id: int
@@ -60,6 +61,7 @@ class ScaledIngredientItemSchema(Schema):
     amount_female_g: Optional[float] = None
     amount_male_g: Optional[float] = None
     unit: str
+    kitchen_measure: Optional[str] = ""
     calories: float
     protein_g: float
     fat_g: float

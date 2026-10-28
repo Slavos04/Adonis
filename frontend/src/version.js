@@ -1,14 +1,50 @@
-export const APP_VERSION = '1.2';
+export const APP_VERSION = '1.3';
 export const APP_RELEASE_DATE = '2026-10-28';
 
 export const CHANGELOG_DATA = [
+  {
+    version: '1.3',
+    date: '2026-10-28',
+    time: '07:20 CET',
+    title: 'Wydanie 1.3 — Pomiary w belce, historia zaleceń i jadłospisów, kategorie zakupów i miary kuchenne',
+    badge: 'Aktualna',
+    badgeType: 'emerald',
+    changes: [
+      {
+        category: 'Aplikacja Webowa',
+        items: [
+          'Dodanie przycisku "Zamknij" w oknie Ustawień.',
+          'Pełna historia zaleceń wraz z podglądem przypisanych jadłospisów i 7-dniowych planów posiłków.',
+          'Nowa zakładka "Pomiary" w górnej belce nawigacyjnej z wykresem trendu wagi/talii, klasyfikacją BMI WHO, edycją wzrostu i tabelą pomiarów.',
+          'Grupowanie listy zakupów według kategorii (warzywa, owoce, nabiał, mięso itp.) z master-checkboxem zaznaczającym wszystkie pozycje.',
+          'Przeniesienie usuwania konta i ikony kosza do sekcji Ustawienia (Strefa niebezpieczna) dla ochrony przed przypadkowym skasowaniem.'
+        ]
+      },
+      {
+        category: 'Aplikacja Mobilna Android',
+        items: [
+          'Wyświetlanie czystego numeru wersji w oknie O aplikacji (np. "1.3" bez słowa "Produkcyjna").',
+          'Grupowanie zakupów według kategorii oraz zbiorczy checkbox "Zaznacz wszystkie / Odznacz wszystkie".',
+          'Wsparcie dla miar kuchennych w składnikach posiłków (łyżki, łyżeczki, szklanki, sztuki).'
+        ]
+      },
+      {
+        category: 'Baza Przepisów i Dietetyka',
+        items: [
+          'Weryfikacja bazy przepisów i przypisanych zdjęć.',
+          'Weryfikacja diety redukcyjnej (standardowy nabiał niskotłuszczowy, nabiał bez laktozy wyłącznie w jednostkach klinicznych WZJG).',
+          'Dodanie miar kuchennych obok gramatury dla wszystkich składników (łyżki, łyżeczki, szklanki, sztuki, plastry, garście).'
+        ]
+      }
+    ]
+  },
   {
     version: '1.2',
     date: '2026-10-28',
     time: '05:48 CET',
     title: 'Wydanie 1.2 — Usprawnienia aplikacji mobilnej, minimalizacja gotowania i historia zaleceń',
-    badge: 'Aktualna',
-    badgeType: 'emerald',
+    badge: 'Poprzednia',
+    badgeType: 'slate',
     changes: [
       {
         category: 'Aplikacja Mobilna Android',

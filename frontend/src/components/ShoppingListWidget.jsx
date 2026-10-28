@@ -81,6 +81,64 @@ export function ShoppingListWidget() {
 
   const boughtCount = displayItems.filter((i) => i.is_bought).length;
   const skippedCount = displayItems.filter((i) => i.is_skipped).length;
+  const allBought = displayItems.length > 0 && displayItems.every((i) => i.is_bought);
+
+  async function handleToggleAll() {
+    const targetState = !allBought;
+    setItems((prev) => prev.map((i) => ({ ...i, is_bought: targetState })));
+    try {
+      const itemIds = displayItems.map((i) => i.id).filter(Boolean);
+      await dietPlansApi.bulkToggleShoppingItems(targetState, itemIds.length ? itemIds : null);
+    } catch (err) {
+      console.error('Błąd zbiorczego oznaczania zakupów:', err);
+    }
+  }
+
+  function normalizeCategory(cat) {
+    if (!cat) return 'Inne produkty';
+    const c = cat.toLowerCase();
+    if (c.includes('warzyw')) return 'Warzywa';
+    if (c.includes('owoc') && !c.includes('morza')) return 'Owoce';
+    if (c.includes('nabiał') || c.includes('mleko') || c.includes('jogurt') || c.includes('ser') || c.includes('twaróg') || c.includes('kefir') || c.includes('skyr')) return 'Nabiał';
+    if (c.includes('mięs') || c.includes('drób') || c.includes('wędlin') || c.includes('kurczak') || c.includes('indyk') || c.includes('szynk')) return 'Mięso i wędliny';
+    if (c.includes('ryb') || c.includes('morza') || c.includes('łosoś') || c.includes('dorsz') || c.includes('tuńczyk')) return 'Ryby i owoce morza';
+    if (c.includes('pieczyw') || c.includes('chleb') || c.includes('bułk')) return 'Pieczywo';
+    if (c.includes('zboż') || c.includes('płatk') || c.includes('kasz') || c.includes('ryż') || c.includes('makaron') || c.includes('mąk')) return 'Produkty zbożowe';
+    if (c.includes('tłuszcz') || c.includes('oliw') || c.includes('olej') || c.includes('orzech') || c.includes('nasion') || c.includes('masło')) return 'Tłuszcze, nasiona i orzechy';
+    return 'Inne produkty';
+  }
+
+  const categoryIcons = {
+    'Warzywa': '🥦',
+    'Owoce': '🍎',
+    'Nabiał': '🧀',
+    'Mięso i wędliny': '🥩',
+    'Ryby i owoce morza': '🐟',
+    'Pieczywo': '🥖',
+    'Produkty zbożowe': '🌾',
+    'Tłuszcze, nasiona i orzechy': '🥜',
+    'Inne produkty': '📦',
+  };
+
+  const categoryOrder = [
+    'Warzywa',
+    'Owoce',
+    'Nabiał',
+    'Mięso i wędliny',
+    'Ryby i owoce morza',
+    'Pieczywo',
+    'Produkty zbożowe',
+    'Tłuszcze, nasiona i orzechy',
+    'Inne produkty'
+  ];
+
+  const groupedItems = categoryOrder.reduce((acc, catName) => {
+    const inCat = displayItems.filter(item => normalizeCategory(item.category) === catName);
+    if (inCat.length > 0) {
+      acc[catName] = inCat;
+    }
+    return acc;
+  }, {});
 
   function getStoreBadgeClass(store) {
     const s = (store || '').toLowerCase();
@@ -292,110 +350,162 @@ export function ShoppingListWidget() {
         </div>
       )}
 
-      {/* List items */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-        {displayItems.map((item) => (
-          <div
-            key={item.product_id}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '0.85rem 1.25rem',
-              borderRadius: '10px',
-              background: item.is_bought
-                ? 'rgba(16,185,129,0.06)'
-                : item.is_skipped
-                ? 'rgba(255,255,255,0.01)'
-                : 'rgba(255,255,255,0.03)',
-              border: '1px solid',
-              borderColor: item.is_bought
-                ? 'rgba(16,185,129,0.3)'
-                : item.is_skipped
-                ? 'rgba(255,255,255,0.04)'
-                : 'var(--border-subtle)',
-              opacity: item.is_skipped ? 0.45 : 1,
-              transition: 'all 0.2s',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              {/* Bought Checkbox */}
-              <button
-                onClick={() => handleToggle(item, 'is_bought')}
-                style={{
-                  width: '26px',
-                  height: '26px',
-                  borderRadius: '6px',
-                  border: item.is_bought ? 'none' : '2px solid var(--border-subtle)',
-                  background: item.is_bought ? '#10b981' : 'transparent',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: '#fff',
-                }}
-                title={item.is_bought ? 'Oznacz jako niekupione' : 'Oznacz jako kupione'}
-              >
-                {item.is_bought && <Check size={16} strokeWidth={3} />}
-              </button>
+      {/* Punkt 4: Master Checkbox - Zaznacz wszystkie / Odznacz wszystkie */}
+      {!loading && displayItems.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '0.85rem 1.25rem',
+            background: allBought ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.03)',
+            borderRadius: '10px',
+            border: '1px solid',
+            borderColor: allBought ? 'rgba(16,185,129,0.35)' : 'var(--border-subtle)',
+            marginBottom: '1.25rem',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+          }}
+        >
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.92rem', userSelect: 'none' }}>
+            <input
+              type="checkbox"
+              checked={allBought}
+              onChange={handleToggleAll}
+              style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#10b981' }}
+            />
+            <span style={{ color: allBought ? '#34d399' : '#fff' }}>
+              {allBought ? '✓ Wszystkie produkty kupione (Kliknij, aby odznaczyć)' : 'Zaznacz wszystkie zakupy jako kupione'}
+            </span>
+          </label>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+            Kupiono: <strong style={{ color: '#10b981' }}>{boughtCount}</strong> z <strong style={{ color: '#fff' }}>{displayItems.length}</strong>
+          </span>
+        </div>
+      )}
 
-              <div>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: '0.95rem',
-                    textDecoration: item.is_bought || item.is_skipped ? 'line-through' : 'none',
-                    color: item.is_bought ? '#9ca3af' : '#fff',
-                  }}
-                >
-                  {item.product_name}
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.2rem', flexWrap: 'wrap' }}>
-                  <span className={`badge ${getStoreBadgeClass(item.displayStore)}`}>
-                    {item.displayStore}
-                  </span>
-                  {item.isConverted && (
-                    <span style={{ fontSize: '0.72rem', color: 'var(--accent-amber)', background: 'rgba(245,158,11,0.1)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
-                      Odpowiednik w {item.displayStore} (baza: {item.originalStore})
-                    </span>
-                  )}
-                  {item.brand && <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{item.brand}</span>}
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    (Użyte w {item.recipes_count} {item.recipes_count === 1 ? 'przepisie' : 'przepisach'})
-                  </span>
-                </div>
-              </div>
+      {/* List items grouped by category */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+        {Object.entries(groupedItems).map(([catName, catItems]) => (
+          <div key={catName}>
+            {/* Category Section Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem', paddingBottom: '0.35rem', borderBottom: '1px solid var(--border-subtle)' }}>
+              <span style={{ fontSize: '1.2rem' }}>{categoryIcons[catName] || '📦'}</span>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: '#fff' }}>
+                {catName}
+              </h3>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, background: 'rgba(255,255,255,0.08)', color: 'var(--accent-emerald)', padding: '0.15rem 0.5rem', borderRadius: '12px' }}>
+                {catItems.length} {catItems.length === 1 ? 'produkt' : catItems.length < 5 ? 'produkty' : 'produktów'}
+              </span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-              <div style={{ textAlign: 'right' }}>
-                <span
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+              {catItems.map((item) => (
+                <div
+                  key={item.product_id}
                   style={{
-                    fontSize: '1.2rem',
-                    fontWeight: 800,
-                    color: item.is_bought ? '#9ca3af' : '#10b981',
-                    textDecoration: item.is_skipped ? 'line-through' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.85rem 1.25rem',
+                    borderRadius: '10px',
+                    background: item.is_bought
+                      ? 'rgba(16,185,129,0.06)'
+                      : item.is_skipped
+                      ? 'rgba(255,255,255,0.01)'
+                      : 'rgba(255,255,255,0.03)',
+                    border: '1px solid',
+                    borderColor: item.is_bought
+                      ? 'rgba(16,185,129,0.3)'
+                      : item.is_skipped
+                      ? 'rgba(255,255,255,0.04)'
+                      : 'var(--border-subtle)',
+                    opacity: item.is_skipped ? 0.45 : 1,
+                    transition: 'all 0.2s',
                   }}
                 >
-                  {item.amount}
-                </span>{' '}
-                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{item.unit}</span>
-              </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    {/* Bought Checkbox */}
+                    <button
+                      onClick={() => handleToggle(item, 'is_bought')}
+                      style={{
+                        width: '26px',
+                        height: '26px',
+                        borderRadius: '6px',
+                        border: item.is_bought ? 'none' : '2px solid var(--border-subtle)',
+                        background: item.is_bought ? '#10b981' : 'transparent',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        color: '#fff',
+                        flexShrink: 0,
+                      }}
+                      title={item.is_bought ? 'Oznacz jako niekupione' : 'Oznacz jako kupione'}
+                    >
+                      {item.is_bought && <Check size={16} strokeWidth={3} />}
+                    </button>
 
-              {/* Skip / "Mam w lodówce" button */}
-              <button
-                onClick={() => handleToggle(item, 'is_skipped')}
-                className="btn btn-secondary btn-sm"
-                style={{
-                  background: item.is_skipped ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.03)',
-                  borderColor: item.is_skipped ? 'rgba(245,158,11,0.4)' : 'var(--border-subtle)',
-                  color: item.is_skipped ? '#fbbf24' : 'var(--text-muted)',
-                }}
-                title={item.is_skipped ? 'Przywróć na listę' : 'Mam w domu / pomiń'}
-              >
-                <EyeOff size={14} />
-                {item.is_skipped ? 'W lodówce' : 'Mam w domu'}
-              </button>
+                    <div>
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          fontSize: '0.95rem',
+                          textDecoration: item.is_bought || item.is_skipped ? 'line-through' : 'none',
+                          color: item.is_bought ? '#9ca3af' : '#fff',
+                        }}
+                      >
+                        {item.product_name}
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.2rem', flexWrap: 'wrap' }}>
+                        <span className={`badge ${getStoreBadgeClass(item.displayStore)}`}>
+                          {item.displayStore}
+                        </span>
+                        {item.isConverted && (
+                          <span style={{ fontSize: '0.72rem', color: 'var(--accent-amber)', background: 'rgba(245,158,11,0.1)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                            Odpowiednik w {item.displayStore} (baza: {item.originalStore})
+                          </span>
+                        )}
+                        {item.brand && <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{item.brand}</span>}
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          (Użyte w {item.recipes_count} {item.recipes_count === 1 ? 'przepisie' : 'przepisach'})
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <span
+                        style={{
+                          fontSize: '1.2rem',
+                          fontWeight: 800,
+                          color: item.is_bought ? '#9ca3af' : '#10b981',
+                          textDecoration: item.is_skipped ? 'line-through' : 'none',
+                        }}
+                      >
+                        {item.amount}
+                      </span>{' '}
+                      <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{item.unit}</span>
+                    </div>
+
+                    {/* Skip / "Mam w lodówce" button */}
+                    <button
+                      onClick={() => handleToggle(item, 'is_skipped')}
+                      className="btn btn-secondary btn-sm"
+                      style={{
+                        background: item.is_skipped ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.03)',
+                        borderColor: item.is_skipped ? 'rgba(245,158,11,0.4)' : 'var(--border-subtle)',
+                        color: item.is_skipped ? '#fbbf24' : 'var(--text-muted)',
+                      }}
+                      title={item.is_skipped ? 'Przywróć na listę' : 'Mam w domu / pomiń'}
+                    >
+                      <EyeOff size={14} />
+                      {item.is_skipped ? 'W lodówce' : 'Mam w domu'}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ))}

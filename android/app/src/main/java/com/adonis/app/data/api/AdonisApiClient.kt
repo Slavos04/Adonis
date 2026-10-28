@@ -57,6 +57,11 @@ interface AdonisApiService {
         @Body request: ToggleShoppingItemRequest
     ): Map<String, Any>
 
+    @POST("diet-plans/shopping-list/bulk-toggle")
+    suspend fun bulkToggleShoppingItems(
+        @Body request: BulkToggleShoppingRequest
+    ): Map<String, Any>
+
     @GET("measurements/")
     suspend fun getMeasurements(): List<Measurement>
 

@@ -7,6 +7,7 @@ import { DietitianDashboard } from './pages/DietitianDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { RecipeBrowser } from './pages/RecipeBrowser';
 import { ShoppingListWidget } from './components/ShoppingListWidget';
+import { MeasurementsPage } from './pages/MeasurementsPage';
 import { ChatWidget } from './components/ChatWidget';
 import { APP_VERSION } from './version';
 
@@ -85,6 +86,8 @@ function MainLayout() {
 
       <main style={{ flex: 1, paddingBottom: '3rem' }}>
         {activeTab === 'dashboard' && renderDashboard()}
+
+        {activeTab === 'measurements' && <MeasurementsPage />}
 
         {activeTab === 'shopping' && (
           <div className="page-container" style={{ maxWidth: '1000px' }}>

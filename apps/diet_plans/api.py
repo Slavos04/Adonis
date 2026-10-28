@@ -8,6 +8,7 @@ from .models import DailyMealPlan, PlannedMeal, ShoppingListItem, DietPlanTempla
 from .schemas import (
     DailyMealPlanOutSchema, AssignDailyPlanSchema,
     ShoppingListItemOutSchema, ToggleShoppingItemStatusSchema,
+    BulkToggleShoppingItemsSchema,
     WeeklyMealPlanOutSchema, DietPlanTemplateCreateSchema,
     DietPlanTemplateOutSchema, ApplyTemplateToPatientSchema,
     AssignmentHistoryOutSchema, PatientLoadPackageSchema
@@ -515,6 +516,31 @@ def serialize_template(t: DietPlanTemplate) -> dict:
             "notes": a.notes,
             "created_at": a.created_at,
         })
+
+    # Wzbogacenie days_data o nazwy i parametry przepisów
+    enriched_days = []
+    recipe_ids = set()
+    for d in (t.days_data or []):
+        for m in d.get("meals", []):
+            if m.get("recipe_id"):
+                recipe_ids.add(m["recipe_id"])
+    recipes_map = {r.id: r for r in Recipe.objects.filter(id__in=recipe_ids)} if recipe_ids else {}
+
+    for d in (t.days_data or []):
+        d_copy = dict(d)
+        enriched_meals = []
+        for m in d.get("meals", []):
+            m_copy = dict(m)
+            rec = recipes_map.get(m.get("recipe_id"))
+            if rec:
+                m_copy["recipe_title"] = rec.title
+                m_copy["recipe_category"] = rec.category
+                m_copy["recipe_calories"] = rec.calories
+                m_copy["recipe_image"] = rec.image_url or ""
+            enriched_meals.append(m_copy)
+        d_copy["meals"] = enriched_meals
+        enriched_days.append(d_copy)
+
     return {
         "id": t.id,
         "name": t.name,
@@ -523,7 +549,7 @@ def serialize_template(t: DietPlanTemplate) -> dict:
         "description": t.description,
         "target_calories": t.target_calories,
         "meals_per_day": t.meals_per_day,
-        "days_data": t.days_data,
+        "days_data": enriched_days,
         "created_at": t.created_at,
         "assignments": assignments_data
     }
@@ -754,4 +780,19 @@ def toggle_shopping_item_status(request, payload: ToggleShoppingItemStatusSchema
         "is_bought": item.is_bought,
         "is_skipped": item.is_skipped,
         "message": "Zaktualizowano status pozycji."
+    }
+
+@router.post("/shopping-list/bulk-toggle", auth=JWTAuth())
+def bulk_toggle_shopping_items(request, payload: BulkToggleShoppingItemsSchema):
+    """Zbiorcze oznaczenie produktów jako kupione/niekupione."""
+    patient = request.auth_user
+    qs = ShoppingListItem.objects.filter(patient=patient)
+    if payload.item_ids:
+        qs = qs.filter(id__in=payload.item_ids)
+
+    updated_count = qs.update(is_bought=payload.is_bought)
+    return {
+        "is_bought": payload.is_bought,
+        "updated_count": updated_count,
+        "message": f"Zaktualizowano {updated_count} pozycji."
     }

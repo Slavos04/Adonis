@@ -454,8 +454,9 @@ fun DailyPlanScreen(
                                 val genderInfo = if (ing.amountFemaleG != null && ing.amountMaleG != null) {
                                     " (👩 ${ing.amountFemaleG.toInt()}g | 👨 ${ing.amountMaleG.toInt()}g)"
                                 } else ""
+                                val measureInfo = if (!ing.kitchenMeasure.isNullOrBlank()) " (${ing.kitchenMeasure})" else ""
                                 Text(
-                                    text = "• ${ing.product.name} — ${ing.amountG} ${ing.unit}$genderInfo (${ing.product.store})",
+                                    text = "• ${ing.product.name} — ${ing.amountG} ${ing.unit}$measureInfo$genderInfo (${ing.product.store})",
                                     fontSize = 12.sp,
                                     modifier = Modifier.padding(vertical = 1.dp)
                                 )

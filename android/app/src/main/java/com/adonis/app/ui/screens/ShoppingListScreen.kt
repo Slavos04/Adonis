@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.adonis.app.data.api.AdonisApiService
 import com.adonis.app.data.model.ShoppingListItem
 import com.adonis.app.data.model.ToggleShoppingItemRequest
+import com.adonis.app.data.model.BulkToggleShoppingRequest
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -132,9 +133,35 @@ fun ShoppingListScreen(apiService: AdonisApiService) {
         }
     }
 
-    val boughtCount = items.count { it.isBought }
-    val totalCount = items.size
+    val boughtCount = filteredItems.count { it.isBought }
+    val totalCount = filteredItems.size
     val progress = if (totalCount > 0) boughtCount.toFloat() / totalCount else 0f
+    val allBought = filteredItems.isNotEmpty() && filteredItems.all { it.isBought }
+
+    fun toggleAllBought(targetState: Boolean) {
+        val ids = filteredItems.mapNotNull { it.id }
+        items = items.map { if (filteredItems.any { f -> f.id == it.id }) it.copy(isBought = targetState) else it }
+        scope.launch {
+            try {
+                apiService.bulkToggleShoppingItems(
+                    BulkToggleShoppingRequest(isBought = targetState, itemIds = ids)
+                )
+            } catch (_: Exception) {}
+        }
+    }
+
+    val categoryOrder = listOf(
+        "Warzywa", "Owoce", "Nabiał", "Mięso i wędliny",
+        "Ryby i owoce morza", "Pieczywo", "Produkty zbożowe",
+        "Tłuszcze, nasiona i orzechy", "Inne produkty"
+    )
+
+    val groupedItems = remember(filteredItems) {
+        categoryOrder.mapNotNull { cat ->
+            val matching = filteredItems.filter { normalizeShoppingCategory(it.category) == cat }
+            if (matching.isNotEmpty()) cat to matching else null
+        }
+    }
 
     // Cały ekran jako LazyColumn z możliwością scrollowania w górę i w dół (Punkt 9)
     LazyColumn(
@@ -308,6 +335,29 @@ fun ShoppingListScreen(apiService: AdonisApiService) {
                         color = MaterialTheme.colorScheme.primary,
                         trackColor = MaterialTheme.colorScheme.surface
                     )
+
+                    if (filteredItems.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { toggleAllBought(!allBought) },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = allBought,
+                                onCheckedChange = { toggleAllBought(it) },
+                                modifier = Modifier.size(28.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (allBought) "Odznacz wszystkie zakupy" else "Zaznacz wszystkie jako kupione",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (allBought) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -408,103 +458,176 @@ fun ShoppingListScreen(apiService: AdonisApiService) {
                 }
             }
         } else {
-            items(filteredItems, key = { it.id ?: "${it.productName}_${it.store}" }) { item ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { toggleBought(item, !item.isBought) },
-                    colors = CardDefaults.cardColors(
-                        containerColor = when {
-                            item.isBought -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                            item.isSkipped -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-                            else -> MaterialTheme.colorScheme.surface
-                        }
-                    )
-                ) {
-                    Row(
+            groupedItems.forEach { (catName, catItems) ->
+                // Nagłówek kategorii
+                item(key = "header_$catName") {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        shape = MaterialTheme.shapes.small,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                            .padding(top = 8.dp, bottom = 2.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                            Checkbox(
-                                checked = item.isBought,
-                                onCheckedChange = { checked ->
-                                    toggleBought(item, checked)
-                                }
-                            )
-
-                            Column(modifier = Modifier.padding(start = 6.dp)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(getCategoryIcon(catName), fontSize = 14.sp)
                                 Text(
-                                    text = item.productName,
-                                    fontWeight = FontWeight.Bold,
+                                    text = catName,
                                     fontSize = 13.sp,
-                                    textDecoration = if (item.isBought || item.isSkipped) TextDecoration.LineThrough else TextDecoration.None
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
                                 )
-
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    modifier = Modifier.padding(top = 2.dp)
-                                ) {
-                                    Surface(
-                                        color = getStoreBadgeColor(item.store),
-                                        shape = MaterialTheme.shapes.extraSmall
-                                    ) {
-                                        Text(
-                                            text = item.store,
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White,
-                                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                        )
-                                    }
-
-                                    if (item.brand.isNotBlank()) {
-                                        Text(
-                                            text = item.brand,
-                                            fontSize = 10.sp,
-                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                        )
-                                    }
-                                }
-
-                                if (item.recipes.isNotEmpty()) {
-                                    Text(
-                                        text = "Danie: ${item.recipes.joinToString(", ")}",
-                                        fontSize = 9.sp,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                                        maxLines = 1,
-                                        modifier = Modifier.padding(top = 2.dp)
-                                    )
-                                }
                             }
-                        }
-
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = "${item.amount} ${item.unit}",
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-
-                            TextButton(
-                                onClick = { toggleSkipped(item) },
-                                contentPadding = PaddingValues(0.dp)
+                            Surface(
+                                shape = MaterialTheme.shapes.extraSmall,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                             ) {
                                 Text(
-                                    if (item.isSkipped) "W lodówce ✓" else "Mam w domu",
-                                    fontSize = 10.sp
+                                    text = "${catItems.size}",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
                                 )
+                            }
+                        }
+                    }
+                }
+
+                items(catItems, key = { it.id ?: "${it.productName}_${it.store}_${catName}" }) { item ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { toggleBought(item, !item.isBought) },
+                        colors = CardDefaults.cardColors(
+                            containerColor = when {
+                                item.isBought -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                item.isSkipped -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                                else -> MaterialTheme.colorScheme.surface
+                            }
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Checkbox(
+                                    checked = item.isBought,
+                                    onCheckedChange = { checked ->
+                                        toggleBought(item, checked)
+                                    }
+                                )
+
+                                Column(modifier = Modifier.padding(start = 6.dp)) {
+                                    Text(
+                                        text = item.productName,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        textDecoration = if (item.isBought || item.isSkipped) TextDecoration.LineThrough else TextDecoration.None
+                                    )
+
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    ) {
+                                        Surface(
+                                            color = getStoreBadgeColor(item.store),
+                                            shape = MaterialTheme.shapes.extraSmall
+                                        ) {
+                                            Text(
+                                                text = item.store,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                            )
+                                        }
+
+                                        if (item.brand.isNotBlank()) {
+                                            Text(
+                                                text = item.brand,
+                                                fontSize = 10.sp,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                            )
+                                        }
+                                    }
+
+                                    if (item.recipes.isNotEmpty()) {
+                                        Text(
+                                            text = "Danie: ${item.recipes.joinToString(", ")}",
+                                            fontSize = 9.sp,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                            maxLines = 1,
+                                            modifier = Modifier.padding(top = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = "${item.amount} ${item.unit}",
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+
+                                TextButton(
+                                    onClick = { toggleSkipped(item) },
+                                    contentPadding = PaddingValues(0.dp)
+                                ) {
+                                    Text(
+                                        if (item.isSkipped) "W lodówce ✓" else "Mam w domu",
+                                        fontSize = 10.sp
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+fun normalizeShoppingCategory(cat: String?): String {
+    if (cat.isNullOrBlank()) return "Inne produkty"
+    val c = cat.lowercase(Locale.getDefault())
+    return when {
+        c.contains("warzyw") -> "Warzywa"
+        c.contains("owoc") && !c.contains("morza") -> "Owoce"
+        c.contains("nabiał") || c.contains("mleko") || c.contains("jogurt") || c.contains("ser") || c.contains("twaróg") || c.contains("kefir") || c.contains("skyr") -> "Nabiał"
+        c.contains("mięs") || c.contains("drób") || c.contains("wędlin") || c.contains("kurczak") || c.contains("indyk") || c.contains("szynk") -> "Mięso i wędliny"
+        c.contains("ryb") || c.contains("morza") || c.contains("łosoś") || c.contains("dorsz") || c.contains("tuńczyk") -> "Ryby i owoce morza"
+        c.contains("pieczyw") || c.contains("chleb") || c.contains("bułk") -> "Pieczywo"
+        c.contains("zboż") || c.contains("płatk") || c.contains("kasz") || c.contains("ryż") || c.contains("makaron") || c.contains("mąk") -> "Produkty zbożowe"
+        c.contains("tłuszcz") || c.contains("oliw") || c.contains("olej") || c.contains("orzech") || c.contains("nasion") || c.contains("masło") -> "Tłuszcze, nasiona i orzechy"
+        else -> "Inne produkty"
+    }
+}
+
+fun getCategoryIcon(cat: String): String {
+    return when (cat) {
+        "Warzywa" -> "🥦"
+        "Owoce" -> "🍎"
+        "Nabiał" -> "🧀"
+        "Mięso i wędliny" -> "🥩"
+        "Ryby i owoce morza" -> "🐟"
+        "Pieczywo" -> "🥖"
+        "Produkty zbożowe" -> "🌾"
+        "Tłuszcze, nasiona i orzechy" -> "🥜"
+        else -> "📦"
     }
 }
 

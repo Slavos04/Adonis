@@ -194,6 +194,11 @@ export const dietPlansApi = {
       method: 'POST',
       body: JSON.stringify({ item_id: itemId, ...data }),
     }),
+  bulkToggleShoppingItems: (isBought, itemIds = null) =>
+    apiRequest('/diet-plans/shopping-list/bulk-toggle', {
+      method: 'POST',
+      body: JSON.stringify({ is_bought: isBought, item_ids: itemIds }),
+    }),
   getTemplates: (category = '') => {
     const q = category ? `?category=${encodeURIComponent(category)}` : '';
     return apiRequest(`/diet-plans/templates${q}`);
@@ -238,6 +243,10 @@ export const measurementsApi = {
     apiRequest(`/measurements/${id}/correct`, {
       method: 'PUT',
       body: JSON.stringify(data),
+    }),
+  delete: (id) =>
+    apiRequest(`/measurements/${id}`, {
+      method: 'DELETE',
     }),
   getAuditLogs: (patientId) => {
     const q = patientId ? `?patient_id=${patientId}` : '';

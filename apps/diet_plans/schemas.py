@@ -68,6 +68,10 @@ class ToggleShoppingItemStatusSchema(Schema):
     is_bought: Optional[bool] = None
     is_skipped: Optional[bool] = None
 
+class BulkToggleShoppingItemsSchema(Schema):
+    is_bought: bool
+    item_ids: Optional[List[int]] = None
+
 class TemplateMealInputSchema(Schema):
     meal_type: str
     recipe_id: int

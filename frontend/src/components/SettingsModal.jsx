@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Settings, Bell, Lock, Palette, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { X, Settings, Bell, Lock, Palette, CheckCircle2, AlertCircle, Clock, Trash2, AlertTriangle } from 'lucide-react';
 import { authApi } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
 export function SettingsModal({ isOpen, onClose }) {
-  const { theme, setTheme, THEMES } = useAuth();
+  const { theme, setTheme, THEMES, user, logout } = useAuth();
   const [loading, setLoading] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState(null);
@@ -30,6 +30,23 @@ export function SettingsModal({ isOpen, onClose }) {
   const [passwordMsg, setPasswordMsg] = useState(null);
   const [passwordError, setPasswordError] = useState(null);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  async function handleDeleteMyAccount() {
+    setDeletingAccount(true);
+    try {
+      await authApi.deleteMyAccount();
+      alert('Twoje konto zostało trwale usunięte.');
+      logout();
+      window.location.reload();
+    } catch (err) {
+      alert(`Błąd usuwania konta: ${err.message}`);
+    } finally {
+      setDeletingAccount(false);
+      setShowDeleteModal(false);
+    }
+  }
 
   useEffect(() => {
     if (isOpen) {
@@ -41,6 +58,7 @@ export function SettingsModal({ isOpen, onClose }) {
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      setShowDeleteModal(false);
     }
   }, [isOpen]);
 
@@ -431,6 +449,73 @@ export function SettingsModal({ isOpen, onClose }) {
               {changingPassword ? 'Zmienianie...' : 'Zaktualizuj hasło'}
             </button>
           </form>
+        </div>
+
+        {/* Sekcja 4: Strefa niebezpieczna - Usuwanie konta (przeniesione z paska) */}
+        <div style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(239,68,68,0.25)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <AlertTriangle size={18} color="var(--accent-rose)" />
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--accent-rose)' }}>
+              Strefa niebezpieczna
+            </h3>
+          </div>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.85rem', lineHeight: 1.4 }}>
+            Usunięcie Twojego konta jest operacją nieodwracalną. Wszystkie Twoje dane, pomiary, historia i jadłospisy zostaną trwale skasowane.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowDeleteModal(true)}
+            className="btn btn-secondary btn-sm"
+            style={{
+              borderColor: 'rgba(239,68,68,0.4)',
+              color: '#f87171',
+              background: 'rgba(239,68,68,0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              fontWeight: 600,
+            }}
+          >
+            <Trash2 size={14} /> Usuń moje konto
+          </button>
+        </div>
+
+        {/* Modal usuwania konta */}
+        {showDeleteModal && (
+          <div className="modal-overlay" onClick={() => setShowDeleteModal(false)} style={{ zIndex: 1300 }}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', textAlign: 'center' }}>
+              <AlertTriangle size={42} color="var(--accent-rose)" style={{ marginBottom: '1rem' }} />
+              <h2 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '0.5rem' }}>Trwałe usunięcie konta</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+                Czy na pewno chcesz bezpowrotnie usunąć swoje konto <strong style={{ color: 'var(--accent-rose)' }}>{user?.email}</strong>? Wszystkie dane i historia zostaną bezpowrotnie utracone.
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowDeleteModal(false)}>
+                  Anuluj
+                </button>
+                <button
+                  className="btn btn-danger"
+                  style={{ flex: 1 }}
+                  disabled={deletingAccount}
+                  onClick={handleDeleteMyAccount}
+                >
+                  <Trash2 size={15} /> {deletingAccount ? 'Usuwanie...' : 'Usuń konto'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Punkt 1: Przycisk Zamknij na dole okna ustawień */}
+        <div style={{ marginTop: '2rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn btn-secondary"
+            style={{ minWidth: '120px', fontWeight: 700 }}
+          >
+            Zamknij
+          </button>
         </div>
       </div>
     </div>

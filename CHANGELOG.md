@@ -5,6 +5,35 @@ Projekt stosuje zasadę: **każda kolejna zmiana w projekcie podnosi numer wersj
 
 ---
 
+## [1.3] — 2026-10-28
+**Data modyfikacji:** 2026-10-28 07:20 CET
+
+### Usprawnienia i Nowości (Improvements & Features)
+1. **Aplikacja webowa — Przycisk "Zamknij" w oknie Ustawień:**
+   - Dodano wyraźny przycisk "Zamknij" w dolnym pasku modala Ustawień, umożliwiający intuicyjne wyjście z konfiguracji.
+2. **Aplikacja webowa — Pełna historia zaleceń i wgląd do jadłospisów:**
+   - Zastąpiono pojedyncze ostatnie zalecenie pełnym oknem historii zaleceń i przypisanych jadłospisów (`RecommendationsHistoryModal.jsx`).
+   - Użytkownik ma dostęp do chronologicznej osi czasu zaleceń dietetyka oraz interaktywnego wglądu do wszystkich pakietów jadłospisów wraz z 7-dniowym harmonogramem posiłków, nazwami dań, kaloriami i makroskładnikami.
+3. **Aplikacja webowa — Nowe menu "Pomiary" w belce górnej:**
+   - Dodano zakładkę "Pomiary" w głównym pasku nawigacyjnym aplikacji webowej (`MeasurementsPage.jsx`).
+   - Wdrożono zestaw tych samych informacji i funkcji co w aplikacji mobilnej: kafelki wagi i trendu, interaktywny wykres trendu wagi i obwodu talii, klasyfikację BMI wg norm WHO, szybką edycję wzrostu pacjenta, pełną tabelę historii pomiarów z opcją usuwania, formularz dodawania nowego pomiaru oraz przycisk wglądu do zaleceń.
+4. **Web & Mobile — Kategoryzacja listy zakupów oraz zbiorczy checkbox:**
+   - Produkty na liście zakupów są automatycznie grupowane w czytelne sekcje: Warzywa, Owoce, Nabiał, Mięso i wędliny, Ryby i owoce morza, Pieczywo, Produkty zbożowe, Tłuszcze, nasiona i orzechy oraz Inne produkty.
+   - Dodano ogólny master-checkbox ("Zaznacz wszystkie / Odznacz wszystkie") umożliwiający jednym kliknięciem oznaczenie wszystkich pozycji jako kupione/niekupione zarówno w aplikacji webowej (`ShoppingListWidget.jsx`), jak i mobilnej (`ShoppingListScreen.kt`).
+   - Wdrożono dedykowany endpoint backendu `/api/diet-plans/shopping-list/bulk-toggle` dla optymalizacji wydajności.
+5. **Aplikacja webowa — Bezpieczeństwo usunięcia konta (Strefa niebezpieczna w Ustawieniach):**
+   - Usunięto ikonę kosza i usuwanie konta z górnej belki nawigacyjnej, eliminując ryzyko przypadkowego kliknięcia obok wylogowania.
+   - Opcję usunięcia konta z dwuetapowym potwierdzeniem hasłem przeniesiono do sekcji "Strefa niebezpieczna" w oknie Ustawienia.
+6. **Aplikacja mobilna — Numer wersji bez dopisku "Produkcyjna" i wdrożenie na serwer:**
+   - W oknie informacji o aplikacji (`AppInfoDialog.kt`) wyświetlany jest wyłącznie czysty numer wersji (`1.3`), usunięto słowo "Produkcyjna".
+   - Podniesiono wersję aplikacji do `1.3.0` (versionCode 5), zbudowano oficjalny plik release APK i wdrożono bezpośrednio na serwer produkcyjny pod adresem `https://adonis.slavosmm.duckdns.org/Adonis-fit-and-eat-v1.3.apk`.
+7. **Baza przepisów, weryfikacja diety redukcyjnej i miary kuchenne:**
+   - Przeprowadzono audyt 291 przepisów i ich fotografii (weryfikacja spójności i jakości).
+   - Zweryfikowano poprawność jadłospisów diety redukcyjnej: w standardowej redukcji stosowany jest pełnowartościowy nabiał niskotłuszczowy (nabiał bez laktozy zarezerwowany jest ściśle dla jednostek klinicznych takich jak WZJG / Colitis Ulcerosa).
+   - Dodano przeliczanie i prezentację miar kuchennych obok gramatury dla każdego składnika (np. łyżki, łyżeczki, szklanki, sztuki, plastry, garście) zarówno w skalerze porcji, jak i w widokach posiłków na webie i w aplikacji mobilnej.
+
+---
+
 ## [1.2] — 2026-10-28
 **Data modyfikacji:** 2026-10-28 05:48 CET
 

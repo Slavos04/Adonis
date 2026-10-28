@@ -66,7 +66,8 @@ data class RecipeIngredient(
     @SerializedName("amount_g") val amountG: Double,
     @SerializedName("amount_female_g") val amountFemaleG: Double? = null,
     @SerializedName("amount_male_g") val amountMaleG: Double? = null,
-    val unit: String
+    val unit: String,
+    @SerializedName("kitchen_measure") val kitchenMeasure: String? = null
 )
 
 data class Recipe(
@@ -139,6 +140,7 @@ data class ShoppingListItem(
     @SerializedName("product_name") val productName: String,
     val store: String,
     val brand: String,
+    val category: String? = null,
     val amount: Double,
     val unit: String,
     @SerializedName("is_bought") val isBought: Boolean,
@@ -150,6 +152,11 @@ data class ToggleShoppingItemRequest(
     @SerializedName("item_id") val itemId: Int,
     @SerializedName("is_bought") val isBought: Boolean? = null,
     @SerializedName("is_skipped") val isSkipped: Boolean? = null
+)
+
+data class BulkToggleShoppingRequest(
+    @SerializedName("is_bought") val isBought: Boolean,
+    @SerializedName("item_ids") val itemIds: List<Int>? = null
 )
 
 data class Measurement(

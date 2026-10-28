@@ -62,6 +62,7 @@ def scale_recipe(recipe, target_portions: float, gender: str = 'all') -> dict:
             "amount_female_g": float(item.amount_female_g) if item.amount_female_g else round(float(item.amount_g) * 0.82, 1),
             "amount_male_g": float(item.amount_male_g) if item.amount_male_g else round(float(item.amount_g) * 1.18, 1),
             "unit": item.unit,
+            "kitchen_measure": item.kitchen_measure,
             "calories": float(ing_cal.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)),
             "protein_g": float(ing_prot.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)),
             "fat_g": float(ing_fat.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)),

@@ -11,26 +11,8 @@ import { AppInfoModal } from './AppInfoModal';
 export function Navbar({ activeTab, setActiveTab }) {
   const { user, logout } = useAuth();
   const [unread, setUnread] = useState({ unread_messages: 0, unread_notifications: 0 });
-  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showAppInfoModal, setShowAppInfoModal] = useState(false);
-  const [deletingAccount, setDeletingAccount] = useState(false);
-
-  async function handleDeleteMyAccount() {
-    setDeletingAccount(true);
-    try {
-      await authApi.deleteMyAccount();
-      alert('Twoje konto zostało trwale usunięte.');
-      logout();
-      setActiveTab('login');
-    } catch (err) {
-      alert(`Błąd usuwania konta: ${err.message}`);
-    } finally {
-      setDeletingAccount(false);
-      setShowDeleteAccountModal(false);
-    }
-  }
-
 
   const fetchUnread = useCallback(async () => {
     if (!user) return;
@@ -166,14 +148,6 @@ export function Navbar({ activeTab, setActiveTab }) {
               >
                 <LogOut size={14} />
               </button>
-              <button
-                onClick={() => setShowDeleteAccountModal(true)}
-                className="btn btn-secondary btn-sm"
-                title="Usuń moje konto"
-                style={{ color: 'var(--accent-rose)', height: '38px', padding: '0 0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <Trash2 size={14} />
-              </button>
             </div>
           ) : (
             <button onClick={() => setActiveTab('login')} className="btn btn-primary btn-sm">
@@ -193,6 +167,12 @@ export function Navbar({ activeTab, setActiveTab }) {
                 onClick={() => setActiveTab('dashboard')}
               >
                 <Utensils size={15} /> Jadłospis
+              </button>
+              <button
+                className={`tab-btn ${activeTab === 'measurements' ? 'active' : ''}`}
+                onClick={() => setActiveTab('measurements')}
+              >
+                <Activity size={15} /> Pomiary
               </button>
               <button
                 className={`tab-btn ${activeTab === 'shopping' ? 'active' : ''}`}
@@ -247,32 +227,6 @@ export function Navbar({ activeTab, setActiveTab }) {
             Czat
           </button>
         </nav>
-      )}
-
-      {/* Delete account confirmation modal */}
-      {showDeleteAccountModal && (
-        <div className="modal-overlay" onClick={() => setShowDeleteAccountModal(false)} style={{ zIndex: 1200 }}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px', textAlign: 'center' }}>
-            <AlertTriangle size={42} color="var(--accent-rose)" style={{ marginBottom: '1rem' }} />
-            <h2 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '0.5rem' }}>Trwałe usunięcie konta</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-              Czy na pewno chcesz bezpowrotnie usunąć swoje konto <strong style={{ color: 'var(--accent-rose)' }}>{user?.email}</strong>? Wszystkie Twoje dane, pomiary, historia i plany dietetyczne zostaną trwale skasowane.
-            </p>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowDeleteAccountModal(false)}>
-                Anuluj
-              </button>
-              <button
-                className="btn btn-danger"
-                style={{ flex: 1 }}
-                disabled={deletingAccount}
-                onClick={handleDeleteMyAccount}
-              >
-                <Trash2 size={15} /> {deletingAccount ? 'Usuwanie...' : 'Usuń konto'}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Settings Modal */}

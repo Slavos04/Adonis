@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, Calendar, UserCheck, Plus, Send, Clock, ShieldCheck } from 'lucide-react';
-import { authApi } from '../api/client';
+import { X, Sparkles, Calendar, UserCheck, Plus, Send, Clock, Package, ChevronDown, ChevronUp, Utensils, Flame, CheckCircle2 } from 'lucide-react';
+import { authApi, dietPlansApi } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 
 export default function RecommendationsHistoryModal({ isOpen, onClose, patientId, isDietitian = false, onRecommendationAdded }) {
+  const { profile } = useAuth();
+  const [activeTab, setActiveTab] = useState('recommendations'); // 'recommendations' | 'diet_packages'
   const [history, setHistory] = useState([]);
+  const [packages, setPackages] = useState([]);
+  const [expandedPkgId, setExpandedPkgId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [newTitle, setNewTitle] = useState('Oficjalne zalecenia dietetyczne');
@@ -13,25 +18,37 @@ export default function RecommendationsHistoryModal({ isOpen, onClose, patientId
 
   useEffect(() => {
     if (isOpen) {
-      loadHistory();
+      loadAll();
       setSuccessMsg(null);
     }
   }, [isOpen, patientId]);
 
-  const loadHistory = async () => {
+  const loadAll = async () => {
     try {
       setLoading(true);
       setError(null);
-      let data = [];
+
+      // 1. Historia zaleceń
+      let recData = [];
       if (patientId) {
-        data = await authApi.getPatientRecommendationsHistory(patientId);
+        recData = await authApi.getPatientRecommendationsHistory(patientId);
       } else {
-        data = await authApi.getMyRecommendationsHistory();
+        recData = await authApi.getMyRecommendationsHistory();
       }
-      setHistory(data);
+      setHistory(recData || []);
+
+      // 2. Pakiety i szablony jadłospisów
+      try {
+        const pkgData = await dietPlansApi.getTemplates();
+        setPackages(pkgData || []);
+        if (pkgData && pkgData.length > 0 && !expandedPkgId) {
+          setExpandedPkgId(pkgData[0].id);
+        }
+      } catch (_) {}
+
     } catch (err) {
-      console.error('Błąd pobierania historii zaleceń:', err);
-      setError(err.message || 'Nie udało się pobrać historii zaleceń.');
+      console.error('Błąd pobierania historii:', err);
+      setError(err.message || 'Nie udało się pobrać historii.');
     } finally {
       setLoading(false);
     }
@@ -71,7 +88,7 @@ export default function RecommendationsHistoryModal({ isOpen, onClose, patientId
         inset: 0,
         backgroundColor: 'rgba(0, 0, 0, 0.75)',
         backdropFilter: 'blur(6px)',
-        zIndex: 1000,
+        zIndex: 1200,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -83,7 +100,7 @@ export default function RecommendationsHistoryModal({ isOpen, onClose, patientId
         className="glass-panel"
         style={{
           width: '100%',
-          maxWidth: '750px',
+          maxWidth: '820px',
           maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',
@@ -113,27 +130,68 @@ export default function RecommendationsHistoryModal({ isOpen, onClose, patientId
             </div>
             <div>
               <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main, #f8fafc)', margin: 0 }}>
-                Historia zaleceń dietetycznych
+                Historia zaleceń i jadłospisów
               </h2>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #94a3b8)', margin: 0 }}>
-                Wszystkie oficjalne wytyczne, zalecenia i notatki dietetyczne
+                Pełny wgląd we wszystkie wytyczne dietetyczne oraz przypisane pakiety diet
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="btn-icon"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-muted, #94a3b8)',
-              cursor: 'pointer',
-              padding: '0.5rem',
-              borderRadius: '8px',
-            }}
+            className="btn btn-secondary btn-sm"
+            style={{ borderRadius: '50%', width: '32px', height: '32px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             title="Zamknij"
           >
-            <X size={20} />
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Tab switcher */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.1)' }}>
+          <button
+            type="button"
+            onClick={() => setActiveTab('recommendations')}
+            style={{
+              flex: 1,
+              padding: '0.85rem 1rem',
+              background: activeTab === 'recommendations' ? 'rgba(16,185,129,0.12)' : 'transparent',
+              color: activeTab === 'recommendations' ? 'var(--accent-emerald)' : 'var(--text-muted)',
+              border: 'none',
+              borderBottom: activeTab === 'recommendations' ? '2px solid var(--accent-emerald)' : '2px solid transparent',
+              fontWeight: 700,
+              fontSize: '0.88rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            <Sparkles size={16} />
+            Wytyczne i zalecenia ({history.length + (profile?.official_recommendations && !history.some(h => h.content === profile.official_recommendations) ? 1 : 0)})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('diet_packages')}
+            style={{
+              flex: 1,
+              padding: '0.85rem 1rem',
+              background: activeTab === 'diet_packages' ? 'rgba(99,102,241,0.12)' : 'transparent',
+              color: activeTab === 'diet_packages' ? '#a5b4fc' : 'var(--text-muted)',
+              border: 'none',
+              borderBottom: activeTab === 'diet_packages' ? '2px solid #818cf8' : '2px solid transparent',
+              fontWeight: 700,
+              fontSize: '0.88rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            <Package size={16} />
+            Przypisane jadłospisy i pakiety ({packages.length})
           </button>
         </div>
 
@@ -170,7 +228,7 @@ export default function RecommendationsHistoryModal({ isOpen, onClose, patientId
           )}
 
           {/* Form for Dietitian to add a new recommendation */}
-          {isDietitian && patientId && (
+          {activeTab === 'recommendations' && isDietitian && patientId && (
             <form
               onSubmit={handleAddRecommendation}
               className="glass-panel"
@@ -190,16 +248,16 @@ export default function RecommendationsHistoryModal({ isOpen, onClose, patientId
               <div style={{ marginBottom: '0.75rem' }}>
                 <input
                   type="text"
-                  placeholder="Tytuł zalecenia (np. Zmiana nawyków, Dieta lekkostrawna...)"
+                  placeholder="Tytuł zalecenia (np. Zmiana nawyków, Dieta redukcyjna...)"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   style={{
                     width: '100%',
                     padding: '0.6rem 0.85rem',
                     borderRadius: '8px',
-                    border: '1px solid var(--border-color, rgba(255,255,255,0.15))',
-                    background: 'var(--bg-main, #0f172a)',
-                    color: 'var(--text-main, #fff)',
+                    border: '1px solid var(--border-subtle)',
+                    background: '#1f2937',
+                    color: '#fff',
                     fontSize: '0.875rem',
                   }}
                 />
@@ -215,9 +273,9 @@ export default function RecommendationsHistoryModal({ isOpen, onClose, patientId
                     width: '100%',
                     padding: '0.6rem 0.85rem',
                     borderRadius: '8px',
-                    border: '1px solid var(--border-color, rgba(255,255,255,0.15))',
-                    background: 'var(--bg-main, #0f172a)',
-                    color: 'var(--text-main, #fff)',
+                    border: '1px solid var(--border-subtle)',
+                    background: '#1f2937',
+                    color: '#fff',
                     fontSize: '0.875rem',
                     resize: 'vertical',
                   }}
@@ -227,19 +285,13 @@ export default function RecommendationsHistoryModal({ isOpen, onClose, patientId
                 <button
                   type="submit"
                   disabled={submitting || !newContent.trim()}
-                  className="btn-primary"
+                  className="btn btn-primary"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem',
                     padding: '0.5rem 1.25rem',
                     fontSize: '0.85rem',
-                    borderRadius: '8px',
-                    backgroundColor: '#10b981',
-                    color: '#fff',
-                    border: 'none',
-                    cursor: submitting ? 'not-allowed' : 'pointer',
-                    opacity: submitting ? 0.7 : 1,
                   }}
                 >
                   <Send size={15} />
@@ -249,90 +301,238 @@ export default function RecommendationsHistoryModal({ isOpen, onClose, patientId
             </form>
           )}
 
-          {/* Timeline of Recommendations */}
-          <div>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-muted, #94a3b8)', marginBottom: '1rem' }}>
-              Wpisy w historii ({history.length})
-            </h3>
-
-            {loading ? (
-              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                Ładowanie historii zaleceń...
-              </div>
-            ) : history.length === 0 ? (
-              <div
-                style={{
-                  textAlign: 'center',
-                  padding: '2.5rem 1rem',
-                  border: '1px dashed var(--border-color, rgba(255,255,255,0.15))',
-                  borderRadius: '12px',
-                  color: 'var(--text-muted, #94a3b8)',
-                }}
-              >
-                <Clock size={32} style={{ margin: '0 auto 0.75rem', opacity: 0.5 }} />
-                <p style={{ margin: 0, fontWeight: 500 }}>Brak zarejestrowanych zaleceń w historii.</p>
-                <p style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>
-                  Nowe zalecenia wprowadzane przez dietetyka pojawią się tutaj automatycznie.
-                </p>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {history.map((rec, index) => (
-                  <div
-                    key={rec.id || index}
-                    style={{
-                      padding: '1.1rem 1.25rem',
-                      borderRadius: '12px',
-                      background: index === 0 ? 'rgba(16, 185, 129, 0.08)' : 'rgba(255, 255, 255, 0.03)',
-                      border: index === 0 ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
-                      position: 'relative',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span
-                          style={{
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            padding: '0.2rem 0.5rem',
-                            borderRadius: '4px',
-                            backgroundColor: index === 0 ? '#10b981' : 'rgba(255,255,255,0.1)',
-                            color: '#fff',
-                          }}
-                        >
-                          {index === 0 ? 'NAJNOWSZE' : `#${history.length - index}`}
-                        </span>
-                        <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main, #f8fafc)' }}>
-                          {rec.title}
-                        </h4>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.75rem', color: 'var(--text-muted, #94a3b8)' }}>
-                        {rec.dietitian_name && (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                            <UserCheck size={13} color="#34d399" />
-                            {rec.dietitian_name}
+          {/* TAB 1: Zalecenia */}
+          {activeTab === 'recommendations' && (
+            <div>
+              {loading ? (
+                <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
+                  Ładowanie historii zaleceń...
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {/* Bieżące wytyczne z profilu jeśli nie ma w historii */}
+                  {profile?.official_recommendations && !history.some(h => h.content === profile.official_recommendations) && (
+                    <div
+                      style={{
+                        padding: '1.1rem 1.25rem',
+                        borderRadius: '12px',
+                        background: 'rgba(16, 185, 129, 0.1)',
+                        border: '1px solid rgba(16, 185, 129, 0.4)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '0.2rem 0.5rem', borderRadius: '4px', backgroundColor: '#10b981', color: '#fff' }}>
+                            AKTUALNE W PROFILU
+                          </span>
+                          <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>
+                            Bieżące wytyczne żywieniowe
+                          </h4>
+                        </div>
+                        {profile?.recommendations_updated_at && (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            {new Date(profile.recommendations_updated_at).toLocaleDateString('pl-PL')}
                           </span>
                         )}
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                          <Calendar size={13} />
-                          {new Date(rec.created_at).toLocaleString('pl-PL', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
                       </div>
+                      <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.5, color: '#e2e8f0', whiteSpace: 'pre-line' }}>
+                        {profile.official_recommendations}
+                      </p>
                     </div>
-                    <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.5, color: 'var(--text-main, #e2e8f0)', whiteSpace: 'pre-line' }}>
-                      {rec.content}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  )}
+
+                  {history.length === 0 && !profile?.official_recommendations ? (
+                    <div style={{ textAlign: 'center', padding: '2.5rem 1rem', border: '1px dashed var(--border-subtle)', borderRadius: '12px', color: 'var(--text-muted)' }}>
+                      <Clock size={32} style={{ margin: '0 auto 0.75rem', opacity: 0.5 }} />
+                      <p style={{ margin: 0, fontWeight: 600 }}>Brak zarejestrowanych zaleceń w historii.</p>
+                      <p style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>Wszystkie nowe zalecenia pojawią się w tym miejscu.</p>
+                    </div>
+                  ) : (
+                    history.map((rec, index) => (
+                      <div
+                        key={rec.id || index}
+                        style={{
+                          padding: '1.1rem 1.25rem',
+                          borderRadius: '12px',
+                          background: index === 0 ? 'rgba(16, 185, 129, 0.08)' : 'rgba(255, 255, 255, 0.03)',
+                          border: index === 0 ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid var(--border-subtle)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span
+                              style={{
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                padding: '0.2rem 0.5rem',
+                                borderRadius: '4px',
+                                backgroundColor: index === 0 ? '#10b981' : 'rgba(255,255,255,0.1)',
+                                color: '#fff',
+                              }}
+                            >
+                              {index === 0 ? 'NAJNOWSZE' : `#${history.length - index}`}
+                            </span>
+                            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>
+                              {rec.title}
+                            </h4>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            {rec.dietitian_name && (
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <UserCheck size={13} color="#34d399" />
+                                {rec.dietitian_name}
+                              </span>
+                            )}
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                              <Calendar size={13} />
+                              {new Date(rec.created_at).toLocaleString('pl-PL', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.5, color: '#e2e8f0', whiteSpace: 'pre-line' }}>
+                          {rec.content}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 2: Przypisane pakiety i jadłospisy do wglądu */}
+          {activeTab === 'diet_packages' && (
+            <div>
+              {loading ? (
+                <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
+                  Ładowanie przypisanych jadłospisów...
+                </div>
+              ) : packages.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2.5rem 1rem', border: '1px dashed var(--border-subtle)', borderRadius: '12px', color: 'var(--text-muted)' }}>
+                  <Package size={32} style={{ margin: '0 auto 0.75rem', opacity: 0.5 }} />
+                  <p style={{ margin: 0, fontWeight: 600 }}>Brak przypisanych pakietów diet.</p>
+                  <p style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>Gdy dietetyk przypisze pakiet diety, pojawi się on tutaj z pełnym jadłospisem do wglądu.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {packages.map((pkg) => {
+                    const isExpanded = expandedPkgId === pkg.id;
+                    return (
+                      <div
+                        key={pkg.id}
+                        style={{
+                          borderRadius: '12px',
+                          border: isExpanded ? '1px solid rgba(99,102,241,0.4)' : '1px solid var(--border-subtle)',
+                          background: isExpanded ? 'rgba(99,102,241,0.06)' : 'rgba(255,255,255,0.02)',
+                          overflow: 'hidden',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        {/* Package card header */}
+                        <div
+                          onClick={() => setExpandedPkgId(isExpanded ? null : pkg.id)}
+                          style={{
+                            padding: '1rem 1.25rem',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            cursor: 'pointer',
+                            userSelect: 'none',
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                              <Package size={17} color="#818cf8" />
+                              <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#fff' }}>
+                                {pkg.name}
+                              </h4>
+                              <span style={{ fontSize: '0.72rem', background: 'rgba(99,102,241,0.2)', color: '#c7d2fe', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: 700 }}>
+                                {pkg.category}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                              <span>Kalorie: <strong style={{ color: 'var(--accent-emerald)' }}>{pkg.target_calories} kcal</strong></span>
+                              <span>Posiłków dziennie: <strong style={{ color: '#fff' }}>{pkg.meals_per_day}</strong></span>
+                              <span>Dni w planie: <strong style={{ color: '#fff' }}>{pkg.days_data?.length || 7} dni</strong></span>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 600 }}>{isExpanded ? 'Zwiń' : 'Rozwiń jadłospis'}</span>
+                            {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                          </div>
+                        </div>
+
+                        {/* Package description */}
+                        {pkg.description && (
+                          <div style={{ padding: '0 1.25rem 0.75rem', fontSize: '0.82rem', color: 'var(--text-dim)', lineHeight: 1.4 }}>
+                            {pkg.description}
+                          </div>
+                        )}
+
+                        {/* Expandable 7-day Meal Plan */}
+                        {isExpanded && pkg.days_data && pkg.days_data.length > 0 && (
+                          <div style={{ padding: '0 1.25rem 1.25rem', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '0.85rem' }}>
+                            <h5 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#a5b4fc', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                              Szczegółowy jadłospis tygodniowy:
+                            </h5>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                              {pkg.days_data.map((day) => (
+                                <div
+                                  key={day.day_number}
+                                  style={{
+                                    background: 'rgba(0,0,0,0.25)',
+                                    borderRadius: '8px',
+                                    padding: '0.75rem 1rem',
+                                    border: '1px solid var(--border-subtle)',
+                                  }}
+                                >
+                                  <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--accent-emerald)', marginBottom: '0.45rem' }}>
+                                    Dzień {day.day_number} — {day.day_name}
+                                  </div>
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem' }}>
+                                    {(day.meals || []).map((m, mIdx) => (
+                                      <div
+                                        key={mIdx}
+                                        style={{
+                                          background: 'rgba(255,255,255,0.03)',
+                                          padding: '0.5rem 0.65rem',
+                                          borderRadius: '6px',
+                                          fontSize: '0.78rem',
+                                          border: '1px solid rgba(255,255,255,0.05)',
+                                        }}
+                                      >
+                                        <div style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.7rem' }}>
+                                          {m.meal_type}
+                                        </div>
+                                        <div style={{ color: '#fff', fontWeight: 700, margin: '2px 0' }}>
+                                          {m.recipe_title || `Przepis #${m.recipe_id}`}
+                                        </div>
+                                        <div style={{ color: 'var(--text-dim)', fontSize: '0.72rem' }}>
+                                          {m.recipe_calories ? `${Math.round(m.recipe_calories * (m.portions || 1.0))} kcal` : ''} • Porcja: {m.portions || 1.0}x
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -347,11 +547,12 @@ export default function RecommendationsHistoryModal({ isOpen, onClose, patientId
         >
           <button
             onClick={onClose}
-            className="btn-secondary"
+            className="btn btn-secondary"
             style={{
-              padding: '0.5rem 1.25rem',
+              padding: '0.5rem 1.5rem',
               fontSize: '0.875rem',
               borderRadius: '8px',
+              fontWeight: 700,
             }}
           >
             Zamknij
