@@ -26,7 +26,7 @@ api = NinjaAPI(
 @api.get("/health", tags=["System"])
 def health_check(request):
     """Healthcheck dla monitoringu i orkiestracji kontenerów Docker."""
-    return {"status": "ok", "service": "adonis-backend", "version": "1.1.0"}
+    return {"status": "ok", "service": "adonis-backend", "version": "1.2.0"}
 
 ## Endpoint zwracający historię zmian i aktualną wersję systemu
 @api.get("/changelog", tags=["System"])
@@ -38,8 +38,8 @@ def get_changelog(request):
     if changelog_path.exists():
         content = changelog_path.read_text(encoding="utf-8")
     return {
-        "version": "1.1.0",
-        "last_modified": "2026-10-27 22:15 CET",
+        "version": "1.2.0",
+        "last_modified": "2026-10-28 05:48 CET",
         "changelog": content
     }
 
