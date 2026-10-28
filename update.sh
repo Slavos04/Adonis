@@ -17,9 +17,21 @@ if [ -d 'frontend/dist' ]; then
     docker cp frontend/dist/assets/. adonis_frontend:/usr/share/nginx/html/assets/
     docker cp frontend/dist/index.html adonis_frontend:/usr/share/nginx/html/index.html
     [ -f frontend/dist/app-icon.png ] && docker cp frontend/dist/app-icon.png adonis_frontend:/usr/share/nginx/html/app-icon.png
-    [ -f frontend/dist/Adonis-fit-and-eat-v1.2.apk ] && docker cp frontend/dist/Adonis-fit-and-eat-v1.2.apk adonis_frontend:/usr/share/nginx/html/Adonis-fit-and-eat-v1.2.apk || true
-    [ -f frontend/dist/Adonis-v1.2.apk ] && docker cp frontend/dist/Adonis-v1.2.apk adonis_frontend:/usr/share/nginx/html/Adonis-v1.2.apk || true
+    for apk in frontend/dist/*.apk; do
+        if [ -f "$apk" ]; then
+            filename=$(basename "$apk")
+            echo "Kopiowanie APK: $filename"
+            docker cp "$apk" "adonis_frontend:/usr/share/nginx/html/$filename" || true
+        fi
+    done
 fi
+for root_apk in *.apk; do
+    if [ -f "$root_apk" ]; then
+        filename=$(basename "$root_apk")
+        echo "Kopiowanie root APK: $filename"
+        docker cp "$root_apk" "adonis_frontend:/usr/share/nginx/html/$filename" || true
+    fi
+done
 docker restart adonis_frontend
 
 echo '>> Gotowe! Serwisy Adonis zostały zaktualizowane.'
