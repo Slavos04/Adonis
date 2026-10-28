@@ -16,7 +16,11 @@ echo '>> Aktualizacja frontendu i APK...'
 if [ -d 'frontend/dist' ]; then
     docker cp frontend/dist/assets/. adonis_frontend:/usr/share/nginx/html/assets/
     docker cp frontend/dist/index.html adonis_frontend:/usr/share/nginx/html/index.html
-    [ -f frontend/dist/app-icon.png ] && docker cp frontend/dist/app-icon.png adonis_frontend:/usr/share/nginx/html/app-icon.png
+    for img in frontend/dist/*.png frontend/dist/*.jpg frontend/dist/*.jpeg frontend/dist/*.svg frontend/dist/*.ico frontend/dist/*.webp; do
+        if [ -f "$img" ]; then
+            docker cp "$img" "adonis_frontend:/usr/share/nginx/html/$(basename "$img")" 2>/dev/null || true
+        fi
+    done
     for apk in frontend/dist/*.apk; do
         if [ -f "$apk" ]; then
             filename=$(basename "$apk")
