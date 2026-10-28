@@ -14,10 +14,9 @@ docker restart adonis_backend
 
 echo '>> Aktualizacja frontendu i APK...'
 if [ -d 'frontend/dist' ]; then
-    docker cp frontend/dist/assets/. adonis_frontend:/usr/share/nginx/html/assets/
-    docker cp frontend/dist/index.html adonis_frontend:/usr/share/nginx/html/index.html
-    docker cp frontend/dist/app-icon.png adonis_frontend:/usr/share/nginx/html/app-icon.png
+    docker cp frontend/dist/. adonis_frontend:/usr/share/nginx/html/
 fi
+docker exec adonis_backend python manage.py seed_recipes
 docker restart adonis_frontend
 
 echo '>> Gotowe! Serwisy Adonis zostały zaktualizowane.'
