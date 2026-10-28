@@ -10,7 +10,6 @@ val EmeraldLight = Color(0xFFA7F3D0)
 val ForestGreen = Color(0xFF22C55E)
 val OceanSky = Color(0xFF38BDF8)
 val OceanBlue = Color(0xFF0284C7)
-val AmberGold = Color(0xFFF59E0B)
 
 data class ThemeOption(
     val id: String,
@@ -19,12 +18,12 @@ data class ThemeOption(
     val previewColor: Color
 )
 
+// Dokładnie 4 motywy zgodne z aplikacją webową: ciemny, jasny, ocean, las
 val AvailableThemes = listOf(
-    ThemeOption("dark", "Ciemny (Grafit)", "🌙", Color(0xFF10B981)),
-    ThemeOption("forest", "Las (Zieleń & Drzewa)", "🌲", Color(0xFF22C55E)),
-    ThemeOption("ocean", "Ocean (Fale Błękitu)", "🌊", Color(0xFF38BDF8)),
-    ThemeOption("emerald", "Szmaragd", "💎", Color(0xFF059669)),
-    ThemeOption("amber", "Bursztyn (Złoty)", "✨", Color(0xFFF59E0B))
+    ThemeOption("dark", "Ciemny", "🌙", Color(0xFF111827)),
+    ThemeOption("light", "Jasny", "☀️", Color(0xFFF3F4F6)),
+    ThemeOption("ocean", "Ocean", "🌊", Color(0xFF0284C7)),
+    ThemeOption("forest", "Las", "🌲", Color(0xFF22C55E))
 )
 
 // 1. Ciemny (Dark)
@@ -40,20 +39,20 @@ private val DarkThemeColorScheme = darkColorScheme(
     onSurfaceVariant = Color(0xFF9CA3AF)
 )
 
-// 2. Las (Forest - drzewa, liście, naturalna zieleń)
-private val ForestThemeColorScheme = darkColorScheme(
-    primary = ForestGreen,
+// 2. Jasny (Light)
+private val LightThemeColorScheme = lightColorScheme(
+    primary = EmeraldPrimary,
     onPrimary = Color.White,
-    secondary = Color(0xFF86EFAC),
-    background = Color(0xFF071811),
-    surface = Color(0xFF0E2A1E),
-    surfaceVariant = Color(0xFF173F2E),
-    onBackground = Color(0xFFECFDF5),
-    onSurface = Color(0xFFECFDF5),
-    onSurfaceVariant = Color(0xFFA7F3D0)
+    secondary = Color(0xFF4F46E5),
+    background = Color(0xFFF9FAFB),
+    surface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFFE5E7EB),
+    onBackground = Color(0xFF111827),
+    onSurface = Color(0xFF111827),
+    onSurfaceVariant = Color(0xFF4B5563)
 )
 
-// 3. Ocean (Błękit, morskie fale)
+// 3. Ocean (Błękit, fale oceanu)
 private val OceanThemeColorScheme = darkColorScheme(
     primary = OceanSky,
     onPrimary = Color(0xFF032642),
@@ -66,30 +65,17 @@ private val OceanThemeColorScheme = darkColorScheme(
     onSurfaceVariant = Color(0xFFBAE6FD)
 )
 
-// 4. Szmaragd (Emerald)
-private val EmeraldThemeColorScheme = darkColorScheme(
-    primary = Color(0xFF34D399),
-    onPrimary = Color(0xFF022C22),
-    secondary = Color(0xFF6EE7B7),
-    background = Color(0xFF02231B),
-    surface = Color(0xFF063A2D),
-    surfaceVariant = Color(0xFF0D5240),
-    onBackground = Color(0xFFF2FBF7),
-    onSurface = Color(0xFFF2FBF7),
+// 4. Las (Forest - drzewa, liście, zieleń)
+private val ForestThemeColorScheme = darkColorScheme(
+    primary = ForestGreen,
+    onPrimary = Color.White,
+    secondary = Color(0xFF86EFAC),
+    background = Color(0xFF071811),
+    surface = Color(0xFF0E2A1E),
+    surfaceVariant = Color(0xFF173F2E),
+    onBackground = Color(0xFFECFDF5),
+    onSurface = Color(0xFFECFDF5),
     onSurfaceVariant = Color(0xFFA7F3D0)
-)
-
-// 5. Bursztyn (Amber - ciepłe złociste barwy)
-private val AmberThemeColorScheme = darkColorScheme(
-    primary = AmberGold,
-    onPrimary = Color(0xFF451A03),
-    secondary = Color(0xFFFBBF24),
-    background = Color(0xFF17120E),
-    surface = Color(0xFF261D17),
-    surfaceVariant = Color(0xFF3B2E24),
-    onBackground = Color(0xFFFFFBEB),
-    onSurface = Color(0xFFFFFBEB),
-    onSurfaceVariant = Color(0xFFFDE68A)
 )
 
 @Composable
@@ -98,10 +84,10 @@ fun AdonisTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = when (themeName.lowercase()) {
-        "forest", "las" -> ForestThemeColorScheme
+        "light", "jasny" -> LightThemeColorScheme
         "ocean" -> OceanThemeColorScheme
-        "emerald", "szmaragd" -> EmeraldThemeColorScheme
-        "amber", "bursztyn" -> AmberThemeColorScheme
+        "forest", "las" -> ForestThemeColorScheme
+        "dark", "ciemny" -> DarkThemeColorScheme
         else -> DarkThemeColorScheme
     }
 
@@ -110,4 +96,3 @@ fun AdonisTheme(
         content = content
     )
 }
-

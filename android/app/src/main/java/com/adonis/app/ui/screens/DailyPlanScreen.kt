@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -134,280 +135,157 @@ fun DailyPlanScreen(
         }
     }
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // Górny pasek akcji: Załaduj jadłospis + Historia zaleceń
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            OutlinedButton(
-                onClick = { openPackagesDialog() },
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-            ) {
-                Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Załaduj jadłospis", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-            }
-
-            if (isRecBannerDismissed && !officialRecommendations.isNullOrBlank()) {
-                TextButton(
-                    onClick = { openRecommendationsHistory() },
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Icon(Icons.Default.Assignment, contentDescription = null, modifier = Modifier.size(15.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Zalecenia", fontSize = 11.sp)
-                }
-            }
-        }
-
-        // Top Date Navigation Row
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = {
-                val cal = Calendar.getInstance().apply {
-                    time = currentCalendar.value.time
-                    add(Calendar.DAY_OF_YEAR, -1)
-                }
-                currentCalendar.value = cal
-            }) {
-                Icon(Icons.Default.ChevronLeft, contentDescription = "Poprzedni dzień")
-            }
-
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = displayDateStr.value,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                if (isToday) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(4.dp),
-                        modifier = Modifier.padding(top = 2.dp)
-                    ) {
-                        Text(
-                            text = "Dzisiaj",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
-                        )
-                    }
-                } else {
-                    TextButton(
-                        onClick = { currentCalendar.value = Calendar.getInstance() },
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Text("← Wróć do dzisiaj", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
-                    }
-                }
-            }
-
-            IconButton(onClick = {
-                val cal = Calendar.getInstance().apply {
-                    time = currentCalendar.value.time
-                    add(Calendar.DAY_OF_YEAR, 1)
-                }
-                currentCalendar.value = cal
-            }) {
-                Icon(Icons.Default.ChevronRight, contentDescription = "Następny dzień")
-            }
-        }
-
-        // Recommendations Banner (with dismiss 'X' and history button)
-        if (!isRecBannerDismissed && !officialRecommendations.isNullOrBlank()) {
-            Card(
+        // Wiersz nawigacji z kafelkiem "Załaduj jadłospis" na lewo od daty
+        item {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                    .padding(bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                            Icon(
-                                Icons.Default.Assignment,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Zalecenia Dietetyka",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-
-                        IconButton(
-                            onClick = {
-                                tokenManager.setRecBannerDismissed(true)
-                                isRecBannerDismissed = true
-                            },
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "Zamknij zalecenia",
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-
+                // Kafelek "Załaduj jadłospis" na lewo od daty (tekst w 2 wierszach)
+                OutlinedButton(
+                    onClick = { openPackagesDialog() },
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.padding(end = 4.dp)
+                ) {
+                    Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(15.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = officialRecommendations ?: "",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(top = 4.dp, bottom = 6.dp)
+                        text = "Załaduj\njadłospis",
+                        fontSize = 11.sp,
+                        lineHeight = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Start
                     )
+                }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        TextButton(
-                            onClick = { openRecommendationsHistory() },
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Poprzedni dzień
+                IconButton(onClick = {
+                    val cal = Calendar.getInstance().apply {
+                        time = currentCalendar.value.time
+                        add(Calendar.DAY_OF_YEAR, -1)
+                    }
+                    currentCalendar.value = cal
+                }) {
+                    Icon(Icons.Default.ChevronLeft, contentDescription = "Poprzedni dzień")
+                }
+
+                // Data i powrót do dzisiaj
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = displayDateStr.value,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    if (isToday) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(4.dp),
+                            modifier = Modifier.padding(top = 2.dp)
                         ) {
-                            Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Historia zaleceń", fontSize = 12.sp)
+                            Text(
+                                text = "Dzisiaj",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                            )
+                        }
+                    } else {
+                        TextButton(
+                            onClick = { currentCalendar.value = Calendar.getInstance() },
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("← Dzisiaj", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
                         }
                     }
+                }
+
+                // Następny dzień
+                IconButton(onClick = {
+                    val cal = Calendar.getInstance().apply {
+                        time = currentCalendar.value.time
+                        add(Calendar.DAY_OF_YEAR, 1)
+                    }
+                    currentCalendar.value = cal
+                }) {
+                    Icon(Icons.Default.ChevronRight, contentDescription = "Następny dzień")
                 }
             }
         }
 
         if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-            return
-        }
-
-        planResponse?.let { plan ->
-            // Macro summary card
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text("Cal", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("${plan.totalCalories.toInt()} kcal", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.primary)
-                    }
-                    Column {
-                        Text("B", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("${plan.totalProteinG}g", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    }
-                    Column {
-                        Text("T", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("${plan.totalFatG}g", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    }
-                    Column {
-                        Text("W", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("${plan.totalCarbsG}g", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    }
-                }
-            }
-
-            // Upcoming Meal Reminder Banner
-            val upcomingMeal = remember(plan.meals, isToday) {
-                if (isToday) plan.meals.firstOrNull { !it.isCompleted } else null
-            }
-            if (upcomingMeal != null) {
-                val time = getMealTime(upcomingMeal.mealType, userSettings)
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.NotificationsActive,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Zbliża się czas na posiłek!",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Text(
-                                text = "${formatShortMealType(upcomingMeal.mealType)} ($time) • Czy jadłeś?",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                scope.launch {
-                                    apiService.toggleMealCompleted(upcomingMeal.id)
-                                    loadPlan()
-                                }
-                            },
-                            modifier = Modifier.size(28.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.CheckCircle,
-                                contentDescription = "Zjedzone",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
-            }
-
-            if (plan.meals.isEmpty()) {
+            item {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
+                        .fillMaxWidth()
+                        .padding(32.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = plan.notes ?: "Brak posiłków zaplanowanych na ten dzień.",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
+                    CircularProgressIndicator()
                 }
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
+            }
+        } else {
+            planResponse?.let { plan ->
+                // Macro summary card
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("Cal", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("${plan.totalCalories.toInt()} kcal", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.primary)
+                            }
+                            Column {
+                                Text("B", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("${plan.totalProteinG}g", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            }
+                            Column {
+                                Text("T", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("${plan.totalFatG}g", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            }
+                            Column {
+                                Text("W", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("${plan.totalCarbsG}g", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            }
+                        }
+                    }
+                }
+
+                if (plan.meals.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = plan.notes ?: "Brak posiłków zaplanowanych na ten dzień.",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                } else {
                     items(plan.meals) { meal ->
                         MealItemCard(
                             meal = meal,
@@ -434,6 +312,7 @@ fun DailyPlanScreen(
                 }
             }
         }
+    }
 
         // 1. Portion Scaler Dialog
         scalingMeal?.let { meal ->
@@ -808,7 +687,6 @@ fun DailyPlanScreen(
             )
         }
     }
-}
 
 @Composable
 fun MealItemCard(

@@ -2702,6 +2702,213 @@ def generate_fitness_recipes():
         "image_type": "smoothie"
     },
     {
+        "title": "Ekspresowy wrap pełnoziarnisty z szynką z indyka i świeżymi warzywami",
+        "category": "Obiad",
+        "prep_time": 5,
+        "instructions": "1. Placek tortilli pełnoziarnistej posmaruj jogurtem naturalnym wymieszanym z ziołami.\n2. Wyłóż plastry chudej szynki z indyka, szpinak baby i pokrojone pomidorki.\n3. Zawiń w rulon i przekrój. Błyskawiczny obiad w 5 minut bez gotowania!",
+        "ingredients": [
+            [
+                "Tortilla pełnoziarnista Biedronka",
+                65
+            ],
+            [
+                "Szynka z piersi indyka Kraina Wędlin",
+                100
+            ],
+            [
+                "Jogurt naturalny gęsty Pilos",
+                50
+            ],
+            [
+                "Pomidorki koktajlowe Ryneczek Lidla",
+                80
+            ],
+            [
+                "Szpinak baby świeży Ryneczek Lidla",
+                30
+            ]
+        ],
+        "image_type": "salad"
+    },
+    {
+        "title": "Sałatka śródziemnomorska z tuńczykiem, jajkiem i pomidorkami",
+        "category": "Obiad",
+        "prep_time": 8,
+        "instructions": "1. Do miski wsyp świeży szpinak baby i przekrojone pomidorki koktajlowe.\n2. Dodaj odsączonego tuńczyka w kawałkach i połówki ugotowanego jaja.\n3. Skrop oliwą z oliwek, podawaj z chlebem żytnim. Szybki obiad w 8 minut.",
+        "ingredients": [
+            [
+                "Tuńczyk w sosie własnym Marinero",
+                130
+            ],
+            [
+                "Jaja ściółkowe Moja Kurka",
+                60
+            ],
+            [
+                "Szpinak baby świeży Ryneczek Lidla",
+                40
+            ],
+            [
+                "Pomidorki koktajlowe Ryneczek Lidla",
+                100
+            ],
+            [
+                "Oliwa z oliwek Extra Virgin Luccese",
+                8
+            ],
+            [
+                "Chleb żytni 100% z pieca Lidla",
+                60
+            ]
+        ],
+        "image_type": "salad"
+    },
+    {
+        "title": "Ekspresowy kuskus z ciecierzycą, suszonymi pomidorami i twarogiem",
+        "category": "Obiad",
+        "prep_time": 5,
+        "instructions": "1. Ciecierzycę ze słoika odsącz na sitku i przepłucz wodą.\n2. Połącz z chudym twarogiem, pomidorkami i odrobiną oliwy z oliwek.\n3. Całość dopraw ziołami. Zdrowy obiad bogaty w białko i błonnik w 5 minut bez gotowania!",
+        "ingredients": [
+            [
+                "Ciecierzyca w słoiku Culinea",
+                160
+            ],
+            [
+                "Twaróg chudy Pilos",
+                90
+            ],
+            [
+                "Pomidorki koktajlowe Ryneczek Lidla",
+                100
+            ],
+            [
+                "Oliwa z oliwek Extra Virgin Luccese",
+                8
+            ],
+            [
+                "Chleb żytni 100% z pieca Lidla",
+                50
+            ]
+        ],
+        "image_type": "salad"
+    },
+    {
+        "title": "Sałatka z łososiem wędzonym, ogórkiem i chlebkiem żytnim",
+        "category": "Obiad",
+        "prep_time": 5,
+        "instructions": "1. Na talerzu ułóż świeży szpinak baby i plastry zielonego ogórka.\n2. Dodaj kawałki wędzonego na gorąco łososia i skrop oliwą z oliwek.\n3. Podawaj z chlebem żytnim 100%. Pyszny obiad bez włączania kuchenki w 5 minut.",
+        "ingredients": [
+            [
+                "Łosoś wędzony na gorąco Marinero",
+                100
+            ],
+            [
+                "Szpinak baby świeży Ryneczek Lidla",
+                40
+            ],
+            [
+                "Ogórek zielony szklarniowy Ryneczek Lidla",
+                100
+            ],
+            [
+                "Oliwa z oliwek Extra Virgin Luccese",
+                8
+            ],
+            [
+                "Chleb żytni 100% z pieca Lidla",
+                60
+            ]
+        ],
+        "image_type": "fish"
+    },
+    {
+        "title": "Ekspresowy wrap z tuńczykiem, warzywami i sosem jogurtowym",
+        "category": "Obiad",
+        "prep_time": 5,
+        "instructions": "1. Placek tortilli posmaruj sosem jogurtowym.\n2. Nałóż odsączonego tuńczyka, szpinak baby i pomidorki.\n3. Zwiń i zjedz od razu lub zabierz do pracy. 5 minut przygotowania, 0 minut gotowania.",
+        "ingredients": [
+            [
+                "Tortilla pełnoziarnista Biedronka",
+                65
+            ],
+            [
+                "Tuńczyk w sosie własnym Marinero",
+                120
+            ],
+            [
+                "Jogurt naturalny gęsty Pilos",
+                40
+            ],
+            [
+                "Pomidorki koktajlowe Ryneczek Lidla",
+                70
+            ],
+            [
+                "Szpinak baby świeży Ryneczek Lidla",
+                30
+            ]
+        ],
+        "image_type": "salad"
+    },
+    {
+        "title": "Power Bowl z ciecierzycą, chudą szynką z kurczaka i warzywami",
+        "category": "Obiad",
+        "prep_time": 5,
+        "instructions": "1. Do miski wsyp odsączoną ciecierzycę ze słoika.\n2. Dodaj pokrojoną w paski szynkę z piersi kurczaka Pikok Pure, ogórka i pomidorki.\n3. Skrop oliwą z oliwek. Sycący obiad w 5 minut bez stania przy garnkach.",
+        "ingredients": [
+            [
+                "Ciecierzyca w słoiku Culinea",
+                160
+            ],
+            [
+                "Szynka z piersi kurczaka Pikok Pure",
+                90
+            ],
+            [
+                "Pomidorki koktajlowe Ryneczek Lidla",
+                100
+            ],
+            [
+                "Ogórek zielony szklarniowy Ryneczek Lidla",
+                80
+            ],
+            [
+                "Oliwa z oliwek Extra Virgin Luccese",
+                8
+            ]
+        ],
+        "image_type": "salad"
+    },
+    {
+        "title": "Kanapki obiadowe z pastą z tuńczyka, twarogu chudego i rzodkiewki",
+        "category": "Obiad",
+        "prep_time": 5,
+        "instructions": "1. Odsączonego tuńczyka rozgnieć widelcem z chudym twarogiem i łyżką gęstego jogurtu.\n2. Posmaruj pastą kromki chleba żytniego 100%.\n3. Udekoruj plastrami ogórka. Gotowe w 5 minut!",
+        "ingredients": [
+            [
+                "Chleb żytni 100% z pieca Lidla",
+                100
+            ],
+            [
+                "Tuńczyk w sosie własnym Marinero",
+                110
+            ],
+            [
+                "Twaróg chudy Pilos",
+                80
+            ],
+            [
+                "Jogurt naturalny gęsty Pilos",
+                30
+            ],
+            [
+                "Ogórek zielony szklarniowy Ryneczek Lidla",
+                60
+            ]
+        ],
+        "image_type": "salad"
+    },
+    {
         "title": "Pieczona pierś z kurczaka z ryżem basmati i warzywami",
         "category": "Obiad",
         "prep_time": 30,

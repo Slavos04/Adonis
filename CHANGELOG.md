@@ -5,6 +5,40 @@ Projekt stosuje zasadę: **każda kolejna zmiana w projekcie podnosi numer wersj
 
 ---
 
+## [1.2] — 2026-10-28
+**Data modyfikacji:** 2026-10-28 05:48 CET
+
+### Usprawnienia i Poprawki (Improvements & Fixes)
+1. **Aplikacja mobilna — Ujednolicenie i naprawa motywów kolorystycznych:**
+   - Wdrożono spójne motywy zgodne z aplikacją webową: `ciemny` (Dark), `jasny` (Light), `ocean` (Ocean Teal) oraz `las` (Forest Emerald).
+   - Zapewniono natychmiastowe dynamiczne przełączanie motywu bez konieczności restartu aplikacji (`Theme.kt`, `SettingsScreen.kt`, `MainActivity.kt`).
+2. **Aplikacja mobilna — Naprawa powiadomień systemowych (Android 13+ / API 33-34):**
+   - Dodano uprawnienia `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`, `USE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED` oraz `VIBRATE`.
+   - Zaimplementowano inicjalizację kanałów powiadomień (`NotificationChannel`: `meal_reminders` oraz `general_notifications`) podczas startu aplikacji (`NotificationHelper.kt`, `AdonisApplication.kt`), co aktywuje systemowy przełącznik "Zezwalaj na pokazywanie powiadomień" w ustawieniach telefonu.
+   - Wdrożono `MealReminderReceiver` z obsługą powiadomień o posiłkach o zaplanowanych porach (śniadanie, II śniadanie, obiad, podwieczorek, kolacja) oraz przycisk testowy w menu Ustawienia.
+3. **Ekran jadłospisu — Usunięcie banera posiłku:**
+   - Usunięto baner "Zbliża się czas na posiłek!" z głównego widoku dnia w telefonie, zapewniając przejrzysty i czysty interfejs.
+4. **Ekran jadłospisu — Przeniesienie kafelka "Załaduj jadłospis":**
+   - Kafelek "Załaduj jadłospis" przeniesiono na lewo od selektora daty, z czytelnym tekstem w dwóch wierszach (`Załaduj\njadłospis`).
+5. **Menu Pomiary — Przeniesienie przycisku "Zalecenia":**
+   - Przycisk "Zalecenia" został przeniesiony z ekranu posiłków do menu "Pomiary", w nagłówku obok wskaźnika BMI.
+6. **Menu Zakupy — Wybór zakresu dat oraz szybkie kafelki:**
+   - Dodano selektor dat (zakres `Od` – `Do` z kalendarzem `DatePickerDialog`).
+   - Wprowadzono kafelki szybkiego wyboru (`1d`, `3d`, `5d`, `7d`, `14d`), które po kliknięciu automatycznie uzupełniają daty od dnia bieżącego i odświeżają listę.
+7. **Menu Zakupy — Usunięcie zduplikowanego wiersza ze sklepami:**
+   - Zlikwidowano redundantny podwójny wiersz z nazwami marketów, pozostawiając pojedynczy, czysty wiersz filtrów (`Wszystkie`, `Lidl`, `Biedronka`, `Kaufland`, `Carrefour`).
+8. **Menu Pomiary — Poziomy trend wagi i talii:**
+   - Zmodyfikowano "Wykres trendu wagi i talii" (`MeasurementsChart.kt`): wskaźnik trendu (np. `-1.5 kg`) został przeniesiony do dedykowanego wiersza pod tytułem wykresu, eliminując pionowe zawijanie tekstu.
+9. **Pełne przewijanie ekranów (Scroll góra-dół):**
+   - Wszystkie ekrany menu (`Jadłospis`, `Zakupy`, `Pomiary`, `Ustawienia`, `Czat`) otrzymały pełną obsługę pionowego przewijania (`LazyColumn` / `verticalScroll`), gwarantując wygodne korzystanie na dowolnym rozmiarze ekranu smartfona.
+10. **Jadłospisy — Minimalizacja gotowania oraz historia zaleceń:**
+    - Zoptymalizowano bazę przepisów i pakiety diet: posiłki (śniadania, drugie śniadania, podwieczorki oraz obiady) zostały zmodyfikowane pod kątem zerowego lub minimalnego czasu gotowania (5–10 min: wrapy pełnoziarniste, sałatki śródziemnomorskie, bowls, owsianki, serki wiejskie, skyr).
+    - W oficjalnych zaleceniach automatycznie zapisywany jest tytuł bieżącego jadłospisu, data wprowadzenia, okres obowiązywania oraz chronologiczna historia wszystkich przesłanych pacjentowi pakietów (`PatientRecommendation`).
+11. **Rygorystyczna kontrola dostępu do diet:**
+    - Pacjent (zarówno w aplikacji mobilnej, jak i webowej) posiada dostęp wyłącznie do pakietów przesłanych mu przez jego dietetyka w paczkach — brak dostępu do globalnych szablonów innych pacjentów/dietetyków.
+
+---
+
 ## [1.1] — 2026-10-27
 **Data modyfikacji:** 2026-10-27 22:15 CET
 

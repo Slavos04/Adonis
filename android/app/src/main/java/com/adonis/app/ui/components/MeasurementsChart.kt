@@ -101,34 +101,30 @@ fun WeightAndWaistChartCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             // Nagłówek
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = title,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = subtitle,
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = title,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = subtitle,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
-                // Wskaźnik zmiany wagi
+                // Wskaźnik zmiany wagi w osobnym wierszu poniżej tytułu (wyświetlany poziomo)
                 if (sorted.size > 1) {
+                    Spacer(modifier = Modifier.height(6.dp))
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = if (weightDelta <= 0) Color(0xFF10B981).copy(alpha = 0.15f) else MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
+                        color = if (weightDelta <= 0) Color(0xFF10B981).copy(alpha = 0.15f) else MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
+                        modifier = Modifier.wrapContentWidth()
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                         ) {
                             Icon(
                                 imageVector = if (weightDelta < 0) Icons.Default.TrendingDown else if (weightDelta > 0) Icons.Default.TrendingUp else Icons.Default.TrendingFlat,
@@ -136,12 +132,13 @@ fun WeightAndWaistChartCard(
                                 modifier = Modifier.size(16.dp),
                                 tint = if (weightDelta <= 0) Color(0xFF10B981) else MaterialTheme.colorScheme.error
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "${if (weightDelta > 0) "+" else ""}${String.format(Locale.US, "%.1f", weightDelta)} kg",
+                                text = "Trend: ${if (weightDelta > 0) "+" else ""}${String.format(Locale.US, "%.1f", weightDelta)} kg",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (weightDelta <= 0) Color(0xFF10B981) else MaterialTheme.colorScheme.error
+                                color = if (weightDelta <= 0) Color(0xFF10B981) else MaterialTheme.colorScheme.error,
+                                maxLines = 1
                             )
                         }
                     }

@@ -1,8 +1,14 @@
 package com.adonis.app
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +40,23 @@ class MainActivity : ComponentActivity() {
         setContent {
             var currentTheme by remember { mutableStateOf(tokenManager.getTheme()) }
 
+            // Żądanie uprawnień do powiadomień w Android 13+ (API 33+)
+            val notifPermissionLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission()
+            ) {}
+
+            LaunchedEffect(Unit) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    if (ContextCompat.checkSelfPermission(
+                            this@MainActivity,
+                            Manifest.permission.POST_NOTIFICATIONS
+                        ) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }
+            }
+
             AdonisTheme(themeName = currentTheme) {
                 var isLoggedIn by remember { mutableStateOf(tokenManager.hasToken()) }
                 var currentTab by remember { mutableStateOf(0) }
@@ -61,6 +84,9 @@ class MainActivity : ComponentActivity() {
                             SettingsScreen(
                                 apiService = apiService,
                                 tokenManager = tokenManager,
+                                onThemeChanged = { newTheme ->
+                                    currentTheme = newTheme
+                                },
                                 onClose = {
                                     currentTheme = tokenManager.getTheme()
                                     showSettings = false

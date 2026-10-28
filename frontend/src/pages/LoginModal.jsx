@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Flame, Lock, Mail, UserCheck, Shield, KeyRound, ArrowLeft, CheckCircle2, Eye, EyeOff, Smartphone, Download } from 'lucide-react';
 import { authApi } from '../api/client';
+import { APP_VERSION } from '../version';
 
 export function LoginModal({ onLoginSuccess }) {
   const { login, register, quickSwitch } = useAuth();
@@ -304,8 +305,8 @@ export function LoginModal({ onLoginSuccess }) {
       {/* Pobieranie aplikacji mobilnej APK */}
       <div style={{ textAlign: 'center', marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border-subtle)' }}>
         <a
-          href="/Adonis-fit-and-eat-v1.0.apk"
-          download="Adonis-fit-and-eat-v1.0.apk"
+          href={`/Adonis-fit-and-eat-v${APP_VERSION}.apk`}
+          download={`Adonis-fit-and-eat-v${APP_VERSION}.apk`}
           style={{
             display: 'inline-flex',
             alignItems: 'center',

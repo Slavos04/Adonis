@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.adonis.app.data.api.AdonisApiClient
@@ -25,6 +26,7 @@ import com.adonis.app.data.api.TokenManager
 import com.adonis.app.data.model.ChangePasswordRequest
 import com.adonis.app.data.model.UserNotificationSettings
 import com.adonis.app.ui.components.AppInfoDialog
+import com.adonis.app.util.NotificationHelper
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,9 +34,11 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     apiService: AdonisApiService,
     tokenManager: TokenManager? = null,
+    onThemeChanged: (String) -> Unit = {},
     onClose: () -> Unit,
     onLogout: () -> Unit
 ) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(true) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
@@ -58,7 +62,7 @@ fun SettingsScreen(
     var userGender by remember { mutableStateOf("male") }
 
     // Motyw
-    var selectedTheme by remember { mutableStateOf("system") }
+    var selectedTheme by remember { mutableStateOf(tokenManager?.getTheme() ?: "dark") }
 
     // Zmiana hasła
     var oldPassword by remember { mutableStateOf("") }
@@ -75,7 +79,11 @@ fun SettingsScreen(
                 notifyRec = s.notifyRecommendations
                 notifyChat = s.notifyChatMessages
                 notifyMeal = s.notifyUpcomingMeals
-                selectedTheme = s.appTheme
+                if (!s.appTheme.isNullOrBlank()) {
+                    selectedTheme = s.appTheme
+                    tokenManager?.saveTheme(s.appTheme)
+                    onThemeChanged(s.appTheme)
+                }
                 mealBreakfast = s.mealTimeBreakfast
                 mealSecondBreakfast = s.mealTimeSecondBreakfast
                 mealLunch = s.mealTimeLunch
@@ -94,6 +102,18 @@ fun SettingsScreen(
     }
 
     fun saveSettings(theme: String = selectedTheme) {
+        tokenManager?.saveTheme(theme)
+        onThemeChanged(theme)
+        if (notifyMeal) {
+            NotificationHelper.scheduleAllMealAlarms(
+                context,
+                mealBreakfast,
+                mealSecondBreakfast,
+                mealLunch,
+                mealSnack,
+                mealDinner
+            )
+        }
         scope.launch {
             try {
                 apiService.updateSettings(
@@ -240,6 +260,21 @@ fun SettingsScreen(
                             saveSettings()
                         }
                     )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedButton(
+                        onClick = {
+                            NotificationHelper.showTestNotification(context)
+                            statusMessage = "Wysłano testowe powiadomienie!"
+                            isError = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.NotificationsActive, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Wyślij testowe powiadomienie", fontSize = 12.sp)
+                    }
                 }
             }
 
@@ -359,16 +394,15 @@ fun SettingsScreen(
                     )
 
                     val themes = listOf(
-                        Triple("system", "Systemowy", Color(0xFF6B7280)),
-                        Triple("dark", "Ciemny", Color(0xFF1F2937)),
+                        Triple("dark", "Ciemny", Color(0xFF111827)),
                         Triple("light", "Jasny", Color(0xFFF3F4F6)),
-                        Triple("emerald", "Szmaragdowy", Color(0xFF10B981)),
-                        Triple("sunset", "Zachód słońca", Color(0xFFF59E0B))
+                        Triple("ocean", "Ocean", Color(0xFF0284C7)),
+                        Triple("forest", "Las", Color(0xFF22C55E))
                     )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceAround
                     ) {
                         themes.forEach { (key, name, color) ->
                             Column(
@@ -376,6 +410,8 @@ fun SettingsScreen(
                                 modifier = Modifier
                                     .clickable {
                                         selectedTheme = key
+                                        tokenManager?.saveTheme(key)
+                                        onThemeChanged(key)
                                         saveSettings(key)
                                     }
                                     .padding(4.dp)

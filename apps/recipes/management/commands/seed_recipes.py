@@ -182,11 +182,11 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f"[OK] Zaktualizowano i przeliczono makroskładniki (z podziałem na płeć) dla {created_recipes_count} przepisów ze zdjęciami"))
 
-        # 4. Przykładowy 7-dniowy jadłospis dla pacjenta
-        all_breakfasts = list(Recipe.objects.filter(category=MealCategory.BREAKFAST))
-        all_second = list(Recipe.objects.filter(category=MealCategory.SECOND_BREAKFAST))
-        all_lunches = list(Recipe.objects.filter(category=MealCategory.LUNCH))
-        all_dinners = list(Recipe.objects.filter(category=MealCategory.DINNER))
+        # 4. Przykładowy 7-dniowy jadłospis dla pacjenta (zminimalizowany czas gotowania)
+        all_breakfasts = list(Recipe.objects.filter(category=MealCategory.BREAKFAST).order_by('preparation_time_minutes', 'id'))
+        all_second = list(Recipe.objects.filter(category=MealCategory.SECOND_BREAKFAST).order_by('preparation_time_minutes', 'id'))
+        all_lunches = list(Recipe.objects.filter(category=MealCategory.LUNCH).order_by('preparation_time_minutes', 'id'))
+        all_dinners = list(Recipe.objects.filter(category=MealCategory.DINNER).order_by('preparation_time_minutes', 'id'))
 
         today = date.today()
         # Monday of current week
@@ -454,6 +454,62 @@ class Command(BaseCommand):
                 )
 
         self.stdout.write(self.style.SUCCESS(f"[OK] Utworzono {len(templates_list)} dedykowanych pakietów diet z podziałem na płeć (Kobiety, Mężczyźni, Uniwersalne) i przypisano je do kont pacjentów!"))
+
+        # Wymóg 10: w zaleceniach zapisz tytuł bieżącego jadłospisu i date wprowadzenia, oraz historię przesłanych jadlospisów
+        from apps.authentication.models import PatientRecommendation
+
+        # Dla pacjenta (Marek Nowak)
+        male_plan_title = "[MĘŻCZYZNA] Dieta Redukcyjna 2000 kcal"
+        male_intro_date = start_d.strftime("%d.%m.%Y")
+        male_history_text = "\n".join([f"• {t.name} (od {start_d.strftime('%d.%m.%Y')}, dodano: {today.strftime('%d.%m.%Y')})" for t, g in templates_list if g in ("male", "all")])
+        profile.official_recommendations = (
+            f"📌 BIEŻĄCY JADŁOSPIS: {male_plan_title}\n"
+            f"📅 Data wprowadzenia: {male_intro_date} (obowiązuje od {start_d.strftime('%d.%m.%Y')} do {end_d.strftime('%d.%m.%Y')})\n"
+            f"----------------------------------------\n"
+            f"💡 ZALECENIA DIETETYKA:\n"
+            f"1. Regularne posiłki co 3.5h – minimalny czas spędzony w kuchni!\n"
+            f"2. Minimum 2.5 l wody mineralnej dziennie.\n"
+            f"3. Pilnowanie gramatury mięsa, ryb i pieczywa zgodnie z rozpiską.\n\n"
+            f"📜 HISTORIA PRZESŁANYCH JADŁOSPISÓW:\n"
+            f"{male_history_text}"
+        )
+        profile.save(update_fields=['official_recommendations'])
+
+        PatientRecommendation.objects.get_or_create(
+            patient=patient_user,
+            title=f"Wdrożenie: {male_plan_title}",
+            defaults={
+                'dietitian': dietitian_user,
+                'content': f"Wdrożono jadłospis '{male_plan_title}' z datą wprowadzenia: {male_intro_date}. Minimalna ilość gotowania na co dzień."
+            }
+        )
+
+        # Dla pacjentki (Anna Nowak)
+        female_plan_title = "[KOBIETA] Dieta Redukcyjna 1500 kcal"
+        female_intro_date = start_d.strftime("%d.%m.%Y")
+        female_history_text = "\n".join([f"• {t.name} (od {start_d.strftime('%d.%m.%Y')}, dodano: {today.strftime('%d.%m.%Y')})" for t, g in templates_list if g in ("female", "all")])
+        pacjentka_profile.official_recommendations = (
+            f"📌 BIEŻĄCY JADŁOSPIS: {female_plan_title}\n"
+            f"📅 Data wprowadzenia: {female_intro_date} (obowiązuje od {start_d.strftime('%d.%m.%Y')} do {end_d.strftime('%d.%m.%Y')})\n"
+            f"----------------------------------------\n"
+            f"💡 ZALECENIA DIETETYKA:\n"
+            f"1. Picie minimum 2 l wody mineralnej dziennie.\n"
+            f"2. Szybkie, lekkostrawne posiłki – minimalny nakład czasu na gotowanie.\n"
+            f"3. Kolacje najpóźniej do 19:30.\n\n"
+            f"📜 HISTORIA PRZESŁANYCH JADŁOSPISÓW:\n"
+            f"{female_history_text}"
+        )
+        pacjentka_profile.save(update_fields=['official_recommendations'])
+
+        PatientRecommendation.objects.get_or_create(
+            patient=pacjentka_user,
+            title=f"Wdrożenie: {female_plan_title}",
+            defaults={
+                'dietitian': dietitian_user,
+                'content': f"Wdrożono jadłospis '{female_plan_title}' z datą wprowadzenia: {female_intro_date}. Szybkie posiłki z minimalnym czasem w kuchni."
+            }
+        )
+
 
 
         # 6. Pomiary i Audit Log

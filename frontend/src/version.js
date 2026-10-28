@@ -1,14 +1,46 @@
-export const APP_VERSION = '1.1';
-export const APP_RELEASE_DATE = '2026-10-27';
+export const APP_VERSION = '1.2';
+export const APP_RELEASE_DATE = '2026-10-28';
 
 export const CHANGELOG_DATA = [
+  {
+    version: '1.2',
+    date: '2026-10-28',
+    time: '05:48 CET',
+    title: 'Wydanie 1.2 — Usprawnienia aplikacji mobilnej, minimalizacja gotowania i historia zaleceń',
+    badge: 'Aktualna',
+    badgeType: 'emerald',
+    changes: [
+      {
+        category: 'Aplikacja Mobilna Android',
+        items: [
+          'Ujednolicenie motywów: ciemny, jasny, ocean, las z natychmiastowym przełączaniem.',
+          'Naprawa uprawnień i kanałów powiadomień Android 13+ (przypomnienia o posiłkach).',
+          'Usunięcie banera posiłku z ekranu głównego telefonu.',
+          'Przeniesienie kafelka "Załaduj jadłospis" na lewo od selektora daty z tekstem w 2 wierszach.',
+          'Przeniesienie przycisku "Zalecenia" do menu "Pomiary".',
+          'W menu Zakupy: dodanie wyboru zakresu dat (Od - Do) oraz szybkich kafelków (1d, 3d, 5d, 7d, 14d).',
+          'W menu Zakupy: usunięcie zduplikowanego wiersza ze sklepami.',
+          'W menu Pomiary: wyświetlanie trendu wagi poziomo w nowym wierszu.',
+          'Pionowe przewijanie góra-dół dla wszystkich ekranów menu.'
+        ]
+      },
+      {
+        category: 'Jadłospisy i Zalecenia',
+        items: [
+          'Minimalizacja gotowania na śniadanie, II śniadanie, podwieczorek i obiad (5-10 min).',
+          'Zapis w zaleceniach tytułu bieżącego jadłospisu, daty wprowadzenia oraz historii przesłanych pakietów.',
+          'Ścisła kontrola dostępu: pacjent ma dostęp wyłącznie do jadłospisów przesłanych mu przez dietetyka w paczkach.'
+        ]
+      }
+    ]
+  },
   {
     version: '1.1',
     date: '2026-10-27',
     time: '22:15 CET',
     title: 'Wydanie 1.1 — Podział jadłospisów na płeć, nowe logo i historia zmian',
-    badge: 'Aktualna',
-    badgeType: 'emerald',
+    badge: 'Wcześniejsza',
+    badgeType: 'blue',
     changes: [
       {
         category: 'Podział jadłospisów na płeć',

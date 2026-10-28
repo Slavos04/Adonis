@@ -1,5 +1,6 @@
 package com.adonis.app.ui.screens
 
+import android.app.DatePickerDialog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -7,7 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Store
@@ -16,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -30,30 +32,30 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShoppingListScreen(apiService: AdonisApiService) {
-    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    var daysAhead by remember { mutableStateOf(5) }
+    val context = LocalContext.current
+    val sdf = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
 
-    val today = remember { Calendar.getInstance() }
-    val startDate = remember { sdf.format(today.time) }
-    val endDate = remember(daysAhead) {
-        val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, daysAhead) }
-        sdf.format(cal.time)
+    var startDate by remember {
+        mutableStateOf(sdf.format(Calendar.getInstance().time))
     }
+    var endDate by remember {
+        val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 4) }
+        mutableStateOf(sdf.format(cal.time))
+    }
+    var activeDaysChip by remember { mutableStateOf<Int?>(5) }
 
     var items by remember { mutableStateOf<List<ShoppingListItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var selectedStoreFilter by remember { mutableStateOf("Wszystkie") }
-    var oneStopStore by remember { mutableStateOf("OFF") } // OFF, Lidl, Biedronka, Kaufland, Carrefour
     val scope = rememberCoroutineScope()
 
     val availableStores = listOf("Wszystkie", "Lidl", "Biedronka", "Kaufland", "Carrefour")
-    val oneStopStores = listOf("OFF", "Lidl", "Biedronka", "Kaufland", "Carrefour")
 
-    fun loadItems() {
+    fun loadItems(start: String = startDate, end: String = endDate) {
         scope.launch {
             isLoading = true
             try {
-                items = apiService.getShoppingList(startDate, endDate)
+                items = apiService.getShoppingList(start, end)
             } catch (_: Exception) {
             } finally {
                 isLoading = false
@@ -61,8 +63,39 @@ fun ShoppingListScreen(apiService: AdonisApiService) {
         }
     }
 
-    LaunchedEffect(endDate) {
-        loadItems()
+    LaunchedEffect(startDate, endDate) {
+        loadItems(startDate, endDate)
+    }
+
+    fun showDatePicker(currentDateStr: String, onDateSelected: (String) -> Unit) {
+        val cal = Calendar.getInstance()
+        try {
+            sdf.parse(currentDateStr)?.let { cal.time = it }
+        } catch (_: Exception) {}
+
+        DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                val chosen = Calendar.getInstance().apply {
+                    set(year, month, dayOfMonth)
+                }
+                onDateSelected(sdf.format(chosen.time))
+            },
+            cal.get(Calendar.YEAR),
+            cal.get(Calendar.MONTH),
+            cal.get(Calendar.DAY_OF_MONTH)
+        ).show()
+    }
+
+    fun applyDaysRange(days: Int) {
+        activeDaysChip = days
+        val cal = Calendar.getInstance()
+        val newStart = sdf.format(cal.time)
+        cal.add(Calendar.DAY_OF_YEAR, days - 1)
+        val newEnd = sdf.format(cal.time)
+        startDate = newStart
+        endDate = newEnd
+        loadItems(newStart, newEnd)
     }
 
     fun toggleBought(item: ShoppingListItem, checked: Boolean) {
@@ -90,7 +123,7 @@ fun ShoppingListScreen(apiService: AdonisApiService) {
         }
     }
 
-    // Filter items based on store filter
+    // Filter items based on single store filter row
     val filteredItems = remember(items, selectedStoreFilter) {
         if (selectedStoreFilter == "Wszystkie") {
             items
@@ -103,136 +136,221 @@ fun ShoppingListScreen(apiService: AdonisApiService) {
     val totalCount = items.size
     val progress = if (totalCount > 0) boughtCount.toFloat() / totalCount else 0f
 
-    Column(
+    // Cały ekran jako LazyColumn z możliwością scrollowania w górę i w dół (Punkt 9)
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Lista Zakupów",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Lidl, Biedronka, Kaufland, Carrefour",
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-            }
-            IconButton(onClick = { loadItems() }) {
-                Icon(Icons.Default.Refresh, contentDescription = "Odśwież")
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Progress Card - Item 11: "Koszyk: 0/37" so percentage fits on one line
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 10.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Column(modifier = Modifier.padding(10.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+        // Nagłówek
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Koszyk: $boughtCount/$totalCount",
-                        fontSize = 13.sp,
+                        text = "Lista Zakupów",
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${(progress * 100).toInt()}%",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.primary
+                        text = "Generowana z Twojego jadłospisu",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 }
-                Spacer(modifier = Modifier.height(6.dp))
-                LinearProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(7.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surface
-                )
+                IconButton(onClick = { loadItems() }) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Odśwież")
+                }
             }
         }
 
-        // Days range selection chips
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Zakres:", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            listOf(3, 5, 7, 14).forEach { days ->
-                FilterChip(
-                    selected = daysAhead == days,
-                    onClick = { daysAhead = days },
-                    label = { Text("$days d", fontSize = 11.sp) }
-                )
+        // Punkt 6: Wybór zakresu dat (Od - Do) oraz szybkie kafelki (np. "3d", "5d", "7d", "14d")
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "Zakres dat jadłospisu:",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Pola dat Od - Do
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = MaterialTheme.shapes.small,
+                            color = MaterialTheme.colorScheme.surface,
+                            tonalElevation = 2.dp,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable {
+                                    showDatePicker(startDate) { newDate ->
+                                        startDate = newDate
+                                        activeDaysChip = null
+                                    }
+                                }
+                        ) {
+                            Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                                Text("Od:", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                                Text(startDate, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        Text("—", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+
+                        Surface(
+                            shape = MaterialTheme.shapes.small,
+                            color = MaterialTheme.colorScheme.surface,
+                            tonalElevation = 2.dp,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable {
+                                    showDatePicker(endDate) { newDate ->
+                                        endDate = newDate
+                                        activeDaysChip = null
+                                    }
+                                }
+                        ) {
+                            Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                                Text("Do:", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                                Text(endDate, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Kafelki szybkiego wyboru: 1d, 3d, 5d, 7d, 14d
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Szybki wybór:", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                        listOf(1, 3, 5, 7, 14).forEach { days ->
+                            val isSelected = activeDaysChip == days
+                            Surface(
+                                shape = MaterialTheme.shapes.small,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                                tonalElevation = 1.dp,
+                                modifier = Modifier.clickable { applyDaysRange(days) }
+                            ) {
+                                Text(
+                                    text = "${days}d",
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        // One-Stop Shopping Mode Banner / Toggle - Item 12: clearly visible store chips
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 10.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = if (oneStopStore != "OFF") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-            )
-        ) {
-            Column(modifier = Modifier.padding(8.dp)) {
+        // Karta postępu zakupów
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Column(modifier = Modifier.padding(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Koszyk: $boughtCount/$totalCount",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "${(progress * 100).toInt()}%",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(7.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surface
+                    )
+                }
+            }
+        }
+
+        // Punkt 7: Usunięto zduplikowany wiersz ze sklepami. Pozostawiono pojedynczy, czysty wiersz filtrów sklepów.
+        item {
+            Column {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(bottom = 4.dp)
                 ) {
                     Icon(
                         Icons.Default.Store,
-                        contentDescription = "One-Stop",
+                        contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = "Tryb One-Stop (wszystko w 1 sklepie):",
-                        fontSize = 11.sp,
+                        text = "Sklep:",
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
-                Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    oneStopStores.forEach { store ->
-                        val isSelected = oneStopStore == store
+                    availableStores.forEach { store ->
+                        val isSelected = selectedStoreFilter == store
                         Surface(
                             shape = MaterialTheme.shapes.small,
                             color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                            modifier = Modifier.clickable { oneStopStore = store }
+                            modifier = Modifier.clickable { selectedStoreFilter = store }
                         ) {
                             Text(
-                                text = if (store == "OFF") "Wyłączony" else store,
+                                text = store,
                                 fontSize = 11.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                 color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                             )
                         }
                     }
@@ -240,83 +358,57 @@ fun ShoppingListScreen(apiService: AdonisApiService) {
             }
         }
 
-        // Store Filter Chips - Item 12: clearly visible store chips
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            availableStores.forEach { store ->
-                val isSelected = selectedStoreFilter == store
-                Surface(
-                    shape = MaterialTheme.shapes.small,
-                    color = if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier.clickable { selectedStoreFilter = store }
+        if (isLoading) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = store,
-                        fontSize = 11.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        color = if (isSelected) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
-                    )
+                    CircularProgressIndicator()
                 }
             }
-        }
-
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-            return
-        }
-
-        if (filteredItems.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.ShoppingCart,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        text = "Brak produktów w liście zakupów",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Lista generuje się automatycznie z Twojego jadłospisu ($startDate – $endDate). Załaduj pakiet dań w menu Jadłospis.",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Button(onClick = { loadItems() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Odśwież listę", fontSize = 12.sp)
+        } else if (filteredItems.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Default.ShoppingCart,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = "Brak produktów w liście zakupów",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Lista generuje się z Twojego jadłospisu ($startDate – $endDate). Załaduj pakiet jadłospisów w menu Jadłospis.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(onClick = { loadItems() }) {
+                            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Odśwież listę", fontSize = 12.sp)
+                        }
                     }
                 }
             }
-            return
-        }
-
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(filteredItems, key = { it.id ?: it.productName }) { item ->
-                val isOneStopSubstituted = oneStopStore != "OFF" && !item.store.equals(oneStopStore, ignoreCase = true)
-                val targetDisplayStore = if (isOneStopSubstituted) oneStopStore else item.store
-
+        } else {
+            items(filteredItems, key = { it.id ?: "${it.productName}_${it.store}" }) { item ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -358,11 +450,11 @@ fun ShoppingListScreen(apiService: AdonisApiService) {
                                     modifier = Modifier.padding(top = 2.dp)
                                 ) {
                                     Surface(
-                                        color = getStoreBadgeColor(targetDisplayStore),
+                                        color = getStoreBadgeColor(item.store),
                                         shape = MaterialTheme.shapes.extraSmall
                                     ) {
                                         Text(
-                                            text = targetDisplayStore,
+                                            text = item.store,
                                             fontSize = 9.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = Color.White,
@@ -370,13 +462,7 @@ fun ShoppingListScreen(apiService: AdonisApiService) {
                                         )
                                     }
 
-                                    if (isOneStopSubstituted) {
-                                        Text(
-                                            text = "odp. z ${item.store}",
-                                            fontSize = 9.sp,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    } else if (item.brand.isNotBlank()) {
+                                    if (item.brand.isNotBlank()) {
                                         Text(
                                             text = item.brand,
                                             fontSize = 10.sp,
@@ -431,4 +517,3 @@ fun getStoreBadgeColor(store: String): Color {
         else -> Color(0xFF4B5563)
     }
 }
-

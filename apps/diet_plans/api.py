@@ -113,6 +113,58 @@ def deploy_template_to_patient_days(template: DietPlanTemplate, patient: User, s
             end_date=end_date,
             notes=notes or f"Wdrożono pakiet {template.name}"
         )
+
+        # Wymóg 10: w zaleceniach zapisz tytuł bieżącego jadłospisu i date wprowadzenia, oraz historię przesłanych jadlospisów
+        try:
+            from apps.authentication.models import PatientRecommendation
+            intro_date_str = start_date.strftime("%d.%m.%Y")
+            end_date_str = end_date.strftime("%d.%m.%Y")
+
+            assignments = DietPlanTemplateAssignment.objects.filter(
+                patient=patient
+            ).select_related('template', 'dietitian').order_by('-created_at')[:10]
+
+            history_lines = []
+            for a in assignments:
+                created_str = a.created_at.strftime("%d.%m.%Y") if hasattr(a, 'created_at') and a.created_at else a.start_date.strftime("%d.%m.%Y")
+                dietitian_info = f" (przesłał: {a.dietitian.get_full_name() or a.dietitian.email})" if a.dietitian else ""
+                history_lines.append(f"• {a.template.name} — od {a.start_date.strftime('%d.%m.%Y')} do {a.end_date.strftime('%d.%m.%Y')} [wprowadzono: {created_str}]{dietitian_info}")
+
+            history_block = "\n".join(history_lines) if history_lines else f"• {template.name} (od {intro_date_str})"
+
+            header_block = (
+                f"📌 BIEŻĄCY JADŁOSPIS: {template.name}\n"
+                f"📅 Data wprowadzenia: {intro_date_str} (obowiązuje do: {end_date_str})\n"
+                f"----------------------------------------"
+            )
+
+            if hasattr(patient, 'patient_profile') and patient.patient_profile:
+                prof = patient.patient_profile
+                current_text = prof.official_recommendations or ""
+                import re
+                cleaned = re.sub(r'📌 BIEŻĄCY JADŁOSPIS:.*?(?=\n\n|\n💡|\Z)', '', current_text, flags=re.DOTALL)
+                cleaned = re.sub(r'📜 HISTORIA PRZESŁANYCH JADŁOSPISÓW:.*', '', cleaned, flags=re.DOTALL).strip()
+                if not cleaned:
+                    cleaned = "💡 ZALECENIA DIETETYKA:\n1. Regularne posiłki co 3-4 godziny.\n2. Pij minimum 2-2.5 l wody dziennie.\n3. Posiłki zoptymalizowane pod minimalny czas przygotowania."
+
+                prof.official_recommendations = (
+                    f"{header_block}\n\n"
+                    f"{cleaned}\n\n"
+                    f"📜 HISTORIA PRZESŁANYCH JADŁOSPISÓW:\n"
+                    f"{history_block}"
+                )
+                prof.save(update_fields=['official_recommendations'])
+
+            PatientRecommendation.objects.create(
+                patient=patient,
+                dietitian=dietitian,
+                title=f"Wdrożenie: {template.name}",
+                content=f"Wdrożono jadłospis '{template.name}' ({template.category}) z datą wprowadzenia: {intro_date_str}. Okres ważności do {end_date_str}."
+            )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Błąd zapisu zaleceń po wdrożeniu pakietu: {e}")
+
     return len(days_data), start_date, end_date
 
 def serialize_daily_plan(plan: DailyMealPlan) -> dict:

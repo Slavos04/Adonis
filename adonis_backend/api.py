@@ -1,5 +1,5 @@
 ## ==============================================================================
-## GŁÓWNY ROUTER API SYSTEMU ADONIS FIT & EAT (ver. 1.1)
+## GŁÓWNY ROUTER API SYSTEMU ADONIS FIT & EAT (ver. 1.2)
 ## Integruje wszystkie moduły biznesowe: autoryzację użytkowników, bazę przepisów,
 ## jadłospisy z podziałem na płeć, pomiary antropometryczne z normami WHO BMI,
 ## komunikator czatu oraz dziennik zmian CHANGELOG.
@@ -17,7 +17,7 @@ from apps.chat.api import router as chat_router
 ## Inicjalizacja instancji Django Ninja z dokumentacją interaktywną OpenAPI / Swagger
 api = NinjaAPI(
     title="ADONIS fit & eat API",
-    version="1.1.0",
+    version="1.2.0",
     description="Wieloplatformowe produkcyjne API dietetyczne z obsługą jadłospisów wg płci, norm WHO BMI i WebSockets",
     docs_url="/docs"
 )

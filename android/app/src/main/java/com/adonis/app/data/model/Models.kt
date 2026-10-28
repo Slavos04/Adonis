@@ -22,7 +22,8 @@ data class PatientProfile(
     @SerializedName("fat_goal_g") val fatGoalG: Double,
     @SerializedName("carbs_goal_g") val carbsGoalG: Double,
     @SerializedName("meals_per_day") val mealsPerDay: Int? = 4,
-    @SerializedName("official_recommendations") val officialRecommendations: String?
+    @SerializedName("official_recommendations") val officialRecommendations: String?,
+    @SerializedName("recommendations_updated_at") val recommendationsUpdatedAt: String? = null
 )
 
 data class AuthResponse(

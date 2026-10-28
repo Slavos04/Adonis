@@ -11,9 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.TrendingDown
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import com.adonis.app.data.api.AdonisApiService
 import com.adonis.app.data.model.Measurement
 import com.adonis.app.data.model.MeasurementRequest
+import com.adonis.app.data.model.PatientRecommendation
 import com.adonis.app.ui.components.WeightAndWaistChartCard
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -43,6 +42,14 @@ fun MeasurementsScreen(apiService: AdonisApiService) {
     var patientHeight by remember { mutableStateOf(175.0) }
     var isLoading by remember { mutableStateOf(true) }
     var showAddDialog by remember { mutableStateOf(false) }
+
+    // Zalecenia dietetyka i historia jadłospisów
+    var showRecommendationsDialog by remember { mutableStateOf(false) }
+    var officialRecommendations by remember { mutableStateOf<String?>(null) }
+    var recommendationsUpdatedAt by remember { mutableStateOf<String?>(null) }
+    var currentDietTitle by remember { mutableStateOf<String?>("Zbilansowany jadłospis tygodniowy") }
+    var recHistoryList by remember { mutableStateOf<List<PatientRecommendation>>(emptyList()) }
+    var isRecLoading by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
 
@@ -59,20 +66,31 @@ fun MeasurementsScreen(apiService: AdonisApiService) {
         scope.launch {
             isLoading = true
             try {
-                // Returns list ordered by date
                 val list = apiService.getMeasurements()
                 measurements = list.sortedBy { it.date }
-            } catch (_: Exception) {
-            }
+            } catch (_: Exception) {}
 
             try {
                 val meResp = apiService.getMyProfile()
                 val prof = meResp.profile
-                if (prof != null && prof.height > 0) {
-                    patientHeight = prof.height
+                if (prof != null) {
+                    if (prof.height > 0) patientHeight = prof.height
+                    officialRecommendations = prof.officialRecommendations
+                    recommendationsUpdatedAt = prof.recommendationsUpdatedAt
                 }
-            } catch (_: Exception) {
-            } finally {
+            } catch (_: Exception) {}
+
+            try {
+                val plan = apiService.getDailyPlan()
+                if (!plan.notes.isNullOrBlank()) {
+                    currentDietTitle = plan.notes
+                }
+            } catch (_: Exception) {}
+
+            try {
+                recHistoryList = apiService.getMyRecommendationsHistory()
+            } catch (_: Exception) {}
+            finally {
                 isLoading = false
             }
         }
@@ -118,24 +136,40 @@ fun MeasurementsScreen(apiService: AdonisApiService) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Pomiary & Postępy",
-                        fontSize = 22.sp,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Wykres trendu, analiza BMI i historia",
-                        fontSize = 12.sp,
+                        text = "Wykres trendu, analiza BMI i zalecenia",
+                        fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 }
 
-                FilledTonalIconButton(
-                    onClick = { showAddDialog = true },
-                    modifier = Modifier.size(36.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Dodaj pomiar")
+                    // Klawisz "Zalecenia" przeniesiony do menu Pomiary
+                    OutlinedButton(
+                        onClick = { showRecommendationsDialog = true },
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.Assignment, contentDescription = null, modifier = Modifier.size(15.dp), tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Zalecenia", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    FilledTonalIconButton(
+                        onClick = { showAddDialog = true },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Dodaj pomiar")
+                    }
                 }
             }
         }
@@ -323,6 +357,144 @@ fun MeasurementsScreen(apiService: AdonisApiService) {
                     enabled = !isSaving
                 ) {
                     Text("Anuluj")
+                }
+            }
+        )
+    }
+
+    // Dialog Zaleceń Dietetyka i Historii Jadłospisów (Wymóg 5 i 10)
+    if (showRecommendationsDialog) {
+        AlertDialog(
+            onDismissRequest = { showRecommendationsDialog = false },
+            title = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                        Icon(Icons.Default.Assignment, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Zalecenia & Historia", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                    IconButton(onClick = { showRecommendationsDialog = false }) {
+                        Icon(Icons.Default.Close, contentDescription = "Zamknij")
+                    }
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Sekcja 1: Bieżący Jadłospis
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.MenuBook, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Bieżący Jadłospis", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = currentDietTitle ?: "Zbilansowany jadłospis tygodniowy",
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = "Aktywny w Twoim kalendarzu posiłków",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
+                    }
+
+                    // Sekcja 2: Oficjalne Zalecenia Dietetyka
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Wytyczne i Wskazówki", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                                recommendationsUpdatedAt?.let { d ->
+                                    Text(
+                                        text = d.take(10),
+                                        fontSize = 10.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (!officialRecommendations.isNullOrBlank()) officialRecommendations!! else "Brak bieżących uwag od dietetyka. Stosuj się do wyznaczonych porcji.",
+                                fontSize = 13.sp,
+                                lineHeight = 18.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+
+                    // Sekcja 3: Historia Przesłanych Jadłospisów i Zaleceń
+                    Text("Historia przesłanych zaleceń i pakietów:", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    if (recHistoryList.isEmpty()) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Brak wcześniejszej historii. Nowo przesłane jadłospisy pojawią się tutaj automatycznie.",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(10.dp)
+                            )
+                        }
+                    } else {
+                        recHistoryList.forEach { rec ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                            ) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = rec.dietitianName ?: "Dietetyk",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            text = rec.createdAt.take(16).replace("T", " "),
+                                            fontSize = 10.sp,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(text = rec.content, fontSize = 12.sp, lineHeight = 16.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = { showRecommendationsDialog = false }) {
+                    Text("Zamknij")
                 }
             }
         )
