@@ -20,16 +20,20 @@ if [ -d 'frontend/dist' ]; then
     for apk in frontend/dist/*.apk; do
         if [ -f "$apk" ]; then
             filename=$(basename "$apk")
-            echo "Kopiowanie APK: $filename"
-            docker cp "$apk" "adonis_frontend:/usr/share/nginx/html/$filename" || true
+            if [ "$filename" != "Adonis-fit-and-eat-v1.0.apk" ]; then
+                echo "Kopiowanie APK: $filename"
+                docker cp "$apk" "adonis_frontend:/usr/share/nginx/html/$filename" 2>/dev/null || true
+            fi
         fi
     done
 fi
 for root_apk in *.apk; do
     if [ -f "$root_apk" ]; then
         filename=$(basename "$root_apk")
-        echo "Kopiowanie root APK: $filename"
-        docker cp "$root_apk" "adonis_frontend:/usr/share/nginx/html/$filename" || true
+        if [ "$filename" != "Adonis-fit-and-eat-v1.0.apk" ]; then
+            echo "Kopiowanie root APK: $filename"
+            docker cp "$root_apk" "adonis_frontend:/usr/share/nginx/html/$filename" 2>/dev/null || true
+        fi
     fi
 done
 docker restart adonis_frontend
