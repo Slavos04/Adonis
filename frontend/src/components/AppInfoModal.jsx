@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Flame, Info, Mail, CheckCircle, ShieldCheck, Smartphone, Sparkles, X, Download, History, Copy, Check } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
 import { APP_VERSION } from '../version';
 import { ChangelogModal } from './ChangelogModal';
 
@@ -235,28 +234,26 @@ export function AppInfoModal({ isOpen, onClose }) {
               }}>
                 <div
                   style={{
-                    padding: '10px',
-                    background: '#ffffff',
-                    borderRadius: '14px',
-                    boxShadow: '0 0 20px rgba(16,185,129,0.4), 0 4px 12px rgba(0,0,0,0.4)',
+                    padding: '8px',
+                    background: 'rgba(15, 23, 42, 0.85)',
+                    borderRadius: '16px',
+                    boxShadow: '0 0 25px rgba(16,185,129,0.45), 0 4px 14px rgba(0,0,0,0.5)',
                     border: '2px solid #34d399',
                     display: 'inline-block',
-                    position: 'relative'
+                    position: 'relative',
+                    overflow: 'hidden'
                   }}
                   title="Zeskanuj aparatem telefonu"
                 >
-                  <QRCodeSVG
-                    value={typeof window !== 'undefined' ? `${window.location.origin}/pobierz` : `https://adonis.slavosmm.duckdns.org/pobierz`}
-                    size={135}
-                    level="H"
-                    includeMargin={false}
-                    fgColor="#0f172a"
-                    bgColor="#ffffff"
-                    imageSettings={{
-                      src: "/app-icon.png",
-                      height: 28,
-                      width: 28,
-                      excavate: true
+                  <img
+                    src="/AdonisQR.png"
+                    alt="Kod QR do pobrania Adonis"
+                    style={{
+                      width: '140px',
+                      height: '140px',
+                      display: 'block',
+                      borderRadius: '10px',
+                      objectFit: 'contain'
                     }}
                   />
                 </div>

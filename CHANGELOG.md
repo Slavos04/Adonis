@@ -5,6 +5,16 @@ Projekt stosuje zasadę: **każda kolejna zmiana w projekcie podnosi numer wersj
 
 ---
 
+## [1.5] — 2026-10-28
+**Data modyfikacji:** 2026-10-28 20:40 CET
+
+### Usprawnienia i Nowości (Improvements & Features)
+1. **Aplikacja webowa & Moduł Pobierania — Podmiana kodu QR na AdonisQR.png:**
+   - W oknie informacyjnym „O aplikacji” (`AppInfoModal.jsx`) oraz na stronie pobierania (`pobierz.html`) podmieniono dotychczasowy kod QR na oficjalny, artystyczny kod `AdonisQR.png` z centralnym logotypem Adonis oraz motywem Cyber-Fit.
+   - Zapewniono automatyczne serwowanie i caching pliku `AdonisQR.png` w katalogu publicznym aplikacji frontendowej.
+
+---
+
 ## [1.4] — 2026-10-28
 **Data modyfikacji:** 2026-10-28 19:30 CET
 

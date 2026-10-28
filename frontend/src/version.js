@@ -1,14 +1,31 @@
-export const APP_VERSION = '1.4';
+export const APP_VERSION = '1.5';
 export const APP_RELEASE_DATE = '2026-10-28';
 
 export const CHANGELOG_DATA = [
+  {
+    version: '1.5',
+    date: '2026-10-28',
+    time: '20:40 CET',
+    title: 'Wydanie 1.5 — Oficjalny kod QR AdonisQR.png do pobierania aplikacji mobilnej',
+    badge: 'Aktualna',
+    badgeType: 'emerald',
+    changes: [
+      {
+        category: 'Aplikacja Webowa & Zasoby',
+        items: [
+          'Podmiana kodu QR w oknie „O aplikacji” (AppInfoModal) oraz na dedykowanej stronie pobierania na oficjalną grafikę AdonisQR.png z logo i motywem Cyber-Fit.',
+          'Zwiększenie estetyki i czytelności modułu instalacji aplikacji mobilnej na telefonach komórkowych.'
+        ]
+      }
+    ]
+  },
   {
     version: '1.4',
     date: '2026-10-28',
     time: '19:30 CET',
     title: 'Wydanie 1.4 — Naprawa widoku webowego, artystyczny kod QR i weryfikacja pakietu APK',
-    badge: 'Aktualna',
-    badgeType: 'emerald',
+    badge: 'Poprzednia',
+    badgeType: 'slate',
     changes: [
       {
         category: 'Aplikacja Webowa',
