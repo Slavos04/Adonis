@@ -121,10 +121,10 @@ function MainLayout() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ErrorBoundary>
+    <ErrorBoundary>
+      <AuthProvider>
         <MainLayout />
-      </ErrorBoundary>
-    </AuthProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
