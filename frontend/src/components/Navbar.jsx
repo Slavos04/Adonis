@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
   Flame, Utensils, ShoppingBag, MessageSquare, Users, BookOpen,
-  LogOut, ShieldAlert, Sun, Moon, Waves, Trees, Bell, Trash2, AlertTriangle, Sparkles, Settings, Info
+  LogOut, ShieldAlert, Sun, Moon, Waves, Trees, Bell, Trash2, AlertTriangle, Sparkles, Settings, Info, Activity
 } from 'lucide-react';
 import { chatApi, authApi } from '../api/client';
 import { SettingsModal } from './SettingsModal';

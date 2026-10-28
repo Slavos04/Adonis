@@ -1,14 +1,40 @@
-export const APP_VERSION = '1.3';
+export const APP_VERSION = '1.4';
 export const APP_RELEASE_DATE = '2026-10-28';
 
 export const CHANGELOG_DATA = [
+  {
+    version: '1.4',
+    date: '2026-10-28',
+    time: '19:30 CET',
+    title: 'Wydanie 1.4 — Naprawa widoku webowego, artystyczny kod QR i weryfikacja pakietu APK',
+    badge: 'Aktualna',
+    badgeType: 'emerald',
+    changes: [
+      {
+        category: 'Aplikacja Webowa',
+        items: [
+          'Rozwiązanie problemu renderowania widoku pacjenta (brakujący import ikony Activity w belce nawigacyjnej).',
+          'Dodanie globalnego ErrorBoundary zabezpieczającego aplikację przed białym ekranem w przypadku nieoczekiwanego błędu.',
+          'Wdrożenie artystycznego, w pełni skanowalnego kodu QR w oknie informacyjnym "O aplikacji" (AppInfoModal) wraz z cyberpunkową grafiką i przyciskiem kopiowania bezpośredniego linku do pobrania APK.'
+        ]
+      },
+      {
+        category: 'Aplikacja Mobilna Android & Serwer',
+        items: [
+          'Podniesienie wersji aplikacji mobilnej do 1.4.0 (versionCode 6).',
+          'Weryfikacja i synchronizacja najnowszego pliku APK (Adonis-fit-and-eat-v1.4.apk) bezpośrednio na serwerze produkcyjnym.',
+          'Naprawa nagłówków Nginx i skryptu update.sh gwarantujących poprawne pobieranie najnowszych wersji pliku instalacyjnego.'
+        ]
+      }
+    ]
+  },
   {
     version: '1.3',
     date: '2026-10-28',
     time: '07:20 CET',
     title: 'Wydanie 1.3 — Pomiary w belce, historia zaleceń i jadłospisów, kategorie zakupów i miary kuchenne',
-    badge: 'Aktualna',
-    badgeType: 'emerald',
+    badge: 'Poprzednia',
+    badgeType: 'slate',
     changes: [
       {
         category: 'Aplikacja Webowa',

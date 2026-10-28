@@ -1,10 +1,20 @@
 import React, { useState } from 'react';
-import { Flame, Info, Mail, CheckCircle, ShieldCheck, Smartphone, Sparkles, X, Download, History } from 'lucide-react';
+import { Flame, Info, Mail, CheckCircle, ShieldCheck, Smartphone, Sparkles, X, Download, History, Copy, Check } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { APP_VERSION } from '../version';
 import { ChangelogModal } from './ChangelogModal';
 
 export function AppInfoModal({ isOpen, onClose }) {
   const [showChangelog, setShowChangelog] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}/Adonis-fit-and-eat-v${APP_VERSION}.apk`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }).catch(() => {});
+  };
 
   if (!isOpen) return null;
 
@@ -144,64 +154,202 @@ export function AppInfoModal({ isOpen, onClose }) {
             </div>
           </div>
 
-          {/* Android APK Download Section */}
+          {/* Android APK Download & Artistic QR Code Section */}
           <div
             style={{
-              background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.08) 100%)',
-              border: '1px solid var(--accent-emerald)',
-              borderRadius: '14px',
-              padding: '1rem 1.25rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '1rem',
+              background: 'linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(15,23,42,0.6) 50%, rgba(99,102,241,0.1) 100%)',
+              border: '1px solid rgba(16,185,129,0.4)',
+              borderRadius: '16px',
+              padding: '1.25rem',
               marginBottom: '1.25rem',
-              boxShadow: '0 4px 15px rgba(16,185,129,0.1)',
-              flexWrap: 'wrap'
+              boxShadow: '0 8px 24px rgba(16,185,129,0.15)',
+              position: 'relative',
+              overflow: 'hidden'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-              <div
-                style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '12px',
-                  background: 'rgba(16,185,129,0.2)',
+            {/* Top decorative glow */}
+            <div style={{
+              position: 'absolute',
+              top: '-30px',
+              right: '-30px',
+              width: '120px',
+              height: '120px',
+              background: 'radial-gradient(circle, rgba(16,185,129,0.3) 0%, transparent 70%)',
+              pointerEvents: 'none'
+            }} />
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, var(--accent-emerald), #059669)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  flexShrink: 0
-                }}
-              >
-                <Smartphone size={24} color="var(--accent-emerald)" />
-              </div>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-main)' }}>
-                  Aplikacja mobilna na telefon
+                  boxShadow: '0 2px 10px rgba(16,185,129,0.3)'
+                }}>
+                  <Smartphone size={20} color="#fff" />
                 </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                  Pakiet instalacyjny Android (.APK v{APP_VERSION} &bull; 11.7 MB)
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '0.98rem', color: 'var(--text-main)' }}>
+                    Pobierz aplikację mobilną ADONIS
+                  </div>
+                  <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                    Pakiet Android (.APK v{APP_VERSION} &bull; 11.7 MB)
+                  </div>
+                </div>
+              </div>
+
+              <span style={{
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                color: '#34d399',
+                background: 'rgba(16,185,129,0.15)',
+                padding: '0.2rem 0.6rem',
+                borderRadius: '6px',
+                border: '1px solid rgba(16,185,129,0.3)'
+              }}>
+                Oficjalne wydanie v{APP_VERSION}
+              </span>
+            </div>
+
+            {/* Artistic QR + Visual Preview Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: '1rem',
+              alignItems: 'center',
+              background: 'rgba(0,0,0,0.25)',
+              padding: '1rem',
+              borderRadius: '12px',
+              border: '1px solid rgba(255,255,255,0.06)'
+            }}>
+              {/* Scannable QR Code Card */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center'
+              }}>
+                <div
+                  style={{
+                    padding: '10px',
+                    background: '#ffffff',
+                    borderRadius: '14px',
+                    boxShadow: '0 0 20px rgba(16,185,129,0.4), 0 4px 12px rgba(0,0,0,0.4)',
+                    border: '2px solid #34d399',
+                    display: 'inline-block',
+                    position: 'relative'
+                  }}
+                  title="Zeskanuj aparatem telefonu"
+                >
+                  <QRCodeSVG
+                    value={typeof window !== 'undefined' ? `${window.location.origin}/Adonis-fit-and-eat-v${APP_VERSION}.apk` : `https://adonis.slavosmm.duckdns.org/Adonis-fit-and-eat-v${APP_VERSION}.apk`}
+                    size={135}
+                    level="H"
+                    includeMargin={false}
+                    fgColor="#0f172a"
+                    bgColor="#ffffff"
+                    imageSettings={{
+                      src: "/app-icon.png",
+                      height: 28,
+                      width: 28,
+                      excavate: true
+                    }}
+                  />
+                </div>
+                <span style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  color: '#6ee7b7',
+                  marginTop: '0.5rem',
+                  letterSpacing: '0.02em'
+                }}>
+                  📸 Zeskanuj aparatem telefonu
+                </span>
+              </div>
+
+              {/* Artistic Graphic Banner & Details */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                <div style={{
+                  position: 'relative',
+                  borderRadius: '10px',
+                  overflow: 'hidden',
+                  height: '85px',
+                  border: '1px solid rgba(16,185,129,0.3)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                }}>
+                  <img
+                    src="/adonis_qr_artistic.jpg"
+                    alt="Adonis Mobile Art"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      display: 'block'
+                    }}
+                  />
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%)',
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    padding: '0.4rem 0.6rem'
+                  }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#fff', letterSpacing: '0.04em' }}>
+                      ADONIS Mobile Cyber-Fit
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', lineHeight: 1.35 }}>
+                  Zsynchronizowane posiłki, automatyczna lista zakupów, powiadomienia i pomiary w Twojej kieszeni.
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.2rem' }}>
+                  <a
+                    href={`/Adonis-fit-and-eat-v${APP_VERSION}.apk`}
+                    download={`Adonis-fit-and-eat-v${APP_VERSION}.apk`}
+                    className="btn btn-primary btn-sm"
+                    style={{
+                      flex: 1,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.4rem',
+                      fontWeight: 700,
+                      fontSize: '0.82rem',
+                      padding: '0.5rem 0.8rem',
+                      borderRadius: '8px',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    <Download size={15} /> Pobierz .APK
+                  </a>
+                  {copied ? (
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      style={{ padding: '0.5rem 0.7rem', color: '#34d399', borderColor: '#34d399' }}
+                      title="Skopiowano link!"
+                    >
+                      <Check size={15} />
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={handleCopyLink}
+                      style={{ padding: '0.5rem 0.7rem' }}
+                      title="Kopiuj bezpośredni link do pliku APK"
+                    >
+                      <Copy size={15} />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
-            <a
-              href={`/Adonis-fit-and-eat-v${APP_VERSION}.apk`}
-              download={`Adonis-fit-and-eat-v${APP_VERSION}.apk`}
-              className="btn btn-primary btn-sm"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.45rem',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                whiteSpace: 'nowrap',
-                textDecoration: 'none',
-                padding: '0.55rem 1.1rem',
-                borderRadius: '10px'
-              }}
-            >
-              <Download size={16} /> Pobierz APK
-            </a>
           </div>
 
           {/* Contact info card */}

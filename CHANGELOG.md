@@ -5,6 +5,24 @@ Projekt stosuje zasadę: **każda kolejna zmiana w projekcie podnosi numer wersj
 
 ---
 
+## [1.4] — 2026-10-28
+**Data modyfikacji:** 2026-10-28 19:30 CET
+
+### Usprawnienia i Nowości (Improvements & Features)
+1. **Aplikacja webowa — Naprawa błędu renderowania widoku pacjenta:**
+   - Wykryto i naprawiono błąd krytyczny powodujący brak renderowania widoku po zalogowaniu na konto pacjenta (`ReferenceError: Activity is not defined` w `Navbar.jsx`). Dodano brakujący import ikony `Activity` z biblioteki `lucide-react`.
+   - Otoczono główny layout aplikacji (`MainLayout`) komponentem `ErrorBoundary`, zabezpieczając cały interfejs przed białym ekranem w przypadku nieprzewidzianych wyjątków i wyświetlając czytelny komunikat z przyciskiem przeładowania.
+2. **Aplikacja webowa — Artystyczny kod QR w sekcji Info:**
+   - W oknie „O aplikacji” (`AppInfoModal.jsx`) zaimplementowano artystyczną sekcję pobierania aplikacji mobilnej.
+   - Wdrożono dynamiczny, w pełni funkcjonalny kod QR (`QRCodeSVG` z `qrcode.react`), który aparatem dowolnego telefonu natychmiast prowadzi do pobrania aktualnego pliku `.apk`.
+   - Dodano estetyczny motyw wizualny *Cyber-Fit* w kolorystyce szmaragdowo-neonowej, cyberpunkowy podgląd potrawy oraz przyciski szybkiego pobierania pliku i kopiowania bezpośredniego linku do schowka.
+3. **Aplikacja mobilna Android & Serwer Produkcyjny:**
+   - Podniesiono wersję aplikacji mobilnej do `1.4.0` (versionCode 6).
+   - Skompilowano oficjalne wydanie release APK `Adonis-fit-and-eat-v1.4.apk` i wdrożono bezpośrednio na serwer produkcyjny pod publicznym adresem `https://adonis.slavosmm.duckdns.org/Adonis-fit-and-eat-v1.4.apk`.
+   - Zaktualizowano `version.js` oraz stopkę aplikacji do wersji 1.4.
+
+---
+
 ## [1.3] — 2026-10-28
 **Data modyfikacji:** 2026-10-28 07:20 CET
 

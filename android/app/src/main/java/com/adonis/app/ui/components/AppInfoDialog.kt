@@ -57,7 +57,7 @@ fun AppInfoDialog(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "1.3",
+                        text = "1.4",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
