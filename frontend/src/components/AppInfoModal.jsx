@@ -9,7 +9,7 @@ export function AppInfoModal({ isOpen, onClose }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopyLink = () => {
-    const url = `${window.location.origin}/Adonis-fit-and-eat-v${APP_VERSION}.apk`;
+    const url = `${window.location.origin}/pobierz`;
     navigator.clipboard.writeText(url).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
@@ -246,7 +246,7 @@ export function AppInfoModal({ isOpen, onClose }) {
                   title="Zeskanuj aparatem telefonu"
                 >
                   <QRCodeSVG
-                    value={typeof window !== 'undefined' ? `${window.location.origin}/Adonis-fit-and-eat-v${APP_VERSION}.apk` : `https://adonis.slavosmm.duckdns.org/Adonis-fit-and-eat-v${APP_VERSION}.apk`}
+                    value={typeof window !== 'undefined' ? `${window.location.origin}/pobierz` : `https://adonis.slavosmm.duckdns.org/pobierz`}
                     size={135}
                     level="H"
                     includeMargin={false}
