@@ -43,6 +43,16 @@ export function DietitianDashboard() {
   // Templates / Packages state
   const [templates, setTemplates] = useState([]);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('Wszystkie');
+  const [customGroups, setCustomGroups] = useState(() => {
+    try {
+      const saved = localStorage.getItem('adonis_custom_diet_groups');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [showAddGroupInput, setShowAddGroupInput] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showPdfImportModal, setShowPdfImportModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
@@ -54,7 +64,7 @@ export function DietitianDashboard() {
 
   // Package Creator state
   const [tplName, setTplName] = useState('');
-  const [tplCategory, setTplCategory] = useState('Dieta niskokaloryczna');
+  const [tplCategory, setTplCategory] = useState('Bez grupy');
   const [tplDescription, setTplDescription] = useState('');
   const [tplTargetCalories, setTplTargetCalories] = useState(1800);
   const [tplMealsPerDay, setTplMealsPerDay] = useState(4);
@@ -123,8 +133,8 @@ export function DietitianDashboard() {
     try {
       const [patientsData, recipesData, productsData, templatesData] = await Promise.all([
         authApi.getPatients(),
-        recipesApi.list({ limit: 150 }),
-        recipesApi.products({ limit: 150 }),
+        recipesApi.list({ limit: 1000 }),
+        recipesApi.products({ limit: 1000 }),
         dietPlansApi.getTemplates(),
       ]);
 
@@ -160,8 +170,8 @@ export function DietitianDashboard() {
   async function refreshRecipesAndProducts() {
     try {
       const [rData, pData] = await Promise.all([
-        recipesApi.list({ limit: 150 }),
-        recipesApi.products({ limit: 150 }),
+        recipesApi.list({ limit: 1000 }),
+        recipesApi.products({ limit: 1000 }),
       ]);
       setRecipes(rData);
       const rMap = {};
@@ -249,7 +259,7 @@ export function DietitianDashboard() {
   function initNewPackage() {
     setEditingTemplate(null);
     setTplName('');
-    setTplCategory('Dieta niskokaloryczna');
+    setTplCategory('Bez grupy');
     setTplDescription('');
     setTplTargetCalories(1800);
     setTplMealsPerDay(4);
@@ -648,14 +658,37 @@ export function DietitianDashboard() {
     }
   }
 
-  // Filter templates
-  const categoryFilterOptions = [
-    'Wszystkie', 'Dieta niskokaloryczna', 'Dieta wysokobiałkowa', 'Niski indeks glikemiczny', 'Dieta wegetariańska'
-  ];
+  // Grupy diety i dynamiczne filtrowanie
+  function handleAddGroup(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const name = newGroupName.trim();
+    if (!name) return;
+    if (!customGroups.includes(name)) {
+      const updated = [...customGroups, name];
+      setCustomGroups(updated);
+      try {
+        localStorage.setItem('adonis_custom_diet_groups', JSON.stringify(updated));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    setSelectedCategoryFilter(name);
+    setNewGroupName('');
+    setShowAddGroupInput(false);
+  }
+
+  const templateCategories = Array.from(new Set(templates.map(t => (t.category || '').trim()).filter(Boolean)));
+  const baseDefaultGroups = ['Dieta redukcyjna', 'Dieta niskokaloryczna', 'Dieta wysokobiałkowa', 'Niski indeks glikemiczny', 'Dieta wegetariańska'];
+  const allDietGroups = Array.from(new Set([...templateCategories.filter(g => g !== 'Bez grupy'), ...baseDefaultGroups, ...customGroups]));
+  const categoryFilterOptions = ['Wszystkie', 'Bez grupy', ...allDietGroups];
 
   const filteredTemplates = templates.filter((tpl) => {
     if (selectedCategoryFilter === 'Wszystkie') return true;
-    return tpl.category.toLowerCase().includes(selectedCategoryFilter.toLowerCase());
+    const tplCat = (tpl.category || '').trim().toLowerCase();
+    if (selectedCategoryFilter === 'Bez grupy') {
+      return !tplCat || tplCat === 'bez grupy' || tplCat === 'brak';
+    }
+    return tplCat === selectedCategoryFilter.toLowerCase();
   });
 
   const activeDayMacros = tplDaysData.length > 0 ? calculateDayNutrition(tplActiveDayIdx) : { cal: 0, p: 0, f: 0, c: 0 };
@@ -791,6 +824,42 @@ export function DietitianDashboard() {
                   {cat}
                 </button>
               ))}
+
+              {showAddGroupInput ? (
+                <form onSubmit={handleAddGroup} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <input
+                    type="text"
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    placeholder="Nazwa nowej grupy..."
+                    autoFocus
+                    style={{
+                      background: '#111827',
+                      border: '1px solid #10b981',
+                      color: '#fff',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '6px',
+                      fontSize: '0.8rem'
+                    }}
+                  />
+                  <button type="submit" className="btn btn-primary btn-sm" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}>
+                    Zapisz
+                  </button>
+                  <button type="button" onClick={() => setShowAddGroupInput(false)} className="btn btn-secondary btn-sm" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}>
+                    ✕
+                  </button>
+                </form>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowAddGroupInput(true)}
+                  className="btn btn-secondary btn-sm"
+                  style={{ fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', border: '1px dashed rgba(255,255,255,0.2)' }}
+                  title="Dodaj nową grupę diety"
+                >
+                  <Plus size={14} /> Grupa
+                </button>
+              )}
             </div>
 
             <button onClick={initNewPackage} className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -885,7 +954,7 @@ export function DietitianDashboard() {
                       className="btn btn-secondary btn-sm"
                       style={{ width: '100%', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontSize: '0.8rem' }}
                     >
-                      <Eye size={14} /> {isExpanded ? 'Ukryj przepisy w pakiecie' : 'Pokaż przepisy w pakiecie (7 dni)'}
+                      <Eye size={14} /> {isExpanded ? 'Ukryj przepisy w pakiecie' : `Pokaż przepisy w pakiecie (${tpl.days_data?.length || 7} dni)`}
                     </button>
 
                     {/* Rozwinięty widok dań i przepisów na 7 dni */}
@@ -894,15 +963,17 @@ export function DietitianDashboard() {
                         {(tpl.days_data || []).map((day, dIdx) => (
                           <div key={dIdx} style={{ marginBottom: '0.65rem' }}>
                             <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-emerald)', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '0.2rem', marginBottom: '0.3rem' }}>
-                              {day.day_name || `Dzień ${day.day_number}`}
+                              {day.day_name || POLISH_DAYS[dIdx] || `Dzień ${dIdx + 1}`}
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                               {(day.meals || []).map((m, mIdx) => {
                                 const rec = recipesMap[m.recipe_id];
+                                const mealTitle = rec?.title || m.title || `Przepis #${m.recipe_id}`;
+                                const mealCal = rec ? Math.round(rec.calories * (m.portions || 1)) : (m.calories ? Math.round(m.calories * (m.portions || 1)) : null);
                                 return (
                                   <div key={mIdx} style={{ fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
-                                    <span><strong>{m.meal_type}:</strong> {rec?.title || `Przepis #${m.recipe_id}`} ({m.portions} porc.)</span>
-                                    <span style={{ color: 'var(--accent-amber)', fontWeight: 600 }}>{rec ? `${Math.round(rec.calories * (m.portions || 1))} kcal` : ''}</span>
+                                    <span><strong>{m.meal_type}:</strong> {mealTitle} ({m.portions || 1} porc.)</span>
+                                    <span style={{ color: 'var(--accent-amber)', fontWeight: 600 }}>{mealCal ? `${mealCal} kcal` : ''}</span>
                                   </div>
                                 );
                               })}
@@ -1433,19 +1504,32 @@ export function DietitianDashboard() {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Grupa / Kategoria*</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Grupa diety:*</label>
                   <select
                     value={tplCategory}
                     onChange={(e) => setTplCategory(e.target.value)}
                     style={{ width: '100%', background: '#111827', border: '1px solid var(--border-subtle)', color: '#fff', padding: '0.55rem', borderRadius: '6px' }}
                   >
-                    <option value="Dieta niskokaloryczna">Dieta niskokaloryczna</option>
-                    <option value="Dieta wysokobiałkowa">Dieta wysokobiałkowa</option>
-                    <option value="Niski indeks glikemiczny">Niski indeks glikemiczny</option>
-                    <option value="Dieta wegetariańska">Dieta wegetariańska</option>
-                    <option value="Dieta keto">Dieta keto</option>
-                    <option value="Dieta zbilansowana">Dieta zbilansowana</option>
+                    <option value="Bez grupy">— Bez grupy —</option>
+                    {allDietGroups.map((grp) => (
+                      <option key={grp} value={grp}>{grp}</option>
+                    ))}
+                    <option value="__custom_new__">+ Nowa grupa...</option>
                   </select>
+                  {tplCategory === '__custom_new__' && (
+                    <input
+                      type="text"
+                      placeholder="Wpisz nazwę nowej grupy diety"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val && !customGroups.includes(val)) {
+                          setCustomGroups(prev => [...prev, val]);
+                        }
+                        setTplCategory(val);
+                      }}
+                      style={{ width: '100%', marginTop: '0.4rem', background: '#111827', border: '1px solid #10b981', color: '#fff', padding: '0.5rem', borderRadius: '6px', fontSize: '0.85rem' }}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -1503,15 +1587,15 @@ export function DietitianDashboard() {
 
               {/* Day Tabs Bar */}
               <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-                {POLISH_DAYS.map((dayName, idx) => (
+                {tplDaysData.map((day, idx) => (
                   <button
-                    key={dayName}
+                    key={idx}
                     type="button"
                     onClick={() => setTplActiveDayIdx(idx)}
                     className={`btn btn-sm ${tplActiveDayIdx === idx ? 'btn-primary' : 'btn-secondary'}`}
                     style={{ flex: 1, minWidth: '95px' }}
                   >
-                    {dayName}
+                    {POLISH_DAYS[idx] || day.day_name || `Dzień ${idx + 1}`}
                   </button>
                 ))}
               </div>
@@ -1619,6 +1703,11 @@ export function DietitianDashboard() {
                         onChange={(e) => updateTplMeal(tplActiveDayIdx, mIdx, 'recipe_id', parseInt(e.target.value))}
                         style={{ flex: 1, minWidth: 0, background: '#111827', border: '1px solid var(--border-subtle)', color: '#fff', padding: '0.45rem', borderRadius: '6px', fontSize: '0.85rem' }}
                       >
+                        {!recipes.some(r => r.id === meal.recipe_id) && (
+                          <option value={meal.recipe_id}>
+                            [{meal.meal_type || 'Posiłek'}] {meal.title || `Przepis #${meal.recipe_id}`} ({meal.calories || '?'} kcal)
+                          </option>
+                        )}
                         {recipes.map((r) => (
                           <option key={r.id} value={r.id}>
                             [{r.category}] {r.title} ({r.calories} kcal, ⏱ {r.preparation_time_minutes} min)
@@ -2115,9 +2204,11 @@ export function DietitianDashboard() {
       <PdfImportModal
         isOpen={showPdfImportModal}
         onClose={() => setShowPdfImportModal(false)}
+        availableGroups={allDietGroups}
         onSuccess={() => {
           setShowPdfImportModal(false);
           refreshTemplates();
+          refreshRecipesAndProducts();
         }}
       />
 

@@ -1,3 +1,19 @@
+## [1.7] — 2026-10-29 07:45 CET
+
+### Grupy diety i elastyczne pakiety
+- Dodano przycisk "+" do szybkiego tworzenia nowych grup diety w panelu dietetyka
+- Mo¿liwoœæ swobodnego przypisywania i zmiany grupy dla ka¿dego jad³ospisu oraz opcja "Bez grupy"
+- Dynamiczne filtry grup diety pobieraj¹ce kategorie ze wszystkich dostêpnych szablonów
+
+### Elastyczny import PDF
+- Kategoria nie jest ju¿ wymagana przy imporcie z pliku PDF
+- Dodano opcjonalne pole na opis jad³ospisu oraz wybór grupy diety
+- Usuniêto sztywny opis "28-dniowy jad³ospis..." – opis dostosowuje siê dynamicznie
+
+### Poprawa podgl¹du i edycji pakietów
+- Zwiêkszono limit pobierania przepisów (z 150 do 1000) – nowe przepisy z importu s¹ w pe³ni widoczne
+- Naprawiono wyœwietlanie tytu³ów przepisów i kalorii w sekcji "Poka¿ przepisy w pakiecie"
+- Naprawiono formularz edycji pakietu – prawid³owe mapowanie ID przepisów i wsparcie dla dowolnej liczby dni
 ## [1.6] — 2026-10-29 07:00 CET
 
 ### Import diety z PDF (NFZ)

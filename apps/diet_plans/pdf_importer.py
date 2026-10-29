@@ -179,7 +179,8 @@ def import_diet_from_pdf(
     template_name: str = "M_1500_cal",
     dietitian: Optional[User] = None,
     target_gender: str = "male",
-    category: str = "Dieta NFZ"
+    category: str = "Bez grupy",
+    description: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Główna funkcja importu:
@@ -209,6 +210,9 @@ def import_diet_from_pdf(
     new_recipes_created = 0
     reused_recipes_count = 0
     template_days_data = []
+
+    clean_category = (category or "").strip() or "Bez grupy"
+    clean_description = (description or "").strip() or f"Jadłospis z oficjalnych wytycznych NFZ ({NFZ_SOURCE_URL})"
 
     with transaction.atomic():
         # Pamięć podręczna produktów wg nazwy
@@ -338,19 +342,21 @@ def import_diet_from_pdf(
             name=template_name,
             dietitian=dietitian,
             defaults={
-                "category": category,
-                "description": f"Zbalansowany 28-dniowy jadłospis z oficjalnych wytycznych NFZ ({NFZ_SOURCE_URL}). Łącznie {len(parsed_days) * 4} posiłków.",
+                "category": clean_category,
+                "description": clean_description,
                 "target_calories": avg_cal,
                 "target_gender": target_gender,
-                "meals_per_day": 4,
+                "meals_per_day": len(template_days_data[0]["meals"]) if template_days_data and "meals" in template_days_data[0] else 4,
                 "days_data": template_days_data
             }
         )
         if not created:
-            template.category = category
+            template.category = clean_category
+            if description is not None and description.strip():
+                template.description = clean_description
             template.target_calories = avg_cal
             template.target_gender = target_gender
-            template.meals_per_day = 4
+            template.meals_per_day = len(template_days_data[0]["meals"]) if template_days_data and "meals" in template_days_data[0] else 4
             template.days_data = template_days_data
             template.save()
 
@@ -363,6 +369,8 @@ def import_diet_from_pdf(
         "category": template.category,
         "target_calories": template.target_calories,
         "target_gender": template.target_gender,
+        "days": len(template_days_data),
+        "meals": total_meals_count,
         "total_days": len(template_days_data),
         "total_meals": total_meals_count,
         "new_recipes_created": new_recipes_created,

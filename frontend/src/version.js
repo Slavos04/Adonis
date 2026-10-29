@@ -1,14 +1,48 @@
-export const APP_VERSION = '1.6';
+export const APP_VERSION = '1.7';
 export const APP_RELEASE_DATE = '2026-10-29';
 
 export const CHANGELOG_DATA = [
+  {
+    version: '1.7',
+    date: '2026-10-29',
+    time: '07:45 CET',
+    title: 'Wydanie 1.7 – Zarządzanie grupami diety, elastyczny import PDF i naprawa podglądu pakietów',
+    badge: 'Aktualna',
+    badgeType: 'emerald',
+    changes: [
+      {
+        category: 'Grupy diety & Pakiety',
+        items: [
+          'Nowy przycisk "+" do natychmiastowego dodawania nowych grup diety.',
+          'Elastyczne przypisywanie jadłospisów do wybranej grupy lub opcja "Bez grupy".',
+          'Dynamiczne filtry grup diety bazujące na faktycznie istniejących pakietach.'
+        ]
+      },
+      {
+        category: 'Import PDF',
+        items: [
+          'Kategoria nie jest już wymagana przy imporcie PDF (możliwość wyboru grupy lub "Bez grupy").',
+          'Dodano pole na własny opis jadłospisu przy imporcie.',
+          'Usunięto sztywny opis "28-dniowy jadłospis..." – opis dostosowuje się dynamicznie do liczby dni i założeń.'
+        ]
+      },
+      {
+        category: 'Podgląd i Edycja Pakietów',
+        items: [
+          'Naprawiono błąd wyświetlania przepisów i kalorii w rozwinięciu "Pokaż przepisy w pakiecie" (pełna baza przepisów bez limitu 150 pozycji).',
+          'Pełna zgodność podglądu z formularzem edycji pakietu – prawidłowe mapowanie ID przepisów.',
+          'Wsparcie dla pakietów o dowolnej liczbie dni w edytorze.'
+        ]
+      }
+    ]
+  },
   {
     version: '1.6',
     date: '2026-10-29',
     time: '07:00 CET',
     title: 'Wydanie 1.6 – Import diety z PDF, rok urodzenia pacjenta',
-    badge: 'Aktualna',
-    badgeType: 'emerald',
+    badge: 'Poprzednia',
+    badgeType: 'slate',
     changes: [
       {
         category: 'Import diety z PDF (NFZ)',

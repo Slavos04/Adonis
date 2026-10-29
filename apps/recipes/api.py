@@ -21,7 +21,7 @@ def list_recipes(
     category: Optional[str] = None,
     search: Optional[str] = None,
     max_calories: Optional[float] = None,
-    limit: int = 50,
+    limit: int = 500,
     offset: int = 0
 ):
     """Pobiera listę przepisów fitness z opcją filtrowania po kategorii, nazwie i limicie kalorii."""
@@ -64,7 +64,7 @@ def list_products(
     request,
     search: Optional[str] = None,
     store: Optional[str] = None,
-    limit: int = 50
+    limit: int = 500
 ):
     """Przeglądanie lokalnej bazy produktów z sieci Lidl i Biedronka."""
     qs = Product.objects.all()

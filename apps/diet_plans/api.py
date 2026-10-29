@@ -627,7 +627,8 @@ def import_diet_pdf(
     file: UploadedFile = File(...),
     template_name: str = Form("M_1500_cal"),
     target_gender: str = Form("male"),
-    category: str = Form("Dieta NFZ")
+    category: Optional[str] = Form("Bez grupy"),
+    description: Optional[str] = Form(None)
 ):
     """
     Umożliwia dietetykowi wrzucenie pliku PDF z dietą (np. z portalu Diety NFZ).
@@ -649,7 +650,8 @@ def import_diet_pdf(
             template_name=(template_name or "M_1500_cal").strip(),
             dietitian=current_user,
             target_gender=target_gender,
-            category=category or "Dieta NFZ"
+            category=(category or "").strip() or "Bez grupy",
+            description=description
         )
         return res
     except Exception as e:
