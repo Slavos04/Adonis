@@ -42,13 +42,14 @@ services:
       - JWT_SECRET=${JWT_SECRET:-adonis-jwt-secret-key-ultra-secure-auth-2026}
     volumes:
       - ./media:/app/media
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     depends_on:
       db:
         condition: service_healthy
     networks:
       - adonis_net
+      - siec_web
 
 volumes:
   postgres_data:
@@ -57,3 +58,5 @@ volumes:
 networks:
   adonis_net:
     driver: bridge
+  siec_web:
+    external: true
