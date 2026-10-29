@@ -18,8 +18,7 @@ if [ -d 'frontend/dist' ]; then
     docker cp frontend/dist/index.html adonis_frontend:/usr/share/nginx/html/index.html
     [ -f frontend/dist/pobierz.html ] && docker cp frontend/dist/pobierz.html adonis_frontend:/usr/share/nginx/html/pobierz.html || true
     [ -f frontend/nginx.conf ] && docker cp frontend/nginx.conf adonis_frontend:/etc/nginx/conf.d/default.conf || true
-    # Zabezpieczenie przed starym cashem - nadpisz stary wadliwy bundle najnowszym działającym
-    docker exec adonis_frontend sh -c 'for stale in /usr/share/nginx/html/assets/index-C-*.js; do [ -f "$stale" ] && cp /usr/share/nginx/html/assets/index-BQzC8Sym.js "$stale" || true; done' || true
+    # (stara linia cache-busting usunieta - juz niepotrzebna od v1.6)
     for img in frontend/dist/*.png frontend/dist/*.jpg frontend/dist/*.jpeg frontend/dist/*.svg frontend/dist/*.ico frontend/dist/*.webp; do
         if [ -f "$img" ]; then
             docker cp "$img" "adonis_frontend:/usr/share/nginx/html/$(basename "$img")" 2>/dev/null || true
