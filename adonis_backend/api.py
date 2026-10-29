@@ -17,7 +17,7 @@ from apps.chat.api import router as chat_router
 ## Inicjalizacja instancji Django Ninja z dokumentacją interaktywną OpenAPI / Swagger
 api = NinjaAPI(
     title="ADONIS fit & eat API",
-    version="1.9.0",
+    version="1.10.0",
     description="Wieloplatformowe produkcyjne API dietetyczne z obsługą jadłospisów wg płci, norm WHO BMI i WebSockets",
     docs_url="/docs"
 )

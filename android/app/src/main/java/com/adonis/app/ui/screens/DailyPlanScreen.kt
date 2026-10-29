@@ -314,51 +314,13 @@ fun DailyPlanScreen(
         }
     }
 
-        // 1. Portion Scaler Dialog
+        // 1. Portion Scaler & Meal Options & Substitution Dialog
         scalingMeal?.let { meal ->
-            AlertDialog(
-                onDismissRequest = { scalingMeal = null },
-                title = { Text("Skaluj Porcje: ${meal.recipe.title}") },
-                text = {
-                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                        Text("Wybierz porcję:")
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 8.dp)) {
-                            listOf(1.0, 1.5, 2.0).forEach { p ->
-                                Button(
-                                    onClick = {
-                                        selectedPortions = p
-                                        scope.launch {
-                                            scaledResult = apiService.scaleRecipe(meal.recipe.id, p)
-                                        }
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (selectedPortions == p) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
-                                    )
-                                ) {
-                                    Text("${p}x")
-                                }
-                            }
-                        }
-
-                        scaledResult?.let { res ->
-                            Text(
-                                "Łącznie: ${res.totalCalories.toInt()} kcal (B: ${res.totalProteinG}g, T: ${res.totalFatG}g, W: ${res.totalCarbsG}g)",
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(vertical = 4.dp)
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text("Przeliczona gramatura z Lidla/Biedronki/Kauflandu:", fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-                            res.ingredients.forEach { ing ->
-                                Text("• ${ing.productName} (${ing.store}): ${ing.scaledAmount} ${ing.unit}", fontSize = 12.sp)
-                            }
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { scalingMeal = null }) {
-                        Text("Zamknij")
-                    }
-                }
+            com.adonis.app.ui.components.MealOptionsDialog(
+                meal = meal,
+                apiService = apiService,
+                onDismiss = { scalingMeal = null },
+                onPlanUpdated = { loadPlan() }
             )
         }
 
@@ -777,9 +739,25 @@ fun MealItemCard(
                 }
             }
 
+            if (meal.isCustomSubstitution) {
+                Surface(
+                    color = Color(0x33F59E0B),
+                    shape = RoundedCornerShape(4.dp),
+                    modifier = Modifier.padding(bottom = 2.dp)
+                ) {
+                    Text(
+                        "Zamieniony przez pacjenta",
+                        color = Color(0xFFFBBF24),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
             // Tytuł przepisu - zmniejszona czcionka, mieści się w 2 wersach
             Text(
-                text = meal.recipe.title,
+                text = if (meal.isCustomSubstitution && !meal.customName.isNullOrBlank()) "Zamieniono: ${meal.customName}" else meal.recipe.title,
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
                 maxLines = 2,
@@ -791,8 +769,13 @@ fun MealItemCard(
             )
 
             // Makroskładniki z symbolami Cal, B, T, W
+            val dispCal = if (meal.isCustomSubstitution && meal.customCalories != null) meal.customCalories.toInt() else meal.recipe.calories.toInt()
+            val dispP = if (meal.isCustomSubstitution && meal.customProteinG != null) meal.customProteinG else meal.recipe.proteinG
+            val dispF = if (meal.isCustomSubstitution && meal.customFatG != null) meal.customFatG else meal.recipe.fatG
+            val dispC = if (meal.isCustomSubstitution && meal.customCarbsG != null) meal.customCarbsG else meal.recipe.carbsG
+
             Text(
-                text = "Cal: ${meal.recipe.calories.toInt()} kcal  •  B: ${meal.recipe.proteinG}g  •  T: ${meal.recipe.fatG}g  •  W: ${meal.recipe.carbsG}g",
+                text = "Cal: $dispCal kcal  •  B: ${dispP}g  •  T: ${dispF}g  •  W: ${dispC}g",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
@@ -800,15 +783,15 @@ fun MealItemCard(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Przelicz porcje (zmienione z "Przelicz porcje w locie")
+            // Przycisk "Zamień posiłek"
             OutlinedButton(
                 onClick = onScaleClick,
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(vertical = 4.dp)
             ) {
-                Icon(Icons.Default.Calculate, contentDescription = null, modifier = Modifier.size(15.dp))
+                Icon(Icons.Default.SwapHoriz, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Przelicz porcje", fontSize = 12.sp)
+                Text("Zamień posiłek", fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

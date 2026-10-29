@@ -12,7 +12,8 @@ from .schemas import (
     BulkToggleShoppingItemsSchema,
     WeeklyMealPlanOutSchema, DietPlanTemplateCreateSchema,
     DietPlanTemplateOutSchema, ApplyTemplateToPatientSchema,
-    AssignmentHistoryOutSchema, PatientLoadPackageSchema
+    AssignmentHistoryOutSchema, PatientLoadPackageSchema,
+    MealSubstituteSchema
 )
 from .services import generate_smart_shopping_list
 from apps.recipes.models import Recipe
@@ -198,6 +199,16 @@ def serialize_daily_plan(plan: DailyMealPlan) -> dict:
             f = float(recipe.fat_g) * multiplier
             c = float(recipe.carbs_g) * multiplier
 
+        is_sub = bool(m.is_custom_substitution)
+        sub_name = m.custom_name if is_sub else None
+        sub_items = m.custom_items_json if (is_sub and m.custom_items_json) else []
+
+        if is_sub and m.custom_calories is not None:
+            cal = float(m.custom_calories)
+            p = float(m.custom_protein_g or 0.0)
+            f = float(m.custom_fat_g or 0.0)
+            c = float(m.custom_carbs_g or 0.0)
+
         tot_cal += cal
         tot_p += p
         tot_f += f
@@ -236,11 +247,22 @@ def serialize_daily_plan(plan: DailyMealPlan) -> dict:
             "portions": float(m.portions),
             "order": m.order,
             "is_completed": m.is_completed,
+            "is_custom_substitution": is_sub,
+            "custom_name": sub_name,
+            "custom_calories": round(cal, 1) if is_sub else None,
+            "custom_protein_g": round(p, 1) if is_sub else None,
+            "custom_fat_g": round(f, 1) if is_sub else None,
+            "custom_carbs_g": round(c, 1) if is_sub else None,
+            "custom_items": sub_items,
             "recipe": {
                 "id": recipe.id,
-                "title": recipe.title,
+                "title": (f"Zamieniono: {sub_name}" if (is_sub and sub_name) else recipe.title),
                 "category": recipe.category,
-                "instructions": recipe.instructions or "Wskazówki przygotowania: Połącz składniki i przygotuj zgodnie z instrukcją szefa kuchni.",
+                "instructions": (
+                    f"Posiłek zamieniony przez pacjenta na: {sub_name}.\nSkładniki zamiennika: " + 
+                    ", ".join([f"{it.get('name', 'Produkt')} ({it.get('weight_g', 0)}g, {it.get('calories', 0)} kcal)" for it in sub_items])
+                    if is_sub and sub_items else (recipe.instructions or "Wskazówki przygotowania: Połącz składniki i przygotuj zgodnie z instrukcją szefa kuchni.")
+                ),
                 "preparation_time_minutes": recipe.preparation_time_minutes,
                 "default_portions": float(recipe.default_portions),
                 "calories": round(cal, 1),
@@ -422,10 +444,18 @@ def get_weekly_plan(request, start_date: Optional[date] = None, patient_id: Opti
         for m in p.meals.all():
             recipe = m.recipe
             multiplier = float(m.portions) / float(recipe.default_portions or 1.0)
-            cal = float(recipe.calories) * multiplier
-            p_val = float(recipe.protein_g) * multiplier
-            f_val = float(recipe.fat_g) * multiplier
-            c_val = float(recipe.carbs_g) * multiplier
+            if m.is_custom_substitution and m.custom_calories is not None:
+                cal = float(m.custom_calories)
+                p_val = float(m.custom_protein_g or 0.0)
+                f_val = float(m.custom_fat_g or 0.0)
+                c_val = float(m.custom_carbs_g or 0.0)
+                title = f"Zamieniono: {m.custom_name}" if m.custom_name else recipe.title
+            else:
+                cal = float(recipe.calories) * multiplier
+                p_val = float(recipe.protein_g) * multiplier
+                f_val = float(recipe.fat_g) * multiplier
+                c_val = float(recipe.carbs_g) * multiplier
+                title = recipe.title
 
             tot_cal += cal
             tot_p += p_val
@@ -435,7 +465,7 @@ def get_weekly_plan(request, start_date: Optional[date] = None, patient_id: Opti
             meals_preview.append({
                 "id": m.id,
                 "meal_type": m.meal_type,
-                "recipe_title": recipe.title,
+                "recipe_title": title,
                 "recipe_id": recipe.id,
                 "portions": float(m.portions),
                 "calories": round(cal, 1),
@@ -445,6 +475,7 @@ def get_weekly_plan(request, start_date: Optional[date] = None, patient_id: Opti
                 "image_url": recipe.image_url or "",
                 "preparation_time_minutes": recipe.preparation_time_minutes,
                 "is_completed": m.is_completed,
+                "is_custom_substitution": bool(m.is_custom_substitution),
             })
 
         days_summary.append({
@@ -775,6 +806,58 @@ def toggle_meal_completed(request, meal_id: int):
     meal.is_completed = not meal.is_completed
     meal.save(update_fields=['is_completed'])
     return {"message": "Status posiłku zmieniony.", "is_completed": meal.is_completed}
+
+@router.post("/meals/{meal_id}/substitute", auth=JWTAuth())
+def substitute_meal(request, meal_id: int, payload: MealSubstituteSchema):
+    """Pacjent zastępuje zaplanowany posiłek własnymi produktami / daniem z EAN."""
+    meal = PlannedMeal.objects.select_related('daily_plan').filter(id=meal_id).first()
+    if not meal:
+        raise HttpError(404, "Nie znaleziono posiłku.")
+
+    if meal.daily_plan.patient_id != request.auth_user.id and request.auth_user.role != UserRole.ADMIN:
+        raise HttpError(403, "Brak uprawnień.")
+
+    meal.is_custom_substitution = True
+    meal.custom_name = payload.custom_name.strip()
+    meal.custom_calories = payload.total_calories
+    meal.custom_protein_g = payload.total_protein_g
+    meal.custom_fat_g = payload.total_fat_g
+    meal.custom_carbs_g = payload.total_carbs_g
+    meal.custom_items_json = [item.dict() for item in payload.items]
+    meal.is_completed = True
+    meal.save()
+
+    return {
+        "message": "Posiłek został pomyślnie zamieniony.",
+        "meal_id": meal.id,
+        "is_custom_substitution": True,
+        "custom_name": meal.custom_name,
+        "custom_calories": float(meal.custom_calories),
+        "custom_protein_g": float(meal.custom_protein_g),
+        "custom_fat_g": float(meal.custom_fat_g),
+        "custom_carbs_g": float(meal.custom_carbs_g),
+    }
+
+@router.delete("/meals/{meal_id}/substitute", auth=JWTAuth())
+def revert_meal_substitution(request, meal_id: int):
+    """Przywrócenie oryginalnego przepisu zaplanowanego przez dietetyka."""
+    meal = PlannedMeal.objects.select_related('daily_plan').filter(id=meal_id).first()
+    if not meal:
+        raise HttpError(404, "Nie znaleziono posiłku.")
+
+    if meal.daily_plan.patient_id != request.auth_user.id and request.auth_user.role != UserRole.ADMIN:
+        raise HttpError(403, "Brak uprawnień.")
+
+    meal.is_custom_substitution = False
+    meal.custom_name = None
+    meal.custom_calories = None
+    meal.custom_protein_g = None
+    meal.custom_fat_g = None
+    meal.custom_carbs_g = None
+    meal.custom_items_json = []
+    meal.save()
+
+    return {"message": "Przywrócono oryginalny posiłek.", "meal_id": meal.id}
 
 @router.get("/shopping-list", response=List[ShoppingListItemOutSchema], auth=JWTAuth())
 def get_shopping_list(

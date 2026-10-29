@@ -3,6 +3,23 @@ from typing import List, Optional, Any, Dict
 from datetime import date, datetime
 from apps.recipes.schemas import RecipeOutSchema
 
+class CustomMealItemSchema(Schema):
+    name: str
+    barcode: Optional[str] = None
+    weight_g: float
+    calories: float
+    protein_g: float
+    fat_g: float
+    carbs_g: float
+
+class MealSubstituteSchema(Schema):
+    custom_name: str
+    items: List[CustomMealItemSchema] = []
+    total_calories: float
+    total_protein_g: float
+    total_fat_g: float
+    total_carbs_g: float
+
 class PlannedMealOutSchema(Schema):
     id: int
     meal_type: str
@@ -10,6 +27,13 @@ class PlannedMealOutSchema(Schema):
     order: int
     is_completed: bool
     recipe: RecipeOutSchema
+    is_custom_substitution: Optional[bool] = False
+    custom_name: Optional[str] = None
+    custom_calories: Optional[float] = None
+    custom_protein_g: Optional[float] = None
+    custom_fat_g: Optional[float] = None
+    custom_carbs_g: Optional[float] = None
+    custom_items: Optional[List[Dict[str, Any]]] = []
 
 class DailyMealPlanOutSchema(Schema):
     id: int

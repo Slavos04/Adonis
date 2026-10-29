@@ -118,6 +118,14 @@ class PlannedMeal(models.Model):
     portions = models.DecimalField(_('liczba porcji'), max_digits=4, decimal_places=2, default=1.0)
     order = models.PositiveSmallIntegerField(_('kolejność w ciągu dnia'), default=1)
     is_completed = models.BooleanField(_('oznaczony jako zjedzony'), default=False)
+    # Zastąpienie posiłku przez pacjenta ("Zjadłem coś innego")
+    is_custom_substitution = models.BooleanField(_('zastąpiony posiłek'), default=False)
+    custom_name = models.CharField(_('własna nazwa posiłku'), max_length=255, blank=True, null=True)
+    custom_calories = models.DecimalField(_('kalorie zamiennika (kcal)'), max_digits=7, decimal_places=2, null=True, blank=True)
+    custom_protein_g = models.DecimalField(_('białko zamiennika (g)'), max_digits=6, decimal_places=2, null=True, blank=True)
+    custom_fat_g = models.DecimalField(_('tłuszcz zamiennika (g)'), max_digits=6, decimal_places=2, null=True, blank=True)
+    custom_carbs_g = models.DecimalField(_('węglowodany zamiennika (g)'), max_digits=6, decimal_places=2, null=True, blank=True)
+    custom_items_json = models.JSONField(_('szczegóły produktów zamiennika'), default=list, blank=True)
 
     class Meta:
         verbose_name = _('zaplanowany posiłek')

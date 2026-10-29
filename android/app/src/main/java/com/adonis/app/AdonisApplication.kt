@@ -16,5 +16,6 @@ class AdonisApplication : Application() {
         tokenManager = TokenManager(this)
         apiService = AdonisApiClient.create(tokenManager)
         NotificationHelper.createNotificationChannels(this)
+        com.adonis.app.worker.NotificationSyncWorker.enqueuePeriodic(this)
     }
 }

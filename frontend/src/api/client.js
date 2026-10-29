@@ -193,6 +193,15 @@ export const dietPlansApi = {
     }),
   toggleMealComplete: (mealId) =>
     apiRequest(`/diet-plans/meals/${mealId}/toggle-complete`, { method: 'POST' }),
+  substituteMeal: (mealId, data) =>
+    apiRequest(`/diet-plans/meals/${mealId}/substitute`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  revertMealSubstitute: (mealId) =>
+    apiRequest(`/diet-plans/meals/${mealId}/substitute`, {
+      method: 'DELETE',
+    }),
   getShoppingList: (startDate, endDate, mealTypes) => {
     const q = new URLSearchParams({ start_date: startDate, end_date: endDate });
     if (mealTypes) q.append('meal_types', mealTypes);

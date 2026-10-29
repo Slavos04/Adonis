@@ -7,7 +7,7 @@ import { MonthlyMeasurementChart } from '../components/MonthlyMeasurementChart';
 import { PatientLoadPackageModal } from '../components/PatientLoadPackageModal';
 import {
   Flame, Calendar, ChevronLeft, ChevronRight, CheckCircle2, Circle,
-  Plus, Activity, Sparkles, Info, ChefHat, Clock, Package, X, Bell, History
+  Plus, Activity, Sparkles, Info, ChefHat, Clock, Package, X, Bell, History, RefreshCw
 } from 'lucide-react';
 
 
@@ -75,9 +75,9 @@ export function PatientDashboard() {
     }
   }
 
-  // Modal for Recipe Description and Portion Options
-  const [scalingRecipeId, setScalingRecipeId] = useState(null);
-  const [scalingPortions, setScalingPortions] = useState(1.0);
+  // Modal for Recipe Description, Portions and Substitution
+  const [selectedMealForOptions, setSelectedMealForOptions] = useState(null);
+  const [optionsInitialTab, setOptionsInitialTab] = useState('portions');
 
   // New measurement form
   const [measurementDate, setMeasurementDate] = useState(todayStr);
@@ -722,6 +722,11 @@ export function PatientDashboard() {
                       <div>
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
                           <span className="badge badge-emerald">{meal.meal_type}</span>
+                          {meal.is_custom_substitution && (
+                            <span style={{ fontSize: '0.72rem', background: 'rgba(245,158,11,0.2)', color: '#fbbf24', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: 800, border: '1px solid rgba(245,158,11,0.3)' }}>
+                              Zamieniony
+                            </span>
+                          )}
                           <span style={{ fontSize: '0.78rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'rgba(16,185,129,0.12)', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: 700, border: '1px solid rgba(16,185,129,0.25)' }}>
                             <Clock size={12} /> {getMealTime(meal.meal_type)}
                           </span>
@@ -772,17 +777,35 @@ export function PatientDashboard() {
                     </div>
                   </div>
 
-                  {/* Action button renamed to: Opis i opcje */}
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {/* Action buttons: Opcje & Zamień posiłek */}
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <button
                       onClick={() => {
-                        setScalingRecipeId(meal.recipe.id);
-                        setScalingPortions(meal.portions);
+                        setSelectedMealForOptions(meal);
+                        setOptionsInitialTab('portions');
                       }}
                       className="btn btn-secondary btn-sm"
                       style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                     >
-                      <Info size={14} color="#10b981" /> Opis i opcje
+                      <Info size={14} color="#10b981" /> Opcje
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedMealForOptions(meal);
+                        setOptionsInitialTab('substitute');
+                      }}
+                      className="btn btn-secondary btn-sm"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        borderColor: meal.is_custom_substitution ? '#fbbf24' : 'rgba(16,185,129,0.4)',
+                        color: meal.is_custom_substitution ? '#fbbf24' : '#34d399',
+                        background: meal.is_custom_substitution ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.08)',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <RefreshCw size={14} /> Zamień posiłek
                     </button>
                   </div>
                 </div>
@@ -938,12 +961,18 @@ export function PatientDashboard() {
         </div>
       </div>
 
-      {/* Opis Dania i Opcje Porcji Modal */}
-      {scalingRecipeId && (
+      {/* Opcje Posiłku i Zamiennik Modal */}
+      {selectedMealForOptions && (
         <PortionScalerModal
-          recipeId={scalingRecipeId}
-          initialPortions={scalingPortions}
-          onClose={() => setScalingRecipeId(null)}
+          recipeId={selectedMealForOptions.recipe.id}
+          initialPortions={selectedMealForOptions.portions}
+          meal={selectedMealForOptions}
+          initialTab={optionsInitialTab}
+          onClose={() => setSelectedMealForOptions(null)}
+          onMealUpdated={() => {
+            loadDailyPlan();
+            loadWeeklyPlan();
+          }}
         />
       )}
 

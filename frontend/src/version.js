@@ -1,14 +1,43 @@
-export const APP_VERSION = '1.9';
+export const APP_VERSION = '1.10';
 export const APP_RELEASE_DATE = '2026-10-29';
 
 export const CHANGELOG_DATA = [
+  {
+    version: '1.10',
+    date: '2026-10-29',
+    time: '14:50 CET',
+    title: 'Wydanie 1.10 – Zastępowanie posiłków (EAN / skaner aparatem / ręcznie) oraz powiadomienia w tle',
+    badge: 'Aktualna',
+    badgeType: 'emerald',
+    changes: [
+      {
+        category: 'Zamiana posiłków przez pacjenta (Web + Mobile)',
+        items: [
+          'Dodano przycisk "Zamień posiłek" oraz zmieniono kartę porcji na "Opcje" w aplikacji webowej i mobilnej.',
+          'Wprowadzono możliwość zamiany posiłku, gdy pacjent zjadł coś innego niż w planie.',
+          'Integracja z bazą kodów kreskowych Open Food Facts: po wpisaniu EAN pobierana jest nazwa i makroskładniki na 100g.',
+          'Dodano skaner kodów kreskowych z aparatu (Google Play Services Code Scanner w Androidzie oraz skaner wideo w webie).',
+          'Możliwość dodawania wielu produktów do jednego posiłku przyciskiem "+" (np. grahamka + serek wiejski + pomidor) z automatycznym sumowaniem kalorii i makro.',
+          'Opcja ręcznego wprowadzania składników, gdy brak kodu EAN lub produktu nie ma w bazie.',
+          'Oznaczanie posiłków plakietką "Zamieniony" w kalendarzu pacjenta z podglądem składników oraz możliwością przywrócenia oryginalnego dania.'
+        ]
+      },
+      {
+        category: 'Powiadomienia w tle (Android - Wariant A)',
+        items: [
+          'Wdrożono WorkManager do okresowej synchronizacji w tle (sprawdzanie nowych wiadomości na czacie, zaktualizowanego jadłospisu i nowych zaleceń od dietetyka).',
+          'Zabezpieczono harmonogram alarmów o zbliżających się posiłkach w NotificationHelper pod kątem Androida 12+ / 13+ / 14+.'
+        ]
+      }
+    ]
+  },
   {
     version: '1.9',
     date: '2026-10-29',
     time: '09:15 CET',
     title: 'Wydanie 1.9 – Wyeksponowanie usuwania i edycji dań we wszystkich widokach oraz wskaźnik wersji',
-    badge: 'Aktualna',
-    badgeType: 'emerald',
+    badge: 'Poprzednia',
+    badgeType: 'slate',
     changes: [
       {
         category: 'Baza i Edycja Przepisów',

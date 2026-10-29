@@ -114,13 +114,51 @@ data class ScaledRecipeResponse(
     val ingredients: List<ScaledIngredient>
 )
 
+data class CustomMealItem(
+    val name: String,
+    val barcode: String? = null,
+    @SerializedName("weight_g") val weightG: Double = 100.0,
+    val calories: Double = 0.0,
+    @SerializedName("protein_g") val proteinG: Double = 0.0,
+    @SerializedName("fat_g") val fatG: Double = 0.0,
+    @SerializedName("carbs_g") val carbsG: Double = 0.0
+)
+
+data class MealSubstituteRequest(
+    @SerializedName("custom_name") val customName: String,
+    val items: List<CustomMealItem> = emptyList(),
+    @SerializedName("total_calories") val totalCalories: Double,
+    @SerializedName("total_protein_g") val totalProteinG: Double,
+    @SerializedName("total_fat_g") val totalFatG: Double,
+    @SerializedName("total_carbs_g") val totalCarbsG: Double
+)
+
+data class BarcodeProductResponse(
+    val barcode: String? = null,
+    val name: String? = null,
+    val brand: String? = null,
+    val store: String? = null,
+    @SerializedName("calories_per_100g") val caloriesPer100g: Double = 0.0,
+    @SerializedName("protein_per_100g") val proteinPer100g: Double = 0.0,
+    @SerializedName("fat_per_100g") val fatPer100g: Double = 0.0,
+    @SerializedName("carbs_per_100g") val carbsPer100g: Double = 0.0,
+    @SerializedName("image_url") val imageUrl: String? = null
+)
+
 data class PlannedMeal(
     val id: Int,
     @SerializedName("meal_type") val mealType: String,
     val portions: Double,
     val order: Int,
     @SerializedName("is_completed") val isCompleted: Boolean,
-    val recipe: Recipe
+    val recipe: Recipe,
+    @SerializedName("is_custom_substitution") val isCustomSubstitution: Boolean = false,
+    @SerializedName("custom_name") val customName: String? = null,
+    @SerializedName("custom_calories") val customCalories: Double? = null,
+    @SerializedName("custom_protein_g") val customProteinG: Double? = null,
+    @SerializedName("custom_fat_g") val customFatG: Double? = null,
+    @SerializedName("custom_carbs_g") val customCarbsG: Double? = null,
+    @SerializedName("custom_items") val customItems: List<CustomMealItem>? = null
 )
 
 data class DailyMealPlanResponse(

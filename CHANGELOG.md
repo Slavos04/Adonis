@@ -1,3 +1,19 @@
+## [1.10] – 2026-10-29 14:50 CET
+
+### Zamiana posiłków przez pacjenta ("Zamień posiłek")
+- **Przycisk "Zamień posiłek" i karta "Opcje"**: W aplikacji webowej i mobilnej zmieniono nazwę karty na "Opcje" i dodano wyrazisty przycisk "Zamień posiłek".
+- **Baza kodów kreskowych (EAN)**: Zintegrowano ogólnodostępną, bezpłatną bazę Open Food Facts. Wpisanie lub zeskanowanie kodu EAN automatycznie pobiera nazwę produktu oraz wartości odżywcze (kcal, białko, tłuszcz, węglowodany na 100g).
+- **Skaner kodów kreskowych aparatem**: Dodano natywne skanowanie aparatem (Google Play Services Code Scanner w aplikacji Android oraz strumień wideo w aplikacji webowej).
+- **Wieloskładnikowe zamienniki posiłków (+)**: Pacjent może skomponować posiłek z kilku produktów (np. bułka grahamka + serek wiejski + pomidor), a system na żywo zlicza sumę kalorii i makroskładników.
+- **Ręczne wprowadzanie**: Opcja ręcznego wpisania nazwy, wagi i makroskładników w przypadku produktów niewystępujących w bazie EAN.
+- **Aktualizacja planu pacjenta**: Zastąpiony posiłek jest oznaczony etykietą "Zamieniony", a wartości odżywcze dnia przeliczają się z uwzględnieniem zamiennika. Dostępna jest również opcja przywrócenia oryginalnego dania.
+
+### Powiadomienia w tle (Android - Wariant A)
+- **WorkManager synchronizacja w tle**: Wdrożono usługę `NotificationSyncWorker` sprawdzającą w tle nowe wiadomości na czacie, przypisanie nowego jadłospisu oraz nowe zalecenia dietetyka.
+- **Powiadomienia o zbliżających się posiłkach**: Zaktualizowano `NotificationHelper`, dodając bezpieczną obsługę `AlarmManager` dla Androida 12/13/14 (obsługa uprawnień do dokładnych alarmów i trybu uśpienia).
+
+---
+
 ## [1.9] – 2026-10-29 09:15 CET
 
 ### Baza i Edycja Przepisów

@@ -114,6 +114,8 @@ fun SettingsScreen(
                 mealDinner
             )
         }
+        com.adonis.app.worker.NotificationSyncWorker.enqueueImmediate(context)
+        com.adonis.app.worker.NotificationSyncWorker.enqueuePeriodic(context)
         scope.launch {
             try {
                 apiService.updateSettings(

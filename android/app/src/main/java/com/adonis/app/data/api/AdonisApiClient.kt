@@ -40,6 +40,22 @@ interface AdonisApiService {
         @Path("meal_id") mealId: Int
     ): Map<String, Any>
 
+    @POST("diet-plans/meals/{meal_id}/substitute")
+    suspend fun substituteMeal(
+        @Path("meal_id") mealId: Int,
+        @Body request: MealSubstituteRequest
+    ): Map<String, Any>
+
+    @DELETE("diet-plans/meals/{meal_id}/substitute")
+    suspend fun revertMealSubstitute(
+        @Path("meal_id") mealId: Int
+    ): Map<String, Any>
+
+    @GET("recipes/openfoodfacts/barcode/{barcode}")
+    suspend fun getProductByBarcode(
+        @Path("barcode") barcode: String
+    ): BarcodeProductResponse
+
     @GET("recipes/{id}/scale")
     suspend fun scaleRecipe(
         @Path("id") recipeId: Int,

@@ -12,8 +12,8 @@ android {
         applicationId = "com.adonis.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 6
-        versionName = "1.4.0"
+        versionCode = 10
+        versionName = "1.10.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -74,4 +74,10 @@ dependencies {
 
     // Image loading (Coil for Jetpack Compose)
     implementation("io.coil-kt:coil-compose:2.7.0")
+
+    // Barcode Scanning via Google Play Services (ML Kit Code Scanner)
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
+
+    // WorkManager for background notifications & sync (Variant A)
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
 }
