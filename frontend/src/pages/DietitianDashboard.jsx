@@ -1755,6 +1755,18 @@ export function DietitianDashboard() {
                       >
                         <Eye size={15} />
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const rec = recipes.find(x => x.id === meal.recipe_id);
+                          if (rec) openEditRecipeModal(rec);
+                        }}
+                        title="Edytuj dane i składniki tego przepisu w bazie"
+                        className="btn btn-secondary btn-sm"
+                        style={{ width: '34px', height: '34px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderRadius: '6px' }}
+                      >
+                        <Edit3 size={14} />
+                      </button>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'flex-end', flexShrink: 0 }}>

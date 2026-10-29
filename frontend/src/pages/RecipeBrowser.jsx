@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { recipesApi } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { PortionScalerModal } from '../components/PortionScalerModal';
-import { BookOpen, Search, Filter, Barcode, Scale, Sparkles, ShoppingBag, Clock, Edit3, X, Upload } from 'lucide-react';
+import { RecipeDeleteModal } from '../components/RecipeDeleteModal';
+import { BookOpen, Search, Filter, Barcode, Scale, Sparkles, ShoppingBag, Clock, Edit3, X, Upload, Trash2, Flame, Award } from 'lucide-react';
 
 function getStoreBadgeClass(store) {
   const s = (store || '').toLowerCase();
@@ -27,6 +28,13 @@ export function RecipeBrowser() {
   const [scalingRecipeId, setScalingRecipeId] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
   const [editingRecipe, setEditingRecipe] = useState(null);
+  const [recipeToDelete, setRecipeToDelete] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  function promptDeleteRecipe(r) {
+    setRecipeToDelete(r);
+    setShowDeleteModal(true);
+  }
 
   // Open Food Facts state
   const [offQuery, setOffQuery] = useState('');
@@ -49,7 +57,7 @@ export function RecipeBrowser() {
       const data = await recipesApi.list({
         search: searchQuery,
         category: categoryFilter,
-        limit: 100,
+        limit: 1000,
       });
       setRecipes(data);
     } catch (_) {}
@@ -102,7 +110,7 @@ export function RecipeBrowser() {
               <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Katalog Przepisów & Baza Dyskontów</h1>
             </div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-              Ponad 125 przepisów redukcyjnych opartych na produktach z sieci Kaufland, Carrefour, Lidl i Biedronka
+              {recipes.length > 0 ? `Baza ${recipes.length} przepisów redukcyjnych i NFZ` : 'Baza ponad 360 przepisów'} opartych na produktach z sieci Kaufland, Carrefour, Lidl i Biedronka
             </p>
           </div>
 
@@ -111,7 +119,7 @@ export function RecipeBrowser() {
               className={`tab-btn ${viewMode === 'recipes' ? 'active' : ''}`}
               onClick={() => setViewMode('recipes')}
             >
-              Przepisy Fitness (125)
+              Przepisy Fitness ({recipes.length})
             </button>
             <button
               className={`tab-btn ${viewMode === 'products' ? 'active' : ''}`}
@@ -220,7 +228,7 @@ export function RecipeBrowser() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                     <button
                       onClick={() => setScalingRecipeId(r.id)}
                       className="btn btn-primary btn-sm"
@@ -236,6 +244,24 @@ export function RecipeBrowser() {
                         title="Edytuj przepis (Dietetyk & Admin)"
                       >
                         <Edit3 size={14} /> Edytuj
+                      </button>
+                    )}
+                    {canEdit && (
+                      <button
+                        onClick={() => promptDeleteRecipe(r)}
+                        className="btn btn-secondary btn-sm"
+                        style={{
+                          color: '#f43f5e',
+                          borderColor: 'rgba(244,63,94,0.35)',
+                          background: 'rgba(244,63,94,0.08)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          fontWeight: 600
+                        }}
+                        title="Usuń ten przepis z bazy danych"
+                      >
+                        <Trash2 size={14} /> Usuń
                       </button>
                     )}
                   </div>
@@ -401,6 +427,20 @@ export function RecipeBrowser() {
           recipeId={scalingRecipeId}
           initialPortions={1.0}
           onClose={() => setScalingRecipeId(null)}
+          onEdit={canEdit ? (scaled) => {
+            const r = recipes.find(x => x.id === (scaled?.id || scalingRecipeId));
+            if (r) {
+              setScalingRecipeId(null);
+              setEditingRecipe(r);
+            }
+          } : undefined}
+          onDelete={canEdit ? (scaled) => {
+            const r = recipes.find(x => x.id === (scaled?.id || scalingRecipeId)) || scaled;
+            if (r) {
+              setScalingRecipeId(null);
+              promptDeleteRecipe(r);
+            }
+          } : undefined}
         />
       )}
 
@@ -419,8 +459,27 @@ export function RecipeBrowser() {
           recipe={editingRecipe}
           onClose={() => setEditingRecipe(null)}
           onSuccess={() => { loadRecipes(); }}
+          onDelete={(r) => {
+            setEditingRecipe(null);
+            promptDeleteRecipe(r);
+          }}
         />
       )}
+
+      {/* Delete Recipe Modal */}
+      <RecipeDeleteModal
+        isOpen={showDeleteModal}
+        recipe={recipeToDelete}
+        allRecipes={recipes}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setRecipeToDelete(null);
+        }}
+        onSuccess={(msg) => {
+          alert(msg);
+          loadRecipes();
+        }}
+      />
     </div>
   );
 }
@@ -538,7 +597,7 @@ function BrowserEditProductModal({ product, onClose, onSuccess }) {
   );
 }
 
-function BrowserEditRecipeModal({ recipe, onClose, onSuccess }) {
+function BrowserEditRecipeModal({ recipe, onClose, onSuccess, onDelete }) {
   const [form, setForm] = useState({
     title: recipe.title || '',
     category: recipe.category || 'Obiad',
@@ -590,11 +649,85 @@ function BrowserEditRecipeModal({ recipe, onClose, onSuccess }) {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-content" style={{ maxWidth: '550px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <h2 style={{ fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Edit3 size={18} color="var(--accent-emerald)" /> Edycja przepisu (Dietetyk & Admin)
           </h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {onDelete && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onDelete(recipe);
+                }}
+                className="btn btn-secondary btn-sm"
+                style={{
+                  color: '#f43f5e',
+                  borderColor: 'rgba(244, 63, 94, 0.5)',
+                  background: 'rgba(244, 63, 94, 0.12)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                }}
+                title="Usuń ten przepis z bazy danych"
+              >
+                <Trash2 size={14} /> Usuń przepis
+              </button>
+            )}
+            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
+          </div>
+        </div>
+
+        {/* Karta Wartości Odżywczych */}
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.02)',
+          border: '1px solid rgba(16, 185, 129, 0.25)',
+          borderRadius: '10px',
+          padding: '0.75rem 0.9rem',
+          marginBottom: '0.85rem'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#34d399', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Flame size={15} /> Wartości odżywcze dania (1 porcja):
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', textAlign: 'center' }}>
+            <div style={{ background: 'rgba(0,0,0,0.25)', padding: '0.4rem', borderRadius: '6px' }}>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Kalorie</span>
+              <div style={{ fontWeight: 800, color: '#fbbf24', fontSize: '1rem' }}>
+                {Math.round(recipe.calories || 0)} <span style={{ fontSize: '0.7rem' }}>kcal</span>
+              </div>
+            </div>
+            <div style={{ background: 'rgba(0,0,0,0.25)', padding: '0.4rem', borderRadius: '6px' }}>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Białko</span>
+              <div style={{ fontWeight: 800, color: '#38bdf8', fontSize: '1rem' }}>
+                {recipe.protein_g ?? 0}g
+              </div>
+            </div>
+            <div style={{ background: 'rgba(0,0,0,0.25)', padding: '0.4rem', borderRadius: '6px' }}>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Tłuszcze</span>
+              <div style={{ fontWeight: 800, color: '#f59e0b', fontSize: '1rem' }}>
+                {recipe.fat_g ?? 0}g
+              </div>
+            </div>
+            <div style={{ background: 'rgba(0,0,0,0.25)', padding: '0.4rem', borderRadius: '6px' }}>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Węgle</span>
+              <div style={{ fontWeight: 800, color: '#a78bfa', fontSize: '1rem' }}>
+                {recipe.carbs_g ?? 0}g
+              </div>
+            </div>
+          </div>
+
+          {(recipe.calories_female || recipe.calories_male) && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.45rem', paddingTop: '0.4rem', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: '0.73rem', color: 'var(--text-muted)' }}>
+              <span>👩 K: <strong style={{ color: '#fff' }}>{Math.round(recipe.calories_female || 0)} kcal</strong></span>
+              <span>👨 M: <strong style={{ color: '#fff' }}>{Math.round(recipe.calories_male || 0)} kcal</strong></span>
+            </div>
+          )}
         </div>
         {error && <div style={{ color: 'var(--accent-rose)', marginBottom: '0.75rem', fontSize: '0.85rem' }}>{error}</div>}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -637,11 +770,35 @@ function BrowserEditRecipeModal({ recipe, onClose, onSuccess }) {
             <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Sposób przygotowania</label>
             <textarea rows="3" className="form-input" value={form.instructions} onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))} />
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-            <button type="button" onClick={onClose} className="btn btn-secondary" style={{ flex: 1 }}>Anuluj</button>
-            <button type="submit" className="btn btn-primary" disabled={loading} style={{ flex: 1 }}>
-              {loading ? 'Zapisuję...' : 'Zapisz przepis'}
-            </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {onDelete ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onDelete(recipe);
+                }}
+                className="btn btn-secondary"
+                style={{
+                  color: '#fff',
+                  borderColor: '#f43f5e',
+                  background: '#dc2626',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  fontWeight: 700,
+                }}
+                title="Usuń ten przepis z bazy danych"
+              >
+                <Trash2 size={15} /> Usuń przepis
+              </button>
+            ) : <div />}
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button type="button" onClick={onClose} className="btn btn-secondary">Anuluj</button>
+              <button type="submit" className="btn btn-primary" disabled={loading}>
+                {loading ? 'Zapisuję...' : 'Zapisz przepis'}
+              </button>
+            </div>
           </div>
         </form>
       </div>

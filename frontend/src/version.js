@@ -13,9 +13,10 @@ export const CHANGELOG_DATA = [
       {
         category: 'Baza i Edycja Przepisów',
         items: [
-          'Dodano czytelny, pełny przycisk "Usuń przepis" bezpośrednio na każdym kafelku w Bazie Przepisów.',
-          'Dodano klawisz "Usuń przepis" w nagłówku okna edycji przepisu (obok ✕) oraz wyrazisty czerwony przycisk w stopce.',
-          'Dodano przyciski "Edytuj przepis" oraz "Usuń przepis" w oknie szczegółów dania i skalowania porcji (PortionScalerModal).'
+          'Dodano czytelny, pełny przycisk "Usuń przepis" bezpośrednio na każdym kafelku w Bazie Przepisów oraz w ogólnym Katalogu Przepisów (/recipes).',
+          'Dodano klawisz "Usuń przepis" w nagłówku okna edycji przepisu (obok ✕) oraz wyrazisty czerwony przycisk w stopce formularzy edycji.',
+          'Dodano przyciski "Edytuj przepis" oraz "Usuń przepis" w oknie szczegółów dania i skalowania porcji (PortionScalerModal) oraz w edytorze dni szablonu.',
+          'Usunięto sztywno wpisaną liczbę 125 oraz limit 100 w katalogu /recipes – teraz dynamicznie ładuje się i wyświetla pełna baza wszystkich przepisów (360+).'
         ]
       },
       {

@@ -3,9 +3,10 @@ import {
   ShieldAlert, Users, BookOpen, Package, Trash2, UserPlus,
   RefreshCw, AlertTriangle, CheckCircle, XCircle, Edit3,
   Search, Eye, EyeOff, X, Plus, Eraser, ShoppingBag,
-  Palette, Image, Upload, Sliders, Sparkles, Check, ArrowUpDown
+  Palette, Image, Upload, Sliders, Sparkles, Check, ArrowUpDown, Flame
 } from 'lucide-react';
 import { adminApi, recipesApi, dietPlansApi } from '../api/client';
+import { RecipeDeleteModal } from '../components/RecipeDeleteModal';
 import { useAuth } from '../context/AuthContext';
 import {
   PATTERN_PRESETS,
@@ -717,7 +718,7 @@ function EditUserModal({ user, dietitians, onClose, onSuccess }) {
 
 // ─── EDIT RECIPE MODAL ────────────────────────────────────────────────────────
 
-function EditRecipeModal({ recipe, products, onClose, onSuccess }) {
+function EditRecipeModal({ recipe, products, onClose, onSuccess, onDelete }) {
   const [form, setForm] = useState({
     title: recipe.title || '',
     category: recipe.category || 'Obiad',
@@ -932,11 +933,35 @@ function EditRecipeModal({ recipe, products, onClose, onSuccess }) {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
-            <button type="button" onClick={onClose} className="btn btn-secondary" style={{ flex: 1 }}>Anuluj</button>
-            <button type="submit" className="btn btn-primary" disabled={loading} style={{ flex: 1 }}>
-              {loading ? 'Zapisuję...' : 'Zapisz przepis'}
-            </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {onDelete ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onDelete(recipe);
+                }}
+                className="btn btn-secondary"
+                style={{
+                  color: '#fff',
+                  borderColor: '#f43f5e',
+                  background: '#dc2626',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  fontWeight: 700,
+                }}
+                title="Usuń ten przepis z bazy danych"
+              >
+                <Trash2 size={15} /> Usuń przepis
+              </button>
+            ) : <div />}
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button type="button" onClick={onClose} className="btn btn-secondary">Anuluj</button>
+              <button type="submit" className="btn btn-primary" disabled={loading}>
+                {loading ? 'Zapisuję...' : 'Zapisz przepis'}
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -1594,6 +1619,13 @@ export function AdminDashboard() {
   const [editingUser, setEditingUser] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
   const [editingRecipe, setEditingRecipe] = useState(null);
+  const [recipeToDelete, setRecipeToDelete] = useState(null);
+  const [showRecipeDeleteModal, setShowRecipeDeleteModal] = useState(false);
+
+  function promptDeleteRecipe(r) {
+    setRecipeToDelete(r);
+    setShowRecipeDeleteModal(true);
+  }
   const [editingTemplate, setEditingTemplate] = useState(null);
 
   function handleSort(key) {
@@ -2100,7 +2132,7 @@ export function AdminDashboard() {
                             </button>
                             <button
                               className="btn btn-danger btn-sm"
-                              onClick={() => handleDeleteRecipe(r.id, r.title)}
+                              onClick={() => promptDeleteRecipe(r)}
                               title="Usuń przepis"
                               style={{ padding: '0.3rem 0.5rem' }}
                             >
@@ -2264,8 +2296,27 @@ export function AdminDashboard() {
           products={products}
           onClose={() => setEditingRecipe(null)}
           onSuccess={msg => { showToast(msg); loadData(); }}
+          onDelete={(r) => {
+            setEditingRecipe(null);
+            promptDeleteRecipe(r);
+          }}
         />
       )}
+
+      {/* Delete Recipe Modal with Usage Checks */}
+      <RecipeDeleteModal
+        isOpen={showRecipeDeleteModal}
+        recipe={recipeToDelete}
+        allRecipes={recipes}
+        onClose={() => {
+          setShowRecipeDeleteModal(false);
+          setRecipeToDelete(null);
+        }}
+        onSuccess={(msg) => {
+          showToast(msg);
+          loadData();
+        }}
+      />
 
       {editingTemplate && (
         <EditTemplateModal

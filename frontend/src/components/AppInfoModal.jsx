@@ -137,7 +137,7 @@ export function AppInfoModal({ isOpen, onClose }) {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem' }}>
               <Sparkles size={16} color="var(--accent-emerald)" style={{ flexShrink: 0 }} />
-              <span>Baza ponad 125 sprawdzonych przepisów oraz realnych produktów sklepowych.</span>
+              <span>Baza ponad 360 sprawdzonych przepisów oraz realnych produktów sklepowych.</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem' }}>
               <CheckCircle size={16} color="var(--accent-emerald)" style={{ flexShrink: 0 }} />
