@@ -9,9 +9,12 @@ export async function apiRequest(endpoint, options = {}) {
   const token = localStorage.getItem('adonis_token');
 
   const headers = {
-    'Content-Type': 'application/json',
     ...(options.headers || {}),
   };
+
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
@@ -226,6 +229,11 @@ export const dietPlansApi = {
     apiRequest('/diet-plans/patient/load-package', {
       method: 'POST',
       body: JSON.stringify(data),
+    }),
+  importDietPdf: (formData) =>
+    apiRequest('/diet-plans/import-pdf', {
+      method: 'POST',
+      body: formData,
     }),
 };
 

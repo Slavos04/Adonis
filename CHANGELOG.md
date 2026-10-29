@@ -1,3 +1,17 @@
+## [1.6] — 2026-10-29 07:00 CET
+
+### Import diety z PDF (NFZ)
+- Nowe narzêdzie importu jad³ospisu z pliku PDF (diety.nfz.gov.pl) w panelu dietetyka
+- Drag & drop lub wybór pliku PDF — automatyczne wyodrêbnienie przepisów, kategorii posi³ków, makrosk³adników i sk³adników
+- Inteligentna deduplikacja przepisów (ponowne u¿ycie istniej¹cego zamiast duplikatu)
+- Automatyczne przypisanie Ÿród³a: https://diety.nfz.gov.pl/ do ka¿dego przepisu
+- Import szablonu M_1500_cal (28 dni, 112 posi³ków, 89 nowych przepisów)
+- Endpoint API: POST /api/diet-plans/import-pdf (multipart/form-data), dostêpny tylko dla dietetyka/admina
+
+### Rok urodzenia pacjenta
+- Pole birth_year w profilu pacjenta wyœwietlane jako obliczony wiek
+- Wiek pacjenta widoczny w nag³ówku panelu dietetyka przy wyborze pacjenta
+- Pole roku urodzenia w formularzu celów dietetycznych z podgl¹dem obliczonego wieku
 # Dziennik Zmian (CHANGELOG) â€” ADONIS fit & eat
 
 Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.0.0/).

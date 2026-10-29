@@ -54,6 +54,8 @@ def serialize_profile(profile: PatientProfile) -> dict:
         "target_weight": float(profile.target_weight),
         "height": float(profile.height),
         "birth_date": profile.birth_date,
+        "birth_year": profile.birth_year,
+        "age": profile.age,
         "gender": profile.gender,
         "activity_level": profile.activity_level,
         "daily_calories_goal": profile.daily_calories_goal,
@@ -213,6 +215,8 @@ def update_patient_profile(request, patient_id: int, payload: PatientProfileUpda
         profile.target_weight = payload.target_weight
     if payload.height is not None:
         profile.height = payload.height
+    if payload.birth_year is not None:
+        profile.birth_year = payload.birth_year
     if payload.gender is not None:
         profile.gender = payload.gender
     if payload.daily_calories_goal is not None:
@@ -269,6 +273,8 @@ def update_my_profile(request, payload: PatientProfileUpdateSchema):
         profile.current_weight = payload.current_weight
     if payload.target_weight is not None:
         profile.target_weight = payload.target_weight
+    if payload.birth_year is not None:
+        profile.birth_year = payload.birth_year
     if payload.gender is not None:
         profile.gender = payload.gender
     profile.save()

@@ -4,6 +4,7 @@ import { ChatWidget } from '../components/ChatWidget';
 import RecommendationsHistoryModal from '../components/RecommendationsHistoryModal';
 import { PortionScalerModal } from '../components/PortionScalerModal';
 import { MonthlyMeasurementChart } from '../components/MonthlyMeasurementChart';
+import { PdfImportModal } from '../components/PdfImportModal';
 
 import {
   Users, UserCheck, ShieldAlert, FileText, Calendar, Plus,
@@ -43,6 +44,7 @@ export function DietitianDashboard() {
   const [templates, setTemplates] = useState([]);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('Wszystkie');
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showPdfImportModal, setShowPdfImportModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [templateToSend, setTemplateToSend] = useState(null);
   const [sendStartDate, setSendStartDate] = useState(new Date().toISOString().split('T')[0]);
@@ -96,6 +98,7 @@ export function DietitianDashboard() {
   const [carbsG, setCarbsG] = useState(220);
   const [mealsPerDay, setMealsPerDay] = useState(4);
   const [recommendations, setRecommendations] = useState('');
+  const [birthYear, setBirthYear] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showRecModal, setShowRecModal] = useState(false);
 
@@ -183,8 +186,16 @@ export function DietitianDashboard() {
       setAuditLogs(aList);
       if (pData && pData.profile) {
         setSelectedPatientProfile(pData.profile);
+        setDailyCalories(pData.profile.daily_calories_goal || 2000);
+        setProteinG(pData.profile.protein_goal_g || 140);
+        setFatG(pData.profile.fat_goal_g || 60);
+        setCarbsG(pData.profile.carbs_goal_g || 220);
+        setMealsPerDay(pData.profile.meals_per_day || 4);
+        setRecommendations(pData.profile.official_recommendations || '');
+        setBirthYear(pData.profile.birth_year || '');
       } else {
         setSelectedPatientProfile(null);
+        setBirthYear('');
       }
     } catch (_) {}
   }
@@ -604,6 +615,7 @@ export function DietitianDashboard() {
         carbs_goal_g: parseFloat(carbsG),
         meals_per_day: parseInt(mealsPerDay),
         official_recommendations: recommendations,
+        birth_year: birthYear ? parseInt(birthYear) : null,
       });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -711,6 +723,11 @@ export function DietitianDashboard() {
                   </option>
                 ))}
               </select>
+              {selectedPatientProfile?.birth_year && (
+                <span style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '0.2rem', display: 'block' }}>
+                  Wiek: {new Date().getFullYear() - selectedPatientProfile.birth_year} lat (ur. {selectedPatientProfile.birth_year})
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -778,6 +795,13 @@ export function DietitianDashboard() {
 
             <button onClick={initNewPackage} className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <Plus size={16} /> + Utwórz Nowy Pakiet Tygodniowy
+            </button>
+            <button
+              onClick={() => setShowPdfImportModal(true)}
+              className="btn btn-secondary btn-sm"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <FileText size={16} /> Importuj dietę z PDF
             </button>
           </div>
 
@@ -1175,6 +1199,19 @@ export function DietitianDashboard() {
                     style={{ width: '100%', background: '#111827', border: '1px solid var(--border-subtle)', color: '#fff', padding: '0.5rem', borderRadius: '6px' }}
                   />
                 </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Rok urodzenia pacjenta:</label>
+                <input
+                  type="number"
+                  min="1930" max="2015"
+                  value={birthYear}
+                  onChange={(e) => setBirthYear(e.target.value)}
+                  placeholder="np. 1985"
+                  style={{ width: '100%', background: '#111827', border: '1px solid var(--border-subtle)', color: '#fff', padding: '0.5rem', borderRadius: '6px' }}
+                />
+                {birthYear && <span style={{ fontSize: '0.8rem', color: '#34d399' }}>Wiek: {new Date().getFullYear() - parseInt(birthYear)} lat</span>}
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
@@ -2071,6 +2108,16 @@ export function DietitianDashboard() {
         isDietitian={true}
         onRecommendationAdded={(newRec) => {
           setRecommendations(newRec.content);
+        }}
+      />
+
+      {/* PDF Import Modal */}
+      <PdfImportModal
+        isOpen={showPdfImportModal}
+        onClose={() => setShowPdfImportModal(false)}
+        onSuccess={() => {
+          setShowPdfImportModal(false);
+          refreshTemplates();
         }}
       />
 

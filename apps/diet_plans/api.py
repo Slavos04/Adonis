@@ -1,10 +1,11 @@
-from ninja import Router
+from ninja import Router, File, Form, UploadedFile
 from datetime import date, datetime, timedelta
 from typing import List, Optional
 from ninja.errors import HttpError
 from django.db import transaction
 
 from .models import DailyMealPlan, PlannedMeal, ShoppingListItem, DietPlanTemplate, DietPlanTemplateAssignment
+from .pdf_importer import import_diet_from_pdf
 from .schemas import (
     DailyMealPlanOutSchema, AssignDailyPlanSchema,
     ShoppingListItemOutSchema, ToggleShoppingItemStatusSchema,
@@ -619,6 +620,40 @@ def update_diet_template(request, template_id: int, payload: DietPlanTemplateCre
     template.days_data = [d.dict() for d in payload.days_data]
     template.save()
     return serialize_template(template)
+
+@router.post("/import-pdf", auth=JWTAuth())
+def import_diet_pdf(
+    request,
+    file: UploadedFile = File(...),
+    template_name: str = Form("M_1500_cal"),
+    target_gender: str = Form("male"),
+    category: str = Form("Dieta NFZ")
+):
+    """
+    Umożliwia dietetykowi wrzucenie pliku PDF z dietą (np. z portalu Diety NFZ).
+    System automatycznie pobiera wszystkie niezbędne informacje (posiłki, kalorie, makroskładniki,
+    miary domowe, gramatury, instrukcje ze źródłem https://diety.nfz.gov.pl/)
+    i tworzy gotowy pakiet jadłospisu z inteligentną deduplikacją przepisów.
+    """
+    current_user = request.auth_user
+    if current_user.role not in [UserRole.ADMIN, UserRole.DIETITIAN]:
+        raise HttpError(403, "Tylko dietetyk lub administrator może importować jadłospisy z PDF.")
+
+    if not file.name.lower().endswith('.pdf'):
+        raise HttpError(400, "Wymagany jest plik w formacie PDF (.pdf).")
+
+    try:
+        content = file.read()
+        res = import_diet_from_pdf(
+            pdf_source=content,
+            template_name=(template_name or "M_1500_cal").strip(),
+            dietitian=current_user,
+            target_gender=target_gender,
+            category=category or "Dieta NFZ"
+        )
+        return res
+    except Exception as e:
+        raise HttpError(400, f"Błąd przetwarzania pliku PDF: {str(e)}")
 
 @router.delete("/templates/{template_id}", auth=JWTAuth())
 def delete_diet_template(request, template_id: int):

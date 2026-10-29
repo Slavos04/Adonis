@@ -1,14 +1,44 @@
-export const APP_VERSION = '1.5';
-export const APP_RELEASE_DATE = '2026-10-28';
+export const APP_VERSION = '1.6';
+export const APP_RELEASE_DATE = '2026-10-29';
 
 export const CHANGELOG_DATA = [
+  {
+    version: '1.6',
+    date: '2026-10-29',
+    time: '07:00 CET',
+    title: 'Wydanie 1.6 – Import diety z PDF, rok urodzenia pacjenta',
+    badge: 'Aktualna',
+    badgeType: 'emerald',
+    changes: [
+      {
+        category: 'Import diety z PDF (NFZ)',
+        items: [
+          'Nowe narzędzie importu jadłospisu z pliku PDF (diety.nfz.gov.pl) w panelu dietetyka.',
+          'Drag & drop lub wybór pliku PDF – automatyczne wyodrębnienie przepisów, kategorii posiłków, makroskładników i składników.',
+          'Inteligentna deduplikacja przepisów (ponowne użycie istniejącego przepisu zamiast duplikowania).',
+          'Automatyczne przypisanie źródła: https://diety.nfz.gov.pl/ do każdego importowanego przepisu.',
+          'Import szablonu M_1500_cal (28 dni, 112 posiłków, 89 nowych przepisów) z pliku NFZ.',
+          'Endpoint API: POST /api/diet-plans/import-pdf (multipart/form-data), dostępny tylko dla dietetyka/admina.'
+        ]
+      },
+      {
+        category: 'Rok urodzenia pacjenta',
+        items: [
+          'Dodanie pola "Rok urodzenia" w profilu pacjenta (wyświetlany jako obliczony wiek).',
+          'Wiek pacjenta widoczny w nagłówku panelu dietetyka przy wyborze pacjenta.',
+          'Pole roku urodzenia w formularzu celów dietetycznych z podglądem obliczonego wieku.',
+          'Uwzględnienie roku urodzenia w API profilu pacjenta (birth_year, age).'
+        ]
+      }
+    ]
+  },
   {
     version: '1.5',
     date: '2026-10-28',
     time: '20:40 CET',
-    title: 'Wydanie 1.5 — Oficjalny kod QR AdonisQR.png do pobierania aplikacji mobilnej',
-    badge: 'Aktualna',
-    badgeType: 'emerald',
+    title: 'Wydanie 1.5 – Oficjalny kod QR AdonisQR.png do pobierania aplikacji mobilnej',
+    badge: 'Poprzednia',
+    badgeType: 'slate',
     changes: [
       {
         category: 'Aplikacja Webowa & Zasoby',

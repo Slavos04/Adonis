@@ -94,6 +94,7 @@ class PatientProfile(models.Model):
     target_weight = models.DecimalField(_('waga docelowa (kg)'), max_digits=5, decimal_places=2, default=65.0)
     height = models.DecimalField(_('wzrost (cm)'), max_digits=5, decimal_places=2, default=175.0)
     birth_date = models.DateField(_('data urodzenia'), null=True, blank=True)
+    birth_year = models.PositiveSmallIntegerField(_('rok urodzenia'), null=True, blank=True)
     gender = models.CharField(_('płeć'), max_length=10, choices=[('male', 'Mężczyzna'), ('female', 'Kobieta')], default='female')
     activity_level = models.CharField(_('poziom aktywności'), max_length=30, default='umiarkowana')
     
@@ -115,6 +116,17 @@ class PatientProfile(models.Model):
         null=True,
         blank=True
     )
+
+    @property
+    def age(self):
+        """Oblicza aktualny wiek pacjenta na podstawie roku urodzenia lub pełnej daty."""
+        import datetime
+        current_year = datetime.date.today().year
+        if self.birth_year:
+            return max(0, current_year - self.birth_year)
+        if self.birth_date:
+            return max(0, current_year - self.birth_date.year)
+        return None
 
     class Meta:
         verbose_name = _('profil pacjenta')

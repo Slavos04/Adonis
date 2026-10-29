@@ -33,6 +33,8 @@ class PatientProfileOutSchema(Schema):
     target_weight: float
     height: float
     birth_date: Optional[date] = None
+    birth_year: Optional[int] = None
+    age: Optional[int] = None
     gender: str
     activity_level: str
     daily_calories_goal: int
@@ -47,6 +49,8 @@ class PatientProfileUpdateSchema(Schema):
     current_weight: Optional[float] = None
     target_weight: Optional[float] = None
     height: Optional[float] = None
+    birth_date: Optional[date] = None
+    birth_year: Optional[int] = None
     gender: Optional[str] = None
     daily_calories_goal: Optional[int] = None
     protein_goal_g: Optional[float] = None
