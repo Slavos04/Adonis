@@ -93,7 +93,7 @@ async def search_open_food_facts(request, query: str, store: Optional[str] = Non
 async def get_product_by_barcode(request, barcode: str):
     """Pobranie szczegółowych makroskładników na 100g produktu po kodzie kreskowym EAN."""
     # Najpierw sprawdź w lokalnej bazie
-    local_prod = Product.objects.filter(barcode=barcode).first()
+    local_prod = await Product.objects.filter(barcode=barcode).afirst()
     if local_prod:
         return {
             "barcode": local_prod.barcode,
