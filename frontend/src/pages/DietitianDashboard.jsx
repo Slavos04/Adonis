@@ -6,6 +6,7 @@ import { PortionScalerModal } from '../components/PortionScalerModal';
 import { MonthlyMeasurementChart } from '../components/MonthlyMeasurementChart';
 import { PdfImportModal } from '../components/PdfImportModal';
 import { RecipeDeleteModal } from '../components/RecipeDeleteModal';
+import { APP_VERSION } from '../version';
 
 import {
   Users, UserCheck, ShieldAlert, FileText, Calendar, Plus,
@@ -713,6 +714,7 @@ export function DietitianDashboard() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               <Award size={26} color="#10b981" />
               <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Panel Główny Dietetyka Adonis</h1>
+              <span className="badge badge-emerald" style={{ fontSize: '0.75rem', fontWeight: 700 }}>v{APP_VERSION}</span>
             </div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
               Pakiety diet tygodniowych, kalkulator wartości odżywczych, edycja dań ze zdjęciami oraz opieka nad pacjentami.
@@ -1119,22 +1121,44 @@ export function DietitianDashboard() {
                           </div>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', marginTop: '0.5rem' }}>
                           <button
                             onClick={() => setInspectingRecipeId(r.id)}
                             className="btn btn-secondary btn-sm"
-                            style={{ flex: 1, color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                            style={{ color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
                             title="Zobacz szczegóły, składniki i opis przepisu"
                           >
                             <Eye size={14} /> Szczegóły
                           </button>
-                          <button onClick={() => openEditRecipeModal(r)} className="btn btn-secondary btn-sm" style={{ flex: 1 }}>
+                          <button
+                            onClick={() => openEditRecipeModal(r)}
+                            className="btn btn-secondary btn-sm"
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                            title="Edytuj dane i składniki przepisu"
+                          >
                             <Edit3 size={14} /> Edytuj
                           </button>
-                          <button onClick={() => promptDeleteRecipe(r)} className="btn btn-secondary btn-sm" style={{ color: 'var(--accent-rose)' }}>
-                            <Trash2 size={14} />
-                          </button>
                         </div>
+                        <button
+                          onClick={() => promptDeleteRecipe(r)}
+                          className="btn btn-secondary btn-sm"
+                          style={{
+                            width: '100%',
+                            marginTop: '0.4rem',
+                            color: '#f43f5e',
+                            borderColor: 'rgba(244,63,94,0.35)',
+                            background: 'rgba(244,63,94,0.08)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.4rem',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                          }}
+                          title="Usuń ten przepis z bazy danych"
+                        >
+                          <Trash2 size={14} /> Usuń przepis
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -1854,14 +1878,38 @@ export function DietitianDashboard() {
             onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: '720px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem' }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                 <Utensils size={22} color="#10b981" />
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>
                   {editingRecipe ? 'Edycja Przepisu' : 'Nowy Przepis ze Zdjęciem'}
                 </h2>
               </div>
-              <button onClick={() => setShowRecipeModal(false)} className="btn btn-secondary btn-sm">✕</button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {editingRecipe && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowRecipeModal(false);
+                      promptDeleteRecipe(editingRecipe);
+                    }}
+                    className="btn btn-secondary btn-sm"
+                    style={{
+                      color: '#f43f5e',
+                      borderColor: 'rgba(244, 63, 94, 0.5)',
+                      background: 'rgba(244, 63, 94, 0.12)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      fontWeight: 700,
+                    }}
+                    title="Usuń ten przepis z bazy danych"
+                  >
+                    <Trash2 size={15} /> Usuń przepis
+                  </button>
+                )}
+                <button onClick={() => setShowRecipeModal(false)} className="btn btn-secondary btn-sm">✕</button>
+              </div>
             </div>
 
             <form onSubmit={handleSaveRecipe} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -2131,7 +2179,7 @@ export function DietitianDashboard() {
                           promptDeleteRecipe(editingRecipe);
                         }}
                         className="btn btn-secondary"
-                        style={{ color: 'var(--accent-rose)', borderColor: 'rgba(244, 63, 94, 0.4)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                        style={{ color: '#fff', borderColor: '#f43f5e', background: '#dc2626', display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: 700 }}
                         title="Usuń ten przepis z bazy danych"
                       >
                         <Trash2 size={15} /> Usuń przepis
@@ -2319,6 +2367,20 @@ export function DietitianDashboard() {
           recipeId={inspectingRecipeId}
           initialPortions={1.0}
           onClose={() => setInspectingRecipeId(null)}
+          onEdit={(scaled) => {
+            const target = recipes.find((x) => x.id === (scaled?.id || inspectingRecipeId));
+            if (target) {
+              setInspectingRecipeId(null);
+              openEditRecipeModal(target);
+            }
+          }}
+          onDelete={(scaled) => {
+            const target = recipes.find((x) => x.id === (scaled?.id || inspectingRecipeId)) || scaled;
+            if (target) {
+              setInspectingRecipeId(null);
+              promptDeleteRecipe(target);
+            }
+          }}
         />
       )}
 

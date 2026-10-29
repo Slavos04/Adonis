@@ -17,7 +17,7 @@ from apps.chat.api import router as chat_router
 ## Inicjalizacja instancji Django Ninja z dokumentacją interaktywną OpenAPI / Swagger
 api = NinjaAPI(
     title="ADONIS fit & eat API",
-    version="1.8.0",
+    version="1.9.0",
     description="Wieloplatformowe produkcyjne API dietetyczne z obsługą jadłospisów wg płci, norm WHO BMI i WebSockets",
     docs_url="/docs"
 )
@@ -26,7 +26,7 @@ api = NinjaAPI(
 @api.get("/health", tags=["System"])
 def health_check(request):
     """Healthcheck dla monitoringu i orkiestracji kontenerów Docker."""
-    return {"status": "ok", "service": "adonis-backend", "version": "1.8.0"}
+    return {"status": "ok", "service": "adonis-backend", "version": "1.9.0"}
 
 ## Endpoint zwracający historię zmian i aktualną wersję systemu
 @api.get("/changelog", tags=["System"])

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { recipesApi } from '../api/client';
-import { X, Scale, Flame, Award, Clock, ChefHat, Info, Image } from 'lucide-react';
+import { X, Scale, Flame, Award, Clock, ChefHat, Info, Image, Trash2, Edit3 } from 'lucide-react';
 
-export function PortionScalerModal({ recipeId, initialPortions = 1.0, onClose }) {
+export function PortionScalerModal({ recipeId, initialPortions = 1.0, onClose, onEdit, onDelete }) {
   const [portions, setPortions] = useState(initialPortions);
   const [scaledData, setScaledData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -52,9 +52,48 @@ export function PortionScalerModal({ recipeId, initialPortions = 1.0, onClose })
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="btn btn-secondary btn-sm" style={{ padding: '0.4rem' }}>
-            <X size={18} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+            {onEdit && scaledData && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onEdit(scaledData);
+                }}
+                className="btn btn-secondary btn-sm"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem' }}
+                title="Przejdź do edycji tego przepisu"
+              >
+                <Edit3 size={14} /> Edytuj
+              </button>
+            )}
+            {onDelete && scaledData && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onDelete(scaledData);
+                }}
+                className="btn btn-secondary btn-sm"
+                style={{
+                  color: '#f43f5e',
+                  borderColor: 'rgba(244, 63, 94, 0.5)',
+                  background: 'rgba(244, 63, 94, 0.1)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                }}
+                title="Usuń ten przepis z bazy danych"
+              >
+                <Trash2 size={14} /> Usuń przepis
+              </button>
+            )}
+            <button onClick={onClose} className="btn btn-secondary btn-sm" style={{ padding: '0.4rem' }}>
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Dish Photo if available */}
@@ -216,6 +255,64 @@ export function PortionScalerModal({ recipeId, initialPortions = 1.0, onClose })
             <div style={{ whiteSpace: 'pre-line', fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.6, background: 'rgba(0,0,0,0.25)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
               {scaledData.instructions || 'Brak opisu przygotowania.'}
             </div>
+
+            {/* Bottom Actions for Dietitian (if onEdit or onDelete passed) */}
+            {(onEdit || onDelete) && (
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginTop: '1.5rem',
+                  paddingTop: '1rem',
+                  borderTop: '1px solid var(--border-subtle)',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem',
+                }}
+              >
+                {onDelete ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onDelete(scaledData);
+                    }}
+                    className="btn btn-secondary"
+                    style={{
+                      color: '#fff',
+                      borderColor: '#f43f5e',
+                      background: '#dc2626',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      fontWeight: 700,
+                    }}
+                    title="Usuń ten przepis z bazy danych"
+                  >
+                    <Trash2 size={16} /> Usuń przepis
+                  </button>
+                ) : <div />}
+
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {onEdit && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onEdit(scaledData);
+                      }}
+                      className="btn btn-primary"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                    >
+                      <Edit3 size={15} /> Edytuj przepis
+                    </button>
+                  )}
+                  <button type="button" onClick={onClose} className="btn btn-secondary">
+                    Zamknij
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

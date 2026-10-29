@@ -326,3 +326,4 @@ export function RecipeDeleteModal({ isOpen, recipe, allRecipes = [], onClose, on
   );
 }
 export default RecipeDeleteModal;
+

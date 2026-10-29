@@ -1,14 +1,39 @@
-export const APP_VERSION = '1.8';
+export const APP_VERSION = '1.9';
 export const APP_RELEASE_DATE = '2026-10-29';
 
 export const CHANGELOG_DATA = [
+  {
+    version: '1.9',
+    date: '2026-10-29',
+    time: '09:15 CET',
+    title: 'Wydanie 1.9 – Wyeksponowanie usuwania i edycji dań we wszystkich widokach oraz wskaźnik wersji',
+    badge: 'Aktualna',
+    badgeType: 'emerald',
+    changes: [
+      {
+        category: 'Baza i Edycja Przepisów',
+        items: [
+          'Dodano czytelny, pełny przycisk "Usuń przepis" bezpośrednio na każdym kafelku w Bazie Przepisów.',
+          'Dodano klawisz "Usuń przepis" w nagłówku okna edycji przepisu (obok ✕) oraz wyrazisty czerwony przycisk w stopce.',
+          'Dodano przyciski "Edytuj przepis" oraz "Usuń przepis" w oknie szczegółów dania i skalowania porcji (PortionScalerModal).'
+        ]
+      },
+      {
+        category: 'Interfejs i Weryfikacja Wdrożenia',
+        items: [
+          'Dodano wskaźnik wersji (v1.9) w nagłówku Panelu Dietetyka ułatwiający weryfikację załadowania najnowszego kodu w przeglądarce.',
+          'Rozwiązano potencjalne problemy z niewidocznymi przyciskami usuwania przy długich formularzach.'
+        ]
+      }
+    ]
+  },
   {
     version: '1.8',
     date: '2026-10-29',
     time: '08:30 CET',
     title: 'Wydanie 1.8 – Blokada usuwania powiązanych dań, łatwe zastępowanie przepisów i makroskładniki w edycji',
-    badge: 'Aktualna',
-    badgeType: 'emerald',
+    badge: 'Poprzednia',
+    badgeType: 'slate',
     changes: [
       {
         category: 'Bezpieczeństwo i Integralność Bazy Przepisów',
