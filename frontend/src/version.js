@@ -1,14 +1,40 @@
-export const APP_VERSION = '1.7';
+export const APP_VERSION = '1.8';
 export const APP_RELEASE_DATE = '2026-10-29';
 
 export const CHANGELOG_DATA = [
+  {
+    version: '1.8',
+    date: '2026-10-29',
+    time: '08:30 CET',
+    title: 'Wydanie 1.8 – Blokada usuwania powiązanych dań, łatwe zastępowanie przepisów i makroskładniki w edycji',
+    badge: 'Aktualna',
+    badgeType: 'emerald',
+    changes: [
+      {
+        category: 'Bezpieczeństwo i Integralność Bazy Przepisów',
+        items: [
+          'Wprowadzono blokadę usuwania przepisów powiązanych z aktywnymi szablonami diet lub zaplanowanymi posiłkami pacjentów.',
+          'Szczegółowa lista miejsc występowania dania (nazwa pakietu, dzień, kategoria posiłku, dane pacjenta i data).',
+          'Narzędzie natychmiastowego zastępowania usuwanego dania innym wybranym przepisem we wszystkich powiązanych pakietach i planach pacjentów.'
+        ]
+      },
+      {
+        category: 'Edycja Przepisów',
+        items: [
+          'Dodano klawisz "Usuń przepis" bezpośrednio w oknie edycji dania.',
+          'Dodano kartę wartości odżywczych na żywo (kalorie, białko, tłuszcze, węglowodany) przeliczaną dynamicznie ze składników.',
+          'Podgląd docelowych kalorii i makroskładników z podziałem na płeć (Kobieta / Mężczyzna).'
+        ]
+      }
+    ]
+  },
   {
     version: '1.7',
     date: '2026-10-29',
     time: '07:45 CET',
     title: 'Wydanie 1.7 – Zarządzanie grupami diety, elastyczny import PDF i naprawa podglądu pakietów',
-    badge: 'Aktualna',
-    badgeType: 'emerald',
+    badge: 'Poprzednia',
+    badgeType: 'slate',
     changes: [
       {
         category: 'Grupy diety & Pakiety',

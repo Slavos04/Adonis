@@ -1,3 +1,6 @@
+
+from apps.diet_plans.models import PlannedMeal, DietPlanTemplate
+from django.db import transaction
 from ninja import Router
 from typing import List, Optional
 from django.db.models import Q
@@ -5,6 +8,7 @@ from ninja.errors import HttpError
 
 from .models import Recipe, Product, RecipeIngredient
 from .schemas import (
+    ReplaceRecipeSchema,
     RecipeOutSchema, RecipeDetailOutSchema, ScaledRecipeOutSchema,
     ProductOutSchema, RecipeCreateSchema
 )
@@ -271,9 +275,118 @@ def update_recipe(request, recipe_id: int, payload: RecipeUpdateSchema):
 
     return Recipe.objects.prefetch_related('ingredients__product').get(id=recipe.id)
 
+def get_recipe_usages_info(recipe_id: int):
+    """Sprawdza gdzie dany przepis jest użyty w szablonach i zaplanowanych posiłkach pacjentów."""
+    # 1. Posiłki pacjentów
+    planned_meals = PlannedMeal.objects.filter(recipe_id=recipe_id).select_related('daily_plan__patient')
+    planned_usages = []
+    for pm in planned_meals:
+        pat = pm.daily_plan.patient
+        pat_name = f"{pat.first_name} {pat.last_name} ({pat.email})".strip()
+        planned_usages.append({
+            "daily_plan_id": pm.daily_plan.id,
+            "patient_name": pat_name,
+            "date": str(pm.daily_plan.date),
+            "meal_type": pm.meal_type
+        })
+
+    # 2. Szablony dietetyczne
+    template_usages = []
+    templates = DietPlanTemplate.objects.all()
+    for tpl in templates:
+        occurrences = []
+        for d in (tpl.days_data or []):
+            day_name = d.get('day_name') or f"Dzień {d.get('day_number', '?')}"
+            for m in d.get('meals', []):
+                if m.get('recipe_id') == recipe_id:
+                    occurrences.append(f"{day_name} ({m.get('meal_type', 'Posiłek')})")
+        if occurrences:
+            template_usages.append({
+                "template_id": tpl.id,
+                "template_name": tpl.name,
+                "category": tpl.category,
+                "occurrences": occurrences
+            })
+
+    total_usages = len(planned_usages) + sum(len(t["occurrences"]) for t in template_usages)
+    return {
+        "recipe_id": recipe_id,
+        "is_used": total_usages > 0,
+        "total_usages": total_usages,
+        "planned_usages": planned_usages,
+        "template_usages": template_usages
+    }
+
+@router.get("/{recipe_id}/usage", auth=JWTAuth())
+def check_recipe_usage(request, recipe_id: int):
+    """Pobiera listę miejsc (pakietów i planów pacjentów), w których użyty jest dany przepis."""
+    recipe = Recipe.objects.filter(id=recipe_id).first()
+    if not recipe:
+        raise HttpError(404, "Nie znaleziono przepisu.")
+    return get_recipe_usages_info(recipe_id)
+
+@router.post("/{recipe_id}/replace", auth=JWTAuth())
+def replace_recipe(request, recipe_id: int, payload: ReplaceRecipeSchema):
+    """
+    Zastępuje dany przepis innym przepisem we wszystkich szablonach i zaplanowanych posiłkach pacjentów,
+    a następnie opcjonalnie usuwa stary przepis.
+    """
+    user = request.auth_user
+    if user.role not in ['admin', 'dietitian']:
+        raise HttpError(403, "Brak uprawnień.")
+
+    old_recipe = Recipe.objects.filter(id=recipe_id).first()
+    if not old_recipe:
+        raise HttpError(404, "Nie znaleziono przepisu źródłowego.")
+
+    new_recipe = Recipe.objects.filter(id=payload.replacement_recipe_id).first()
+    if not new_recipe:
+        raise HttpError(404, "Nie znaleziono przepisu docelowego (zamiennika).")
+
+    if old_recipe.id == new_recipe.id:
+        raise HttpError(400, "Przepis zamienny musi być inny niż przepis zastępowany.")
+
+    with transaction.atomic():
+        # 1. Zastąpienie w zaplanowanych posiłkach pacjentów
+        updated_planned_count = PlannedMeal.objects.filter(recipe_id=old_recipe.id).update(recipe=new_recipe)
+
+        # 2. Zastąpienie w szablonach pakietów
+        updated_templates_count = 0
+        templates = DietPlanTemplate.objects.all()
+        for tpl in templates:
+            modified = False
+            days = tpl.days_data or []
+            for d in days:
+                for m in d.get('meals', []):
+                    if m.get('recipe_id') == old_recipe.id:
+                        m['recipe_id'] = new_recipe.id
+                        m['title'] = new_recipe.title
+                        m['calories'] = float(new_recipe.calories)
+                        m['protein_g'] = float(new_recipe.protein_g)
+                        m['fat_g'] = float(new_recipe.fat_g)
+                        m['carbs_g'] = float(new_recipe.carbs_g)
+                        modified = True
+            if modified:
+                tpl.days_data = days
+                tpl.save(update_fields=['days_data'])
+                updated_templates_count += 1
+
+        # 3. Opcjonalne usunięcie starego przepisu
+        old_title = old_recipe.title
+        if payload.delete_old:
+            old_recipe.delete()
+
+    return {
+        "success": True,
+        "message": f"Pomyślnie zastąpiono przepis '{old_title}' przepisem '{new_recipe.title}' w {updated_templates_count} szablonach i {updated_planned_count} zaplanowanych posiłkach.",
+        "updated_templates": updated_templates_count,
+        "updated_planned_meals": updated_planned_count,
+        "deleted_old": payload.delete_old
+    }
+
 @router.delete("/{recipe_id}", auth=JWTAuth())
-def delete_recipe(request, recipe_id: int):
-    """Usuwanie przepisu przez dietetyka lub administratora."""
+def delete_recipe(request, recipe_id: int, force: bool = False):
+    """Usuwanie przepisu przez dietetyka lub administratora z blokadą integralności."""
     user = request.auth_user
     if user.role not in ['admin', 'dietitian']:
         raise HttpError(403, "Brak uprawnień.")
@@ -281,6 +394,12 @@ def delete_recipe(request, recipe_id: int):
     recipe = Recipe.objects.filter(id=recipe_id).first()
     if not recipe:
         raise HttpError(404, "Nie znaleziono przepisu.")
+
+    if not force:
+        usage = get_recipe_usages_info(recipe_id)
+        if usage["is_used"]:
+            raise HttpError(409, f"Przepis jest używany w {len(usage['template_usages'])} pakietach i {len(usage['planned_usages'])} posiłkach pacjentów. Zastąp go innym przepisem przed usunięciem.")
+
     recipe.delete()
     return {"message": "Przepis został usunięty."}
 

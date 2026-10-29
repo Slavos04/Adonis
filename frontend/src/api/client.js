@@ -115,9 +115,15 @@ export const recipesApi = {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
-  delete: (id) =>
-    apiRequest(`/recipes/${id}`, {
+  delete: (id, force = false) =>
+    apiRequest(`/recipes/${id}?force=${force}`, {
       method: 'DELETE',
+    }),
+  checkUsage: (id) => apiRequest(`/recipes/${id}/usage`),
+  replace: (id, data) =>
+    apiRequest(`/recipes/${id}/replace`, {
+      method: 'POST',
+      body: JSON.stringify(data),
     }),
   scale: (id, portions) => apiRequest(`/recipes/${id}/scale?portions=${portions}`),
   products: (params = {}) => {

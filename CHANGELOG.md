@@ -1,3 +1,14 @@
+## [1.8] — 2026-10-29 08:30 CET
+
+### Bezpieczeñstwo i Integralnoœæ Bazy Przepisów
+- Wprowadzono blokadê usuwania przepisów powi¹zanych z aktywnymi szablonami diet lub zaplanowanymi posi³kami pacjentów (kod HTTP 409 przy braku zamiennika)
+- Szczegó³owa lista miejsc wystêpowania dania przed usuniêciem (nazwa pakietu, dni, kategorie posi³ków, pacjenci i daty)
+- Narzêdzie automatycznego zastêpowania usuwanego przepisu innym wybranym daniem we wszystkich pakietach i planach pacjentów (endpoint POST /api/recipes/{id}/replace)
+
+### Menu Edycji Przepisów
+- Dodano klawisz "Usuñ przepis" w dolnym pasku okna edycji przepisu
+- Dodano kartê wartoœci od¿ywczych dania na ¿ywo (kalorie, bia³ko, t³uszcze, wêglowodany) przeliczan¹ dynamicznie ze sk³adników
+- Podgl¹d kalorii i makrosk³adników z podzia³em na p³eæ (Kobieta / Mê¿czyzna)
 ## [1.7] — 2026-10-29 07:45 CET
 
 ### Grupy diety i elastyczne pakiety

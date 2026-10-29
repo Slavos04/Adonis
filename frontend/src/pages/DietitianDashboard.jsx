@@ -5,11 +5,12 @@ import RecommendationsHistoryModal from '../components/RecommendationsHistoryMod
 import { PortionScalerModal } from '../components/PortionScalerModal';
 import { MonthlyMeasurementChart } from '../components/MonthlyMeasurementChart';
 import { PdfImportModal } from '../components/PdfImportModal';
+import { RecipeDeleteModal } from '../components/RecipeDeleteModal';
 
 import {
   Users, UserCheck, ShieldAlert, FileText, Calendar, Plus,
   Edit3, History, Save, Send, Utensils, Award, Layers, Sparkles,
-  Trash2, AlertTriangle, Check, Upload, Image, Calculator,
+  Trash2, AlertTriangle, Check, Upload, Image, Calculator, Flame,
   Search, Info, BookOpen, Clock, ChevronRight, Package, Eye, TrendingDown
 } from 'lucide-react';
 
@@ -75,7 +76,14 @@ export function DietitianDashboard() {
   const [expandedTemplateId, setExpandedTemplateId] = useState(null);
 
   // CRUD Recipes & Products state
-  const [crudSubTab, setCrudSubTab] = useState('recipes'); // 'recipes' | 'products'
+  const [crudSubTab, setCrudSubTab] = useState('recipes');
+  const [recipeToDelete, setRecipeToDelete] = useState(null);
+  const [showRecipeDeleteModal, setShowRecipeDeleteModal] = useState(false);
+
+  function promptDeleteRecipe(recipe) {
+    setRecipeToDelete(recipe);
+    setShowRecipeDeleteModal(true);
+  } // 'recipes' | 'products'
   const [showRecipeModal, setShowRecipeModal] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState(null);
   const [recipeFormTitle, setRecipeFormTitle] = useState('');
@@ -1123,7 +1131,7 @@ export function DietitianDashboard() {
                           <button onClick={() => openEditRecipeModal(r)} className="btn btn-secondary btn-sm" style={{ flex: 1 }}>
                             <Edit3 size={14} /> Edytuj
                           </button>
-                          <button onClick={() => handleDeleteRecipe(r.id, r.title)} className="btn btn-secondary btn-sm" style={{ color: 'var(--accent-rose)' }}>
+                          <button onClick={() => promptDeleteRecipe(r)} className="btn btn-secondary btn-sm" style={{ color: 'var(--accent-rose)' }}>
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -1857,6 +1865,85 @@ export function DietitianDashboard() {
             </div>
 
             <form onSubmit={handleSaveRecipe} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Informacja o wartościach odżywczych przepisu */}
+              {(() => {
+                const computedMacros = recipeFormIngredients.reduce((acc, ing) => {
+                  const prod = products.find((p) => p.id === parseInt(ing.product_id));
+                  if (!prod || !ing.amount_g) return acc;
+                  const factor = (parseFloat(ing.amount_g) || 0) / 100.0;
+                  return {
+                    cal: acc.cal + (parseFloat(prod.calories_per_100g) || 0) * factor,
+                    p: acc.p + (parseFloat(prod.protein_per_100g) || 0) * factor,
+                    f: acc.f + (parseFloat(prod.fat_per_100g) || 0) * factor,
+                    c: acc.c + (parseFloat(prod.carbs_per_100g) || 0) * factor,
+                  };
+                }, { cal: 0, p: 0, f: 0, c: 0 });
+
+                const displayCal = computedMacros.cal > 0
+                  ? Math.round(computedMacros.cal)
+                  : (editingRecipe ? Math.round(editingRecipe.calories) : 0);
+                const displayP = computedMacros.p > 0
+                  ? Math.round(computedMacros.p * 10) / 10
+                  : (editingRecipe ? Math.round(editingRecipe.protein_g * 10) / 10 : 0);
+                const displayF = computedMacros.f > 0
+                  ? Math.round(computedMacros.f * 10) / 10
+                  : (editingRecipe ? Math.round(editingRecipe.fat_g * 10) / 10 : 0);
+                const displayC = computedMacros.c > 0
+                  ? Math.round(computedMacros.c * 10) / 10
+                  : (editingRecipe ? Math.round(editingRecipe.carbs_g * 10) / 10 : 0);
+
+                return (
+                  <div style={{
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid rgba(16, 185, 129, 0.25)',
+                    borderRadius: '10px',
+                    padding: '0.85rem 1rem',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#34d399', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <Flame size={16} /> Wartości odżywcze dania (1 porcja):
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                        {computedMacros.cal > 0 ? 'Na bieżąco ze składników' : 'Zapisane w bazie'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', textAlign: 'center' }}>
+                      <div style={{ background: 'rgba(0,0,0,0.25)', padding: '0.5rem', borderRadius: '6px' }}>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Kalorie</span>
+                        <div style={{ fontWeight: 800, color: '#fbbf24', fontSize: '1.05rem' }}>
+                          {displayCal} <span style={{ fontSize: '0.72rem' }}>kcal</span>
+                        </div>
+                      </div>
+                      <div style={{ background: 'rgba(0,0,0,0.25)', padding: '0.5rem', borderRadius: '6px' }}>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Białko</span>
+                        <div style={{ fontWeight: 800, color: '#38bdf8', fontSize: '1.05rem' }}>
+                          {displayP} <span style={{ fontSize: '0.72rem' }}>g</span>
+                        </div>
+                      </div>
+                      <div style={{ background: 'rgba(0,0,0,0.25)', padding: '0.5rem', borderRadius: '6px' }}>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Tłuszcze</span>
+                        <div style={{ fontWeight: 800, color: '#f59e0b', fontSize: '1.05rem' }}>
+                          {displayF} <span style={{ fontSize: '0.72rem' }}>g</span>
+                        </div>
+                      </div>
+                      <div style={{ background: 'rgba(0,0,0,0.25)', padding: '0.5rem', borderRadius: '6px' }}>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Węglowodany</span>
+                        <div style={{ fontWeight: 800, color: '#a78bfa', fontSize: '1.05rem' }}>
+                          {displayC} <span style={{ fontSize: '0.72rem' }}>g</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {editingRecipe && (editingRecipe.calories_female || editingRecipe.calories_male) && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', paddingTop: '0.45rem', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                        <span>👩 Kobieta: <strong style={{ color: '#fff' }}>{Math.round(editingRecipe.calories_female)} kcal</strong> (B: {editingRecipe.protein_female_g}g, T: {editingRecipe.fat_female_g}g, W: {editingRecipe.carbs_female_g}g)</span>
+                        <span>👨 Mężczyzna: <strong style={{ color: '#fff' }}>{Math.round(editingRecipe.calories_male)} kcal</strong> (B: {editingRecipe.protein_male_g}g, T: {editingRecipe.fat_male_g}g, W: {editingRecipe.carbs_male_g}g)</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Tytuł przepisu*</label>
                 <input
@@ -2027,15 +2114,29 @@ export function DietitianDashboard() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <div>
                   {editingRecipe && (
-                    <button
-                      type="button"
-                      onClick={() => setInspectingRecipeId(editingRecipe.id)}
-                      className="btn btn-secondary"
-                      style={{ color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                      title="Podgląd zdjęcia, składników i opisu dania"
-                    >
-                      <Eye size={15} /> Szczegóły (Podgląd)
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => setInspectingRecipeId(editingRecipe.id)}
+                        className="btn btn-secondary"
+                        style={{ color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                        title="Podgląd zdjęcia, składników i opisu dania"
+                      >
+                        <Eye size={15} /> Szczegóły
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowRecipeModal(false);
+                          promptDeleteRecipe(editingRecipe);
+                        }}
+                        className="btn btn-secondary"
+                        style={{ color: 'var(--accent-rose)', borderColor: 'rgba(244, 63, 94, 0.4)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                        title="Usuń ten przepis z bazy danych"
+                      >
+                        <Trash2 size={15} /> Usuń przepis
+                      </button>
+                    </div>
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -2220,6 +2321,24 @@ export function DietitianDashboard() {
           onClose={() => setInspectingRecipeId(null)}
         />
       )}
+
+      {/* Modal bezpiecznego usuwania i zastępowania przepisu */}
+      <RecipeDeleteModal
+        isOpen={showRecipeDeleteModal}
+        recipe={recipeToDelete}
+        allRecipes={recipes}
+        onClose={() => {
+          setShowRecipeDeleteModal(false);
+          setRecipeToDelete(null);
+        }}
+        onSuccess={(msg) => {
+          alert(msg);
+          setShowRecipeDeleteModal(false);
+          setRecipeToDelete(null);
+          refreshRecipesAndProducts();
+          refreshTemplates();
+        }}
+      />
     </div>
   );
 

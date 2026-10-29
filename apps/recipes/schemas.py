@@ -120,3 +120,7 @@ class RecipeUpdateSchema(Schema):
     image_url: Optional[str] = None
     ingredients: Optional[List[RecipeIngredientInputSchema]] = None
 
+
+class ReplaceRecipeSchema(Schema):
+    replacement_recipe_id: int
+    delete_old: bool = True
