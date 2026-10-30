@@ -7,7 +7,7 @@ import { MonthlyMeasurementChart } from '../components/MonthlyMeasurementChart';
 import { PatientLoadPackageModal } from '../components/PatientLoadPackageModal';
 import {
   Flame, Calendar, ChevronLeft, ChevronRight, CheckCircle2, Circle,
-  Plus, Activity, Sparkles, Info, ChefHat, Clock, Package, X, Bell, History, RefreshCw
+  Plus, Activity, Sparkles, Info, ChefHat, Clock, Package, X, Bell, History, RefreshCw, Download
 } from 'lucide-react';
 
 
@@ -438,7 +438,18 @@ export function PatientDashboard() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <a
+              href={dietPlansApi.getWeeklyPdfUrl(weekStartDate, user?.id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-secondary btn-sm"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#38bdf8' }}
+              title="Pobierz lub wydrukuj jadłospis na ten tydzień w formacie PDF"
+            >
+              <Download size={15} /> Pobierz PDF
+            </a>
+
             <button
               onClick={() => changeWeek(-1)}
               className="btn btn-secondary btn-sm"

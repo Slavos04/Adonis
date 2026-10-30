@@ -12,7 +12,7 @@ import {
   Users, UserCheck, ShieldAlert, FileText, Calendar, Plus,
   Edit3, History, Save, Send, Utensils, Award, Layers, Sparkles,
   Trash2, AlertTriangle, Check, Upload, Image, Calculator, Flame,
-  Search, Info, BookOpen, Clock, ChevronRight, Package, Eye, TrendingDown
+  Search, Info, BookOpen, Clock, ChevronRight, Package, Eye, TrendingDown, Download
 } from 'lucide-react';
 
 
@@ -1002,6 +1002,17 @@ export function DietitianDashboard() {
                     >
                       <Send size={14} /> Prześlij paczkę
                     </button>
+
+                    <a
+                      href={dietPlansApi.getTemplatePdfUrl(tpl.id)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-secondary btn-sm"
+                      style={{ padding: '0.4rem 0.6rem', color: '#38bdf8' }}
+                      title="Pobierz / Drukuj jadłospis w PDF"
+                    >
+                      <Download size={15} />
+                    </a>
 
                     <button
                       onClick={() => openEditPackageModal(tpl)}

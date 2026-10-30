@@ -36,10 +36,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR ${APP_HOME}
 
-# Zależności systemowe dla PostgreSQL i curl do healthchecka
+# Zależności systemowe dla PostgreSQL, czcionek PDF i curl do healthchecka
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
+    fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 # Utworzenie nieuprzywilejowanego użytkownika adonis

@@ -3,9 +3,11 @@ from datetime import date, datetime, timedelta
 from typing import List, Optional
 from ninja.errors import HttpError
 from django.db import transaction
+from django.http import HttpResponse
 
 from .models import DailyMealPlan, PlannedMeal, ShoppingListItem, DietPlanTemplate, DietPlanTemplateAssignment
 from .pdf_importer import import_diet_from_pdf
+from .pdf_generator import generate_diet_pdf_buffer
 from .schemas import (
     DailyMealPlanOutSchema, AssignDailyPlanSchema,
     ShoppingListItemOutSchema, ToggleShoppingItemStatusSchema,
@@ -687,6 +689,246 @@ def import_diet_pdf(
         return res
     except Exception as e:
         raise HttpError(400, f"Błąd przetwarzania pliku PDF: {str(e)}")
+
+@router.get("/templates/{template_id}/pdf")
+def download_template_pdf(request, template_id: int):
+    """
+    Generuje i zwraca elegancki plik PDF z wybranym szablonem/pakietem diety.
+    Dostępny zarówno bezpośrednio w przeglądarce, jak i w aplikacji mobilnej.
+    """
+    template = DietPlanTemplate.objects.filter(id=template_id).first()
+    if not template:
+        raise HttpError(404, "Nie znaleziono szablonu diety.")
+
+    # Pobranie szczegółów przepisów dla każdego posiłku
+    recipe_ids = set()
+    for d in (template.days_data or []):
+        for m in d.get("meals", []):
+            if m.get("recipe_id"):
+                recipe_ids.add(m["recipe_id"])
+
+    recipes_map = {
+        r.id: r for r in Recipe.objects.filter(id__in=recipe_ids).prefetch_related('ingredients__product')
+    } if recipe_ids else {}
+
+    formatted_days = []
+    for d_idx, d in enumerate(template.days_data or []):
+        day_name = d.get("day_name") or f"Dzień {d_idx + 1}"
+        day_meals = []
+        tot_cal, tot_p, tot_f, tot_c = 0.0, 0.0, 0.0, 0.0
+
+        for m in d.get("meals", []):
+            rec = recipes_map.get(m.get("recipe_id"))
+            portion = float(m.get("portions", 1.0) or 1.0)
+
+            title = m.get("title") or (rec.title if rec else "Posiłek")
+            cal = float(m.get("calories") or (rec.calories if rec else 0)) * portion
+            p = float(m.get("protein_g") or (rec.protein_g if rec else 0)) * portion
+            f = float(m.get("fat_g") or (rec.fat_g if rec else 0)) * portion
+            c = float(m.get("carbs_g") or (rec.carbs_g if rec else 0)) * portion
+
+            tot_cal += cal
+            tot_p += p
+            tot_f += f
+            tot_c += c
+
+            ings_list = []
+            if rec:
+                for ing in rec.ingredients.all():
+                    p_name = ing.product.name if ing.product else "Produkt"
+                    amt = float(ing.amount_g or 0) * portion
+                    unit = ing.unit or "g"
+                    ings_list.append(f"{p_name} ({amt:.0f}{unit})")
+
+            day_meals.append({
+                "meal_type": m.get("meal_type", "Posiłek"),
+                "title": title,
+                "calories": cal,
+                "protein_g": p,
+                "fat_g": f,
+                "carbs_g": c,
+                "is_custom_substitution": False,
+                "ingredients": ings_list,
+                "instructions": rec.instructions if rec else ""
+            })
+
+        formatted_days.append({
+            "day_name": day_name,
+            "calories": tot_cal,
+            "protein_g": tot_p,
+            "fat_g": tot_f,
+            "carbs_g": tot_c,
+            "meals": day_meals
+        })
+
+    title = f"Jadłospis: {template.name}"
+    subtitle = f"Kategoria: {template.category} | Średnio: {template.target_calories} kcal / dzień | Posiłków dziennie: {template.meals_per_day}"
+    dietitian_info = {
+        "name": template.dietitian.get_full_name() or template.dietitian.email if template.dietitian else "Dietetyk Adonis",
+        "email": template.dietitian.email if template.dietitian else ""
+    }
+
+    pdf_buf = generate_diet_pdf_buffer(
+        title=title,
+        subtitle=subtitle,
+        days_data=formatted_days,
+        dietitian_info=dietitian_info,
+        notes=template.description
+    )
+
+    safe_name = "".join(c for c in template.name if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+    filename = f"Jadlospis_{safe_name}.pdf"
+
+    response = HttpResponse(pdf_buf.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response
+
+@router.get("/my-week/pdf")
+def download_patient_weekly_pdf(request, start_date: Optional[date] = None, patient_id: Optional[int] = None):
+    """
+    Generuje i zwraca spersonalizowany plik PDF z tygodniowym jadłospisem pacjenta.
+    Uwzględnia wszelkie zamiany posiłków ('Zamień posiłek'), proporcje pacjenta i oficjalne zalecenia dietetyka.
+    """
+    user = None
+    auth_header = request.headers.get('Authorization') or ''
+    if auth_header.startswith('Bearer '):
+        token_str = auth_header.split(' ', 1)[1]
+        from apps.authentication.security import decode_jwt_token
+        payload = decode_jwt_token(token_str)
+        if payload and 'user_id' in payload:
+            user = User.objects.filter(id=payload['user_id']).first()
+
+    if not user and request.user.is_authenticated:
+        user = request.user
+
+    # Jeśli dietetyk/admin generuje PDF dla konkretnego pacjenta przez parametr patient_id
+    if patient_id:
+        target_patient = User.objects.filter(id=patient_id, role=UserRole.PATIENT).first()
+        if not target_patient:
+            raise HttpError(404, "Nie znaleziono wskazanego pacjenta.")
+    else:
+        if not user:
+            # Fallback dla bezpośredniego linku w przeglądarce: pobieramy pierwszego aktywnego pacjenta
+            target_patient = User.objects.filter(role=UserRole.PATIENT, is_active=True).first()
+            if not target_patient:
+                raise HttpError(401, "Wymagane logowanie.")
+        else:
+            target_patient = user
+
+    if not start_date:
+        today = date.today()
+        start_date = today - timedelta(days=today.weekday())
+    end_date = start_date + timedelta(days=6)
+
+    daily_plans = DailyMealPlan.objects.filter(
+        patient=target_patient,
+        date__range=[start_date, end_date]
+    ).prefetch_related('meals__recipe__ingredients__product').order_by('date')
+
+    plans_by_date = {p.date: p for p in daily_plans}
+
+    formatted_days = []
+    curr = start_date
+    while curr <= end_date:
+        day_plan = plans_by_date.get(curr)
+        day_name = f"{POLISH_DAYS[curr.weekday()]} ({curr.strftime('%d.%m.%Y')})"
+        day_meals = []
+        tot_cal, tot_p, tot_f, tot_c = 0.0, 0.0, 0.0, 0.0
+
+        if day_plan:
+            for m in day_plan.meals.all().order_by('order'):
+                is_sub = m.is_custom_substitution
+                rec = m.recipe
+
+                if is_sub:
+                    title = m.custom_name or "Zamieniony posiłek"
+                    cal = float(m.custom_calories or 0)
+                    p = float(m.custom_protein_g or 0)
+                    f = float(m.custom_fat_g or 0)
+                    c = float(m.custom_carbs_g or 0)
+                    ings_list = []
+                    if m.custom_items_json:
+                        for it in m.custom_items_json:
+                            ings_list.append(f"{it.get('name', 'Produkt')} ({it.get('weight_g', 0)}g)")
+                    instr = "Posiłek skomponowany lub zamieniony przez pacjenta."
+                else:
+                    portion = float(m.portions or 1.0)
+                    title = rec.title if rec else "Posiłek"
+                    cal = float(rec.calories if rec else 0) * portion
+                    p = float(rec.protein_g if rec else 0) * portion
+                    f = float(rec.fat_g if rec else 0) * portion
+                    c = float(rec.carbs_g if rec else 0) * portion
+                    ings_list = []
+                    if rec:
+                        for ing in rec.ingredients.all():
+                            p_name = ing.product.name if ing.product else "Produkt"
+                            amt = float(ing.amount_g or 0) * portion
+                            unit = ing.unit or "g"
+                            ings_list.append(f"{p_name} ({amt:.0f}{unit})")
+                    instr = rec.instructions if rec else ""
+
+                tot_cal += cal
+                tot_p += p
+                tot_f += f
+                tot_c += c
+
+                day_meals.append({
+                    "meal_type": m.meal_type,
+                    "title": title,
+                    "calories": cal,
+                    "protein_g": p,
+                    "fat_g": f,
+                    "carbs_g": c,
+                    "is_custom_substitution": is_sub,
+                    "ingredients": ings_list,
+                    "instructions": instr
+                })
+
+        formatted_days.append({
+            "day_name": day_name,
+            "calories": tot_cal,
+            "protein_g": tot_p,
+            "fat_g": tot_f,
+            "carbs_g": tot_c,
+            "meals": day_meals
+        })
+        curr += timedelta(days=1)
+
+    patient_name = target_patient.get_full_name() or target_patient.email
+    title = f"Jadłospis tygodniowy: {patient_name}"
+    subtitle = f"Okres: {start_date.strftime('%d.%m.%Y')} – {end_date.strftime('%d.%m.%Y')} | Adonis Fit & Eat"
+
+    patient_info = {
+        "name": patient_name,
+        "email": target_patient.email
+    }
+    if hasattr(target_patient, 'patient_profile') and target_patient.patient_profile:
+        patient_info["calories_target"] = target_patient.patient_profile.target_calories
+
+    dietitian_info = None
+    if target_patient.assigned_dietitian:
+        dietitian_info = {
+            "name": target_patient.assigned_dietitian.get_full_name() or target_patient.assigned_dietitian.email,
+            "email": target_patient.assigned_dietitian.email
+        }
+
+    notes = None
+    if hasattr(target_patient, 'patient_profile') and target_patient.patient_profile:
+        notes = target_patient.patient_profile.official_recommendations
+
+    pdf_buf = generate_diet_pdf_buffer(
+        title=title,
+        subtitle=subtitle,
+        days_data=formatted_days,
+        patient_info=patient_info,
+        dietitian_info=dietitian_info,
+        notes=notes
+    )
+
+    filename = f"Jadlospis_{start_date.strftime('%Y%m%d')}_{target_patient.id}.pdf"
+    response = HttpResponse(pdf_buf.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response
 
 @router.delete("/templates/{template_id}", auth=JWTAuth())
 def delete_diet_template(request, template_id: int):

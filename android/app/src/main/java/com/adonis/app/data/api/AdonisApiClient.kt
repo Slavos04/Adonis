@@ -247,6 +247,20 @@ object AdonisApiClient {
         return "$rootWs/ws/chat/"
     }
 
+    fun getWeeklyPdfUrl(startDate: String?): String {
+        val base = baseUrl.trimEnd('/')
+        return if (startDate != null) {
+            "$base/diet-plans/my-week/pdf?start_date=$startDate"
+        } else {
+            "$base/diet-plans/my-week/pdf"
+        }
+    }
+
+    fun getTemplatePdfUrl(templateId: Int): String {
+        val base = baseUrl.trimEnd('/')
+        return "$base/diet-plans/templates/$templateId/pdf"
+    }
+
     fun create(tokenManager: TokenManager): AdonisApiService {
         val saved = tokenManager.getServerUrl()
         if (saved.isNotBlank()) {

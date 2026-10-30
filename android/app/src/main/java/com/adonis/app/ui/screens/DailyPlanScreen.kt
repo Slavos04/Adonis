@@ -22,6 +22,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import android.net.Uri
+import com.adonis.app.data.api.AdonisApiClient
 import com.adonis.app.data.api.AdonisApiService
 import com.adonis.app.data.api.TokenManager
 import com.adonis.app.data.model.*
@@ -34,6 +38,7 @@ fun DailyPlanScreen(
     apiService: AdonisApiService,
     tokenManager: TokenManager
 ) {
+    val context = LocalContext.current
     val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val shortDateSdf = SimpleDateFormat("d.MM", Locale.getDefault())
     
@@ -164,6 +169,23 @@ fun DailyPlanScreen(
                         lineHeight = 13.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Start
+                    )
+                }
+
+                // Przycisk pobierania PDF jadłospisu
+                IconButton(
+                    onClick = {
+                        val pdfUrl = AdonisApiClient.getWeeklyPdfUrl(selectedDateStr.value)
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(pdfUrl))
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier.size(34.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Download,
+                        contentDescription = "Pobierz jadłospis PDF",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
@@ -608,32 +630,50 @@ fun DailyPlanScreen(
                                                 )
                                             }
 
-                                            Button(
-                                                onClick = {
-                                                    scope.launch {
-                                                        isPackagesLoading = true
-                                                        try {
-                                                            val res = apiService.loadDietPackage(
-                                                                PatientLoadPackageRequest(
-                                                                    templateId = pkg.id,
-                                                                    startDate = selectedDateStr.value
-                                                                )
-                                                            )
-                                                            val msg = (res["message"] as? String) ?: "Pakiet załadowany"
-                                                            packageActionStatus = msg
-                                                            loadPlan()
-                                                            showLoadPackageDialog = false
-                                                        } catch (e: Exception) {
-                                                            packageActionStatus = "Błąd: ${e.message}"
-                                                        } finally {
-                                                            isPackagesLoading = false
-                                                        }
-                                                    }
-                                                },
+                                            Row(
                                                 modifier = Modifier.fillMaxWidth(),
-                                                contentPadding = PaddingValues(vertical = 4.dp)
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                                             ) {
-                                                Text("Wybierz i zastosuj od ${selectedDateStr.value}", fontSize = 12.sp)
+                                                Button(
+                                                    onClick = {
+                                                        scope.launch {
+                                                            isPackagesLoading = true
+                                                            try {
+                                                                val res = apiService.loadDietPackage(
+                                                                    PatientLoadPackageRequest(
+                                                                        templateId = pkg.id,
+                                                                        startDate = selectedDateStr.value
+                                                                    )
+                                                                )
+                                                                val msg = (res["message"] as? String) ?: "Pakiet załadowany"
+                                                                packageActionStatus = msg
+                                                                loadPlan()
+                                                                showLoadPackageDialog = false
+                                                            } catch (e: Exception) {
+                                                                packageActionStatus = "Błąd: ${e.message}"
+                                                            } finally {
+                                                                isPackagesLoading = false
+                                                            }
+                                                        }
+                                                    },
+                                                    modifier = Modifier.weight(1f),
+                                                    contentPadding = PaddingValues(vertical = 4.dp)
+                                                ) {
+                                                    Text("Zastosuj od ${selectedDateStr.value}", fontSize = 12.sp)
+                                                }
+
+                                                OutlinedButton(
+                                                    onClick = {
+                                                        val pdfUrl = AdonisApiClient.getTemplatePdfUrl(pkg.id)
+                                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(pdfUrl))
+                                                        context.startActivity(intent)
+                                                    },
+                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                                ) {
+                                                    Icon(Icons.Default.Download, contentDescription = "Pobierz PDF pakietu", modifier = Modifier.size(16.dp))
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Text("PDF", fontSize = 12.sp)
+                                                }
                                             }
                                         }
                                     }
