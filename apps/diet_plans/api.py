@@ -903,7 +903,7 @@ def download_patient_weekly_pdf(request, start_date: Optional[date] = None, pati
         "email": target_patient.email
     }
     if hasattr(target_patient, 'patient_profile') and target_patient.patient_profile:
-        patient_info["calories_target"] = target_patient.patient_profile.target_calories
+        patient_info["calories_target"] = target_patient.patient_profile.daily_calories_goal
 
     dietitian_info = None
     if target_patient.assigned_dietitian:
