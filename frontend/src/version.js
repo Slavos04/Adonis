@@ -1,14 +1,34 @@
-export const APP_VERSION = '1.10';
-export const APP_RELEASE_DATE = '2026-10-29';
+export const APP_VERSION = '1.11';
+export const APP_RELEASE_DATE = '2026-10-30';
 
 export const CHANGELOG_DATA = [
+  {
+    version: '1.11',
+    date: '2026-10-30',
+    time: '14:30 CET',
+    title: 'Wydanie 1.11 – Generowanie PDF na żądanie (Web & Mobile) oraz naprawa API_URL',
+    badge: 'Aktualna',
+    badgeType: 'emerald',
+    changes: [
+      {
+        category: 'Generowanie PDF na żądanie (Web + Mobile)',
+        items: [
+          'Dodano silnik generowania eleganckich dokumentów PDF (ReportLab + obsługa polskich znaków DejaVu Sans).',
+          'Możliwość pobierania i drukowania pakietu diety bezpośrednio z panelu dietetyka przy każdym pakiecie.',
+          'Przycisk "Pobierz PDF" w kalendarzu tygodniowym pacjenta (Web i Android) generujący spersonalizowany jadłospis z zaleceniami i zamianami dań.',
+          'W aplikacji mobilnej Android dodano przyciski pobierania PDF w widoku planu dnia oraz przy każdym pakiecie diety.',
+          'Naprawiono błąd widoku API_URL is not defined w kliencie API.'
+        ]
+      }
+    ]
+  },
   {
     version: '1.10',
     date: '2026-10-29',
     time: '14:50 CET',
     title: 'Wydanie 1.10 – Zastępowanie posiłków (EAN / skaner aparatem / ręcznie) oraz powiadomienia w tle',
-    badge: 'Aktualna',
-    badgeType: 'emerald',
+    badge: 'Poprzednia',
+    badgeType: 'slate',
     changes: [
       {
         category: 'Zamiana posiłków przez pacjenta (Web + Mobile)',

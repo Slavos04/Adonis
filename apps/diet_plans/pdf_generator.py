@@ -337,3 +337,4 @@ def generate_diet_pdf_buffer(
     doc.build(story, canvasmaker=NumberedCanvas)
     buffer.seek(0)
     return buffer
+

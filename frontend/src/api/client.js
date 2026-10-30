@@ -250,9 +250,9 @@ export const dietPlansApi = {
       method: 'POST',
       body: formData,
     }),
-  getTemplatePdfUrl: (templateId) => `${API_URL}/diet-plans/templates/${templateId}/pdf`,
+  getTemplatePdfUrl: (templateId) => `${API_BASE}/diet-plans/templates/${templateId}/pdf`,
   getWeeklyPdfUrl: (startDate, patientId) => {
-    let url = `${API_URL}/diet-plans/my-week/pdf?`;
+    let url = `${API_BASE}/diet-plans/my-week/pdf?`;
     if (startDate) url += `start_date=${startDate}&`;
     if (patientId) url += `patient_id=${patientId}&`;
     return url;
