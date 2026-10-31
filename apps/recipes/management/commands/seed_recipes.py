@@ -431,27 +431,25 @@ class Command(BaseCommand):
         end_d = today + timedelta(days=28)
         for tpl, target_g in templates_list:
             if target_g in ("female", "all"):
-                DietPlanTemplateAssignment.objects.get_or_create(
-                    template=tpl,
-                    patient=pacjentka_user,
-                    defaults={
-                        "dietitian": dietitian_user,
-                        "start_date": start_d,
-                        "end_date": end_d,
-                        "notes": f"Pakiet przesłany przez dietetyka dla pacjentki: {tpl.name}"
-                    }
-                )
+                if not DietPlanTemplateAssignment.objects.filter(template=tpl, patient=pacjentka_user).exists():
+                    DietPlanTemplateAssignment.objects.create(
+                        template=tpl,
+                        patient=pacjentka_user,
+                        dietitian=dietitian_user,
+                        start_date=start_d,
+                        end_date=end_d,
+                        notes=f"Pakiet przesłany przez dietetyka dla pacjentki: {tpl.name}"
+                    )
             if target_g in ("male", "all"):
-                DietPlanTemplateAssignment.objects.get_or_create(
-                    template=tpl,
-                    patient=patient_user,
-                    defaults={
-                        "dietitian": dietitian_user,
-                        "start_date": start_d,
-                        "end_date": end_d,
-                        "notes": f"Pakiet przesłany przez dietetyka dla pacjenta: {tpl.name}"
-                    }
-                )
+                if not DietPlanTemplateAssignment.objects.filter(template=tpl, patient=patient_user).exists():
+                    DietPlanTemplateAssignment.objects.create(
+                        template=tpl,
+                        patient=patient_user,
+                        dietitian=dietitian_user,
+                        start_date=start_d,
+                        end_date=end_d,
+                        notes=f"Pakiet przesłany przez dietetyka dla pacjenta: {tpl.name}"
+                    )
 
         self.stdout.write(self.style.SUCCESS(f"[OK] Utworzono {len(templates_list)} dedykowanych pakietów diet z podziałem na płeć (Kobiety, Mężczyźni, Uniwersalne) i przypisano je do kont pacjentów!"))
 
