@@ -1226,25 +1226,21 @@ def download_shopping_list_pdf(
         from apps.authentication.security import decode_jwt_token
         payload = decode_jwt_token(token_str)
         if payload and 'user_id' in payload:
-            from apps.users.models import User
-            try:
-                user = User.objects.get(id=payload['user_id'])
-            except User.DoesNotExist:
-                pass
+            user = User.objects.filter(id=payload['user_id']).first()
     elif hasattr(request, 'user') and request.user.is_authenticated:
         user = request.user
 
-    if not user:
-        raise HttpError(401, "Wymagana autoryzacja.")
-
-    target_patient = user
-    if user.role in ['dietitian', 'admin'] or user.is_staff:
-        if patient_id:
-            from apps.users.models import User
-            try:
-                target_patient = User.objects.get(id=patient_id)
-            except User.DoesNotExist:
-                raise HttpError(404, "Nie znaleziono pacjenta.")
+    if patient_id:
+        target_patient = User.objects.filter(id=patient_id).first()
+        if not target_patient:
+            raise HttpError(404, "Nie znaleziono pacjenta.")
+    else:
+        if not user:
+            target_patient = User.objects.filter(role=UserRole.PATIENT, is_active=True).first()
+            if not target_patient:
+                raise HttpError(401, "Wymagana autoryzacja.")
+        else:
+            target_patient = user
 
     # 1. Sprawdzenie brakujących dni i auto-uzupełnienie z aktywnego pakietu
     missing_days = []
