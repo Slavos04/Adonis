@@ -23,6 +23,11 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.adonis.app.data.api.AdonisApiService
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.material.icons.filled.Download
+import com.adonis.app.data.api.AdonisApiClient
+import com.adonis.app.data.api.TokenManager
 import com.adonis.app.data.model.ShoppingListItem
 import com.adonis.app.data.model.ToggleShoppingItemRequest
 import com.adonis.app.data.model.BulkToggleShoppingRequest
@@ -32,7 +37,7 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ShoppingListScreen(apiService: AdonisApiService) {
+fun ShoppingListScreen(apiService: AdonisApiService, tokenManager: TokenManager? = null) {
     val context = LocalContext.current
     val sdf = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
 
@@ -190,8 +195,30 @@ fun ShoppingListScreen(apiService: AdonisApiService) {
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 }
-                IconButton(onClick = { loadItems() }) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Odśwież")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = {
+                            val token = tokenManager?.getToken()
+                            val pdfUrl = AdonisApiClient.getShoppingListPdfUrl(
+                                startDate = startDate,
+                                endDate = endDate,
+                                store = if (selectedStoreFilter != "Wszystkie") selectedStoreFilter else null,
+                                token = token
+                            )
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(pdfUrl))
+                            context.startActivity(intent)
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.Download,
+                            contentDescription = "Pobierz PDF listy zakupów",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    IconButton(onClick = { loadItems() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Odśwież")
+                    }
                 }
             }
         }
@@ -297,6 +324,28 @@ fun ShoppingListScreen(apiService: AdonisApiService) {
                                 )
                             }
                         }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            val token = tokenManager?.getToken()
+                            val pdfUrl = AdonisApiClient.getShoppingListPdfUrl(
+                                startDate = startDate,
+                                endDate = endDate,
+                                store = if (selectedStoreFilter != "Wszystkie") selectedStoreFilter else null,
+                                token = token
+                            )
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(pdfUrl))
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(vertical = 6.dp)
+                    ) {
+                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Drukuj / Pobierz PDF listy zakupów", fontSize = 12.sp)
                     }
                 }
             }

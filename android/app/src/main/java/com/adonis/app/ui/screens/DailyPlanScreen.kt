@@ -175,7 +175,7 @@ fun DailyPlanScreen(
                 // Przycisk pobierania PDF jadłospisu
                 IconButton(
                     onClick = {
-                        val pdfUrl = AdonisApiClient.getWeeklyPdfUrl(selectedDateStr.value)
+                        val pdfUrl = AdonisApiClient.getWeeklyPdfUrl(selectedDateStr.value, tokenManager.getToken())
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(pdfUrl))
                         context.startActivity(intent)
                     },
@@ -664,7 +664,7 @@ fun DailyPlanScreen(
 
                                                 OutlinedButton(
                                                     onClick = {
-                                                        val pdfUrl = AdonisApiClient.getTemplatePdfUrl(pkg.id)
+                                                        val pdfUrl = AdonisApiClient.getTemplatePdfUrl(pkg.id, tokenManager.getToken())
                                                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(pdfUrl))
                                                         context.startActivity(intent)
                                                     },

@@ -338,3 +338,108 @@ def generate_diet_pdf_buffer(
     buffer.seek(0)
     return buffer
 
+
+def generate_shopping_list_pdf_buffer(
+    title: str,
+    subtitle: str,
+    grouped_items: Dict[str, List[Dict[str, Any]]],
+    patient_info: Optional[Dict[str, Any]] = None,
+    store_name: Optional[str] = None
+) -> io.BytesIO:
+    """
+    Generuje elegancki dokument PDF z listą zakupów zagregowaną według kategorii
+    (np. Warzywa, Owoce, Nabiał, Mięso, Pieczywo itd.) z polami wyboru do odhaczania.
+    """
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=1.5*cm,
+        rightMargin=1.5*cm,
+        topMargin=1.5*cm,
+        bottomMargin=1.8*cm
+    )
+
+    styles = _get_styles()
+    story = []
+
+    # 1. Nagłówek
+    story.append(Paragraph(title, styles['title']))
+    story.append(Paragraph(subtitle, styles['subtitle']))
+
+    # 2. Informacje
+    meta_cells = []
+    if patient_info:
+        p_text = f"<b>Pacjent:</b> {patient_info.get('name', '')}"
+        meta_cells.append(Paragraph(p_text, styles['meal_meta']))
+    else:
+        meta_cells.append(Paragraph("<b>Lista Zakupów Adonis</b>", styles['meal_meta']))
+
+    store_label = f"Wszystkie zakupy w markecie: <b>{store_name}</b>" if store_name and store_name != 'Wszystkie' and store_name != 'OFF' else "Sklepy: <b>Lidl, Biedronka, Kaufland, Carrefour</b>"
+    meta_cells.append(Paragraph(store_label, styles['meal_meta']))
+
+    meta_table = Table([meta_cells], colWidths=[9*cm, 9*cm])
+    meta_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), BG_GRAY),
+        ('BOX', (0, 0), (-1, -1), 0.5, BORDER_COLOR),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('PADDING', (0, 0), (-1, -1), 6),
+    ]))
+    story.append(meta_table)
+    story.append(Spacer(1, 8))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=BORDER_COLOR, spaceBefore=4, spaceAfter=10))
+
+    total_items = sum(len(items) for items in grouped_items.values())
+    if total_items == 0:
+        story.append(Paragraph("Brak produktów na liście zakupów w wybranym okresie.", styles['ingredients']))
+        doc.build(story, canvasmaker=NumberedCanvas)
+        buffer.seek(0)
+        return buffer
+
+    # 3. Kategorie produktów
+    for cat_name, items in grouped_items.items():
+        if not items:
+            continue
+
+        cat_elements = []
+        cat_header = f"{cat_name} &nbsp;&bull;&nbsp; <font size=9 color='#64748b'>({len(items)} poz.)</font>"
+        cat_elements.append(Paragraph(cat_header, styles['day_header']))
+
+        table_rows = []
+        for it in items:
+            is_bought = it.get('is_bought', False)
+            p_name = it.get('product_name', 'Produkt')
+            amt = it.get('amount', 0)
+            unit = it.get('unit', 'g')
+            store = it.get('store', '')
+
+            # Checkbox do zaznaczenia ołówkiem
+            check_box = "[ X ]" if is_bought else "[   ]"
+            col_check = Paragraph(f"<font color='#0f766e'><b>{check_box}</b></font>", styles['meal_meta'])
+
+            # Nazwa i ilość
+            name_text = f"<b>{p_name}</b> &nbsp;&mdash;&nbsp; <b>{amt} {unit}</b>"
+            col_name = Paragraph(name_text, styles['ingredients'])
+
+            # Sklep
+            col_store = Paragraph(f"<font color='#64748b'>{store}</font>", styles['meal_meta'])
+
+            table_rows.append([col_check, col_name, col_store])
+
+        cat_table = Table(table_rows, colWidths=[1.8*cm, 12.2*cm, 4.0*cm])
+        cat_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.white),
+            ('BOX', (0, 0), (-1, -1), 0.5, BORDER_COLOR),
+            ('INNERGRID', (0, 0), (-1, -1), 0.5, BG_GRAY),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('PADDING', (0, 0), (-1, -1), 4),
+        ]))
+        cat_elements.append(cat_table)
+        cat_elements.append(Spacer(1, 8))
+
+        story.append(KeepTogether(cat_elements))
+
+    doc.build(story, canvasmaker=NumberedCanvas)
+    buffer.seek(0)
+    return buffer
+

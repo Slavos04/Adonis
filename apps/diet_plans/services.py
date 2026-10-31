@@ -117,3 +117,38 @@ def generate_smart_shopping_list(
     # Sortowanie po sklepie (Lidl, Biedronka, inne) i nazwie
     results.sort(key=lambda x: (x["store"], x["product_name"]))
     return results
+
+SHOPPING_CATEGORY_ORDER = [
+    'Warzywa',
+    'Owoce',
+    'Nabiał',
+    'Mięso i wędliny',
+    'Ryby i owoce morza',
+    'Pieczywo',
+    'Produkty zbożowe',
+    'Tłuszcze, nasiona i orzechy',
+    'Inne produkty'
+]
+
+def normalize_shopping_category(cat: Optional[str]) -> str:
+    if not cat:
+        return 'Inne produkty'
+    c = cat.lower()
+    if 'warzyw' in c:
+        return 'Warzywa'
+    if 'owoc' in c and 'morza' not in c:
+        return 'Owoce'
+    if any(k in c for k in ['nabiał', 'nabial', 'mleko', 'jogurt', 'ser', 'twaróg', 'twarog', 'kefir', 'skyr']):
+        return 'Nabiał'
+    if any(k in c for k in ['mięs', 'mies', 'drób', 'drob', 'wędlin', 'wedlin', 'kurczak', 'indyk', 'szynk']):
+        return 'Mięso i wędliny'
+    if any(k in c for k in ['ryb', 'morza', 'łosoś', 'losos', 'dorsz', 'tuńczyk', 'tunczyk']):
+        return 'Ryby i owoce morza'
+    if any(k in c for k in ['pieczyw', 'chleb', 'bułk', 'bulk']):
+        return 'Pieczywo'
+    if any(k in c for k in ['zboż', 'zboz', 'płatk', 'platk', 'kasz', 'ryż', 'ryz', 'makaron', 'mąk', 'mak']):
+        return 'Produkty zbożowe'
+    if any(k in c for k in ['tłuszcz', 'tluszcz', 'oliw', 'olej', 'orzech', 'nasion', 'masło', 'maslo']):
+        return 'Tłuszcze, nasiona i orzechy'
+    return 'Inne produkty'
+

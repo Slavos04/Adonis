@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { dietPlansApi } from '../api/client';
-import { ShoppingBag, Check, EyeOff, Calendar, Copy, CheckCheck, Store, Printer, Sparkles } from 'lucide-react';
+import { ShoppingBag, Check, EyeOff, Calendar, Copy, CheckCheck, Store, Printer, Sparkles, Download } from 'lucide-react';
 
 export function ShoppingListWidget() {
   const today = new Date();
@@ -219,6 +219,21 @@ export function ShoppingListWidget() {
           >
             <Printer size={15} /> Drukuj
           </button>
+
+          <a
+            href={dietPlansApi.getShoppingListPdfUrl(
+              startDate,
+              endDate,
+              oneStopStore !== 'OFF' ? oneStopStore : (storeFilter !== 'ALL' ? storeFilter : null)
+            )}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-secondary btn-sm"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', textDecoration: 'none' }}
+            title="Pobierz elegancką listę zakupów w formacie PDF do druku"
+          >
+            <Download size={15} /> Pobierz PDF
+          </a>
         </div>
       </div>
 

@@ -1,14 +1,47 @@
-export const APP_VERSION = '1.11';
-export const APP_RELEASE_DATE = '2026-10-30';
+export const APP_VERSION = '1.12';
+export const APP_RELEASE_DATE = '2026-10-31';
 
 export const CHANGELOG_DATA = [
+  {
+    version: '1.12',
+    date: '2026-10-31',
+    time: '11:15 CET',
+    title: 'Wydanie 1.12 – Wydruk listy zakupów w PDF, poprawka PDF jadłospisu i ergonomia EAN',
+    badge: 'Aktualna',
+    badgeType: 'emerald',
+    changes: [
+      {
+        category: 'Wydruk i eksport listy zakupów (Web & Mobile)',
+        items: [
+          'Dodano generowanie i pobieranie listy zakupów w formacie PDF podzielonej na działy (Warzywa, Owoce, Nabiał, Mięso itd.) z polami do odhaczania.',
+          'W aplikacji mobilnej dodano przycisk pobierania PDF listy zakupów w nagłówku oraz pod wyborem zakresu dat.',
+          'W aplikacji webowej dodano przycisk "Pobierz PDF" w widoku listy zakupów obok opcji drukowania i kopiowania do schowka.',
+          'Uwzględnienie filtrów marketu (Lidl, Biedronka, Kaufland, Carrefour) przy generowaniu pliku PDF.'
+        ]
+      },
+      {
+        category: 'Poprawka generowania PDF jadłospisu pacjenta',
+        items: [
+          'Naprawiono pobieranie PDF w sekcji "Jadłospis" w aplikacji mobilnej – dodano przekazywanie tokenu autoryzacyjnego w intencie.',
+          'Wprowadzono automatyczne dopełnianie brakujących dni w jadłospisie z aktywnego pakietu dietetyka, eliminując problem pustych wydruków.'
+        ]
+      },
+      {
+        category: 'Ergonomia zamiany posiłku (EAN & Skaner)',
+        items: [
+          'W oknie "Zamień posiłek" w aplikacji mobilnej rozciągnięto pole kodu EAN na pełną szerokość z ikoną aparatu/skanera po prawej stronie.',
+          'Przeniesiono przycisk "Szukaj w bazie kodów EAN" bezpośrednio pod pole formularza dla wygodniejszej obsługi jedną ręką.'
+        ]
+      }
+    ]
+  },
   {
     version: '1.11',
     date: '2026-10-30',
     time: '14:30 CET',
     title: 'Wydanie 1.11 – Generowanie PDF na żądanie (Web & Mobile) oraz naprawa API_URL',
-    badge: 'Aktualna',
-    badgeType: 'emerald',
+    badge: 'Poprzednia',
+    badgeType: 'slate',
     changes: [
       {
         category: 'Generowanie PDF na żądanie (Web + Mobile)',

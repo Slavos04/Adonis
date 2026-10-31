@@ -247,18 +247,46 @@ object AdonisApiClient {
         return "$rootWs/ws/chat/"
     }
 
-    fun getWeeklyPdfUrl(startDate: String?): String {
+    fun getWeeklyPdfUrl(startDate: String?, token: String? = null): String {
         val base = baseUrl.trimEnd('/')
-        return if (startDate != null) {
-            "$base/diet-plans/my-week/pdf?start_date=$startDate"
+        val params = mutableListOf<String>()
+        if (startDate != null) {
+            params.add("start_date=$startDate")
+        }
+        if (!token.isNullOrBlank()) {
+            params.add("token=$token")
+        }
+        return if (params.isNotEmpty()) {
+            "$base/diet-plans/my-week/pdf?" + params.joinToString("&")
         } else {
             "$base/diet-plans/my-week/pdf"
         }
     }
 
-    fun getTemplatePdfUrl(templateId: Int): String {
+    fun getTemplatePdfUrl(templateId: Int, token: String? = null): String {
         val base = baseUrl.trimEnd('/')
-        return "$base/diet-plans/templates/$templateId/pdf"
+        return if (!token.isNullOrBlank()) {
+            "$base/diet-plans/templates/$templateId/pdf?token=$token"
+        } else {
+            "$base/diet-plans/templates/$templateId/pdf"
+        }
+    }
+
+    fun getShoppingListPdfUrl(
+        startDate: String,
+        endDate: String,
+        store: String? = null,
+        token: String? = null
+    ): String {
+        val base = baseUrl.trimEnd('/')
+        val params = mutableListOf("start_date=$startDate", "end_date=$endDate")
+        if (!store.isNullOrBlank() && store != "Wszystkie" && store != "OFF") {
+            params.add("store=$store")
+        }
+        if (!token.isNullOrBlank()) {
+            params.add("token=$token")
+        }
+        return "$base/diet-plans/shopping-list/pdf?" + params.joinToString("&")
     }
 
     fun create(tokenManager: TokenManager): AdonisApiService {

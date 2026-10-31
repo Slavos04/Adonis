@@ -7,7 +7,7 @@ from django.http import HttpResponse
 
 from .models import DailyMealPlan, PlannedMeal, ShoppingListItem, DietPlanTemplate, DietPlanTemplateAssignment
 from .pdf_importer import import_diet_from_pdf
-from .pdf_generator import generate_diet_pdf_buffer
+from .pdf_generator import generate_diet_pdf_buffer, generate_shopping_list_pdf_buffer
 from .schemas import (
     DailyMealPlanOutSchema, AssignDailyPlanSchema,
     ShoppingListItemOutSchema, ToggleShoppingItemStatusSchema,
@@ -17,7 +17,7 @@ from .schemas import (
     AssignmentHistoryOutSchema, PatientLoadPackageSchema,
     MealSubstituteSchema
 )
-from .services import generate_smart_shopping_list
+from .services import generate_smart_shopping_list, normalize_shopping_category, SHOPPING_CATEGORY_ORDER
 from apps.recipes.models import Recipe
 from apps.authentication.models import User, UserRole
 from apps.authentication.security import JWTAuth
@@ -784,15 +784,21 @@ def download_template_pdf(request, template_id: int):
     return response
 
 @router.get("/my-week/pdf")
-def download_patient_weekly_pdf(request, start_date: Optional[date] = None, patient_id: Optional[int] = None):
+def download_patient_weekly_pdf(request, start_date: Optional[date] = None, patient_id: Optional[int] = None, token: Optional[str] = None):
     """
     Generuje i zwraca spersonalizowany plik PDF z tygodniowym jadłospisem pacjenta.
     Uwzględnia wszelkie zamiany posiłków ('Zamień posiłek'), proporcje pacjenta i oficjalne zalecenia dietetyka.
+    Automatycznie wypełnia brakujące dni z aktywnego lub ostatniego szablonu diety pacjenta.
     """
     user = None
     auth_header = request.headers.get('Authorization') or ''
+    token_str = None
     if auth_header.startswith('Bearer '):
         token_str = auth_header.split(' ', 1)[1]
+    elif token:
+        token_str = token
+
+    if token_str:
         from apps.authentication.security import decode_jwt_token
         payload = decode_jwt_token(token_str)
         if payload and 'user_id' in payload:
@@ -820,12 +826,46 @@ def download_patient_weekly_pdf(request, start_date: Optional[date] = None, pati
         start_date = today - timedelta(days=today.weekday())
     end_date = start_date + timedelta(days=6)
 
+    # 1. Pobranie istniejących planów
     daily_plans = DailyMealPlan.objects.filter(
         patient=target_patient,
         date__range=[start_date, end_date]
     ).prefetch_related('meals__recipe__ingredients__product').order_by('date')
-
     plans_by_date = {p.date: p for p in daily_plans}
+
+    # 2. Sprawdzenie brakujących dni i automatyczne wypełnienie z aktywnego pakietu
+    missing_days = [
+        start_date + timedelta(days=i)
+        for i in range(7)
+        if (start_date + timedelta(days=i)) not in plans_by_date or plans_by_date[start_date + timedelta(days=i)].meals.count() == 0
+    ]
+
+    if missing_days:
+        assignment = DietPlanTemplateAssignment.objects.filter(
+            patient=target_patient,
+            start_date__lte=end_date
+        ).order_by('-start_date', '-id').first()
+
+        if not assignment:
+            assignment = DietPlanTemplateAssignment.objects.filter(
+                patient=target_patient
+            ).order_by('-start_date', '-id').first()
+
+        if assignment and assignment.template:
+            for day in missing_days:
+                populate_day_from_template(
+                    patient=target_patient,
+                    target_date=day,
+                    template=assignment.template,
+                    dietitian=assignment.dietitian,
+                    notes=f"Pakiet: {assignment.template.name} (auto)"
+                )
+            # Przeładowanie planów
+            daily_plans = DailyMealPlan.objects.filter(
+                patient=target_patient,
+                date__range=[start_date, end_date]
+            ).prefetch_related('meals__recipe__ingredients__product').order_by('date')
+            plans_by_date = {p.date: p for p in daily_plans}
 
     formatted_days = []
     curr = start_date
@@ -1158,3 +1198,119 @@ def bulk_toggle_shopping_items(request, payload: BulkToggleShoppingItemsSchema):
         "updated_count": updated_count,
         "message": f"Zaktualizowano {updated_count} pozycji."
     }
+
+@router.get("/shopping-list/pdf")
+def download_shopping_list_pdf(
+    request,
+    start_date: date,
+    end_date: date,
+    store: Optional[str] = None,
+    meal_types: Optional[str] = None,
+    patient_id: Optional[int] = None,
+    token: Optional[str] = None
+):
+    """
+    Generuje i zwraca plik PDF z listą zakupów zagregowaną według kategorii
+    (np. Warzywa, Owoce, Nabiał itd.) dla pacjenta lub dietetyka.
+    Automatycznie synchronizuje produkty z przypisanego pakietu diety.
+    """
+    user = None
+    auth_header = request.headers.get('Authorization') or ''
+    token_str = None
+    if auth_header.startswith('Bearer '):
+        token_str = auth_header.split(' ', 1)[1]
+    elif token:
+        token_str = token
+
+    if token_str:
+        from apps.authentication.security import decode_jwt_token
+        payload = decode_jwt_token(token_str)
+        if payload and 'user_id' in payload:
+            from apps.users.models import User
+            try:
+                user = User.objects.get(id=payload['user_id'])
+            except User.DoesNotExist:
+                pass
+    elif hasattr(request, 'user') and request.user.is_authenticated:
+        user = request.user
+
+    if not user:
+        raise HttpError(401, "Wymagana autoryzacja.")
+
+    target_patient = user
+    if user.role in ['dietitian', 'admin'] or user.is_staff:
+        if patient_id:
+            from apps.users.models import User
+            try:
+                target_patient = User.objects.get(id=patient_id)
+            except User.DoesNotExist:
+                raise HttpError(404, "Nie znaleziono pacjenta.")
+
+    # 1. Sprawdzenie brakujących dni i auto-uzupełnienie z aktywnego pakietu
+    missing_days = []
+    curr = start_date
+    while curr <= end_date:
+        has_plan = DailyMealPlan.objects.filter(patient=target_patient, date=curr, meals__isnull=False).distinct().exists()
+        if not has_plan:
+            missing_days.append(curr)
+        curr += timedelta(days=1)
+
+    if missing_days:
+        assignment = DietPlanTemplateAssignment.objects.filter(
+            patient=target_patient,
+            start_date__lte=end_date
+        ).order_by('-start_date', '-id').first()
+        if not assignment:
+            assignment = DietPlanTemplateAssignment.objects.filter(
+                patient=target_patient
+            ).order_by('-start_date', '-id').first()
+
+        if assignment and assignment.template:
+            for day in missing_days:
+                populate_day_from_template(
+                    patient=target_patient,
+                    target_date=day,
+                    template=assignment.template,
+                    dietitian=assignment.dietitian,
+                    notes=f"Pakiet: {assignment.template.name} (auto)"
+                )
+
+    types_list = [t.strip() for t in meal_types.split(",")] if meal_types else None
+    items = generate_smart_shopping_list(
+        patient=target_patient,
+        start_date=start_date,
+        end_date=end_date,
+        meal_types=types_list,
+        persist=True
+    )
+
+    if store and store.lower() not in ('wszystkie', 'off', 'all', ''):
+        items = [it for it in items if (it.get('store') or '').strip().lower() == store.strip().lower()]
+
+    # Grupowanie według kategorii
+    grouped_items = {cat: [] for cat in SHOPPING_CATEGORY_ORDER}
+    for item in items:
+        cat_key = normalize_shopping_category(item.get('category'))
+        if cat_key not in grouped_items:
+            grouped_items[cat_key] = []
+        grouped_items[cat_key].append(item)
+
+    filtered_grouped = {cat: items_list for cat, items_list in grouped_items.items() if len(items_list) > 0}
+
+    patient_name = target_patient.get_full_name() or target_patient.username
+    title = f"Lista Zakupów: {start_date.strftime('%d.%m.%Y')} - {end_date.strftime('%d.%m.%Y')}"
+    subtitle = "Klinika Dietetyczna Adonis • Inteligentna lista zakupów"
+
+    pdf_buffer = generate_shopping_list_pdf_buffer(
+        title=title,
+        subtitle=subtitle,
+        grouped_items=filtered_grouped,
+        patient_info={"name": patient_name},
+        store_name=store
+    )
+
+    response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+    filename = f"lista_zakupow_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+

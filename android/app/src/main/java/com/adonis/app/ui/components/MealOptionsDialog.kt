@@ -360,42 +360,57 @@ fun MealOptionsDialog(
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Text("Pobierz z bazy kodów kreskowych (EAN):", fontSize = 12.sp, fontWeight = FontWeight.Bold)
 
-                                Row(
+                                // Pełna szerokość pola EAN z ikoną aparatu
+                                OutlinedTextField(
+                                    value = eanCodeInput,
+                                    onValueChange = { eanCodeInput = it },
+                                    label = { Text("Wpisz kod kreskowy (EAN)") },
+                                    placeholder = { Text("Wpisz cyfry kodu lub użyj aparatu...") },
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    OutlinedTextField(
-                                        value = eanCodeInput,
-                                        onValueChange = { eanCodeInput = it },
-                                        placeholder = { Text("Kod EAN...") },
-                                        modifier = Modifier.weight(1f),
-                                        singleLine = true
-                                    )
-
-                                    Button(
-                                        onClick = { lookupBarcode(eanCodeInput) },
-                                        enabled = !isSearchingEan && eanCodeInput.isNotBlank()
-                                    ) {
-                                        Text(if (isSearchingEan) "..." else "Szukaj")
+                                        .padding(vertical = 4.dp),
+                                    singleLine = true,
+                                    trailingIcon = {
+                                        IconButton(
+                                            onClick = {
+                                                barcodeScanner?.startScan()
+                                                    ?.addOnSuccessListener { barcode ->
+                                                        barcode.rawValue?.let { lookupBarcode(it) }
+                                                    }
+                                                    ?.addOnFailureListener {
+                                                        Toast.makeText(context, "Błąd skanera: ${it.message}", Toast.LENGTH_SHORT).show()
+                                                    }
+                                            }
+                                        ) {
+                                            Icon(
+                                                Icons.Default.PhotoCamera,
+                                                contentDescription = "Skanuj aparatem",
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
                                     }
+                                )
 
-                                    // Skaner aparatem (Google Play Services Code Scanner)
-                                    IconButton(
-                                        onClick = {
-                                            barcodeScanner?.startScan()
-                                                ?.addOnSuccessListener { barcode ->
-                                                    barcode.rawValue?.let { lookupBarcode(it) }
-                                                }
-                                                ?.addOnFailureListener {
-                                                    Toast.makeText(context, "Błąd skanera: ${it.message}", Toast.LENGTH_SHORT).show()
-                                                }
-                                        },
-                                        modifier = Modifier.background(MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
-                                    ) {
-                                        Icon(Icons.Default.PhotoCamera, contentDescription = "Skanuj aparatem", tint = MaterialTheme.colorScheme.onPrimary)
+                                // Klawisz szukaj przeniesiony poniżej okna wpisywania EAN
+                                Button(
+                                    onClick = { lookupBarcode(eanCodeInput) },
+                                    enabled = !isSearchingEan && eanCodeInput.isNotBlank(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 6.dp)
+                                ) {
+                                    if (isSearchingEan) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(16.dp),
+                                            strokeWidth = 2.dp,
+                                            color = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Wyszukiwanie w bazie...")
+                                    } else {
+                                        Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Szukaj w bazie kodów EAN")
                                     }
                                 }
 

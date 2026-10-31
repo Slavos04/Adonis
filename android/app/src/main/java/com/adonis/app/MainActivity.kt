@@ -276,7 +276,7 @@ class MainActivity : ComponentActivity() {
                                     } else {
                                         when (currentTab) {
                                             0 -> DailyPlanScreen(apiService = apiService, tokenManager = tokenManager)
-                                            1 -> ShoppingListScreen(apiService = apiService)
+                                            1 -> ShoppingListScreen(apiService = apiService, tokenManager = tokenManager)
                                             2 -> MeasurementsScreen(apiService = apiService)
                                             3 -> ChatScreen(apiService = apiService, tokenManager = tokenManager)
                                         }

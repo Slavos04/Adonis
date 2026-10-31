@@ -255,6 +255,16 @@ export const dietPlansApi = {
     let url = `${API_BASE}/diet-plans/my-week/pdf?`;
     if (startDate) url += `start_date=${startDate}&`;
     if (patientId) url += `patient_id=${patientId}&`;
+    const token = localStorage.getItem('token');
+    if (token) url += `token=${encodeURIComponent(token)}&`;
+    return url;
+  },
+  getShoppingListPdfUrl: (startDate, endDate, store, patientId) => {
+    let url = `${API_BASE}/diet-plans/shopping-list/pdf?start_date=${startDate}&end_date=${endDate}`;
+    if (store && store !== 'Wszystkie' && store !== 'OFF') url += `&store=${encodeURIComponent(store)}`;
+    if (patientId) url += `&patient_id=${patientId}`;
+    const token = localStorage.getItem('token');
+    if (token) url += `&token=${encodeURIComponent(token)}`;
     return url;
   },
 };
