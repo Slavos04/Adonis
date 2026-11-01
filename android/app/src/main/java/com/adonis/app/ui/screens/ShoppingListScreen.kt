@@ -55,7 +55,7 @@ fun ShoppingListScreen(apiService: AdonisApiService, tokenManager: TokenManager?
     var selectedStoreFilter by remember { mutableStateOf("Wszystkie") }
     val scope = rememberCoroutineScope()
 
-    val availableStores = listOf("Wszystkie", "Lidl", "Biedronka", "Kaufland", "Carrefour")
+    val availableStores = listOf("Wszystkie", "Lidl", "Biedronka", "Netto", "Kaufland", "Carrefour")
 
     fun loadItems(start: String = startDate, end: String = endDate) {
         scope.launch {
@@ -684,6 +684,7 @@ fun getStoreBadgeColor(store: String): Color {
     return when (store.lowercase()) {
         "lidl" -> Color(0xFF0050AA)
         "biedronka" -> Color(0xFFD32F2F)
+        "netto" -> Color(0xFFD97706)
         "kaufland" -> Color(0xFFC62828)
         "carrefour" -> Color(0xFF0284C7)
         else -> Color(0xFF4B5563)

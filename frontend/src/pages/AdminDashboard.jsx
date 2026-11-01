@@ -221,6 +221,7 @@ function CreateProductModal({ onClose, onSuccess }) {
               <select className="form-input" value={form.store} onChange={e => setForm(f => ({ ...f, store: e.target.value }))}>
                 <option value="Lidl">Lidl</option>
                 <option value="Biedronka">Biedronka</option>
+                <option value="Netto">Netto</option>
                 <option value="Kaufland">Kaufland</option>
                 <option value="Carrefour">Carrefour</option>
                 <option value="Ogolne">Ogólne / Inny</option>
@@ -357,6 +358,7 @@ function EditProductModal({ product, onClose, onSuccess }) {
               <select className="form-input" value={form.store} onChange={e => setForm(f => ({ ...f, store: e.target.value }))}>
                 <option value="Lidl">Lidl</option>
                 <option value="Biedronka">Biedronka</option>
+                <option value="Netto">Netto</option>
                 <option value="Kaufland">Kaufland</option>
                 <option value="Carrefour">Carrefour</option>
                 <option value="Ogolne">Ogólne / Inny</option>
@@ -2042,7 +2044,7 @@ export function AdminDashboard() {
                         <td style={{ color: 'var(--text-dim)', fontSize: '0.78rem' }}>#{p.id}</td>
                         <td style={{ fontWeight: 600, fontSize: '0.85rem' }}>{p.name}</td>
                         <td>
-                          <span className={`badge ${p.store === 'Lidl' ? 'badge-lidl' : p.store === 'Biedronka' ? 'badge-biedronka' : p.store === 'Kaufland' ? 'badge-kaufland' : p.store === 'Carrefour' ? 'badge-carrefour' : 'badge-emerald'}`} style={{ fontSize: '0.72rem' }}>
+                          <span className={`badge ${p.store === 'Lidl' ? 'badge-lidl' : p.store === 'Biedronka' ? 'badge-biedronka' : p.store === 'Netto' ? 'badge-netto' : p.store === 'Kaufland' ? 'badge-kaufland' : p.store === 'Carrefour' ? 'badge-carrefour' : 'badge-emerald'}`} style={{ fontSize: '0.72rem' }}>
                             {p.store}
                           </span>
                         </td>

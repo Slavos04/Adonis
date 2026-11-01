@@ -332,7 +332,7 @@ fun DietitianRecipesScreen(
         var isSavingProduct by remember { mutableStateOf(false) }
         var prodError by remember { mutableStateOf<String?>(null) }
 
-        val storeOptions = listOf("Lidl", "Biedronka", "Kaufland", "Auchan", "Carrefour", "Inny")
+        val storeOptions = listOf("Lidl", "Biedronka", "Netto", "Kaufland", "Auchan", "Carrefour", "Inny")
         val prodCategoryOptions = listOf("Nabiał", "Mięso/Ryby", "Pieczywo/Zboża", "Warzywa", "Owoce", "Tłuszcze/Orzechy", "Inne")
 
         AlertDialog(

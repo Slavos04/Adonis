@@ -1,14 +1,52 @@
-export const APP_VERSION = '1.12';
-export const APP_RELEASE_DATE = '2026-10-31';
+export const APP_VERSION = '1.13';
+export const APP_RELEASE_DATE = '2026-11-01';
 
 export const CHANGELOG_DATA = [
+  {
+    version: '1.13',
+    date: '2026-11-01',
+    time: '05:30 CET',
+    title: 'Wydanie 1.13 – Auto-zapis produktów, Netto, kod QR mobile, czystsze gramatury i ergonomia',
+    badge: 'Aktualna',
+    badgeType: 'emerald',
+    changes: [
+      {
+        category: 'Baza produktów i automatyczne zapisywanie (Crowdsourcing)',
+        items: [
+          'Nowo wyszukiwane lub zamieniane produkty z kodem kreskowym (Open Food Facts / własne) są automatycznie utrwalane w lokalnej bazie Adonis.',
+          'W kreatorze przepisów przycisk "Usuń przepis" przeniesiono do jednej linii z przyciskami szczegółów i edycji (tylko ikona kosza).'
+        ]
+      },
+      {
+        category: 'Sklepy i zakupy',
+        items: [
+          'Dodano sieć sklepów Netto do wszystkich filtrów, selektorów i kafelków (Web & Mobile).'
+        ]
+      },
+      {
+        category: 'Ergonomia i interfejs pacjenta',
+        items: [
+          'Wyświetlanie nazwy aktywnego jadłospisu na koncie pacjenta w aplikacji webowej i mobilnej.',
+          'Przy oznaczaniu zjedzonego posiłku dodano ikonę sztućców ze znikającym pytajnikiem po potwierdzeniu zjedzenia.',
+          'Usunięto mylące podwójne gramatury kobiet/mężczyzn ze składników – prezentowana jest wyłącznie wyliczona porcja dla danego pacjenta.'
+        ]
+      },
+      {
+        category: 'Okna informacyjne i kody QR',
+        items: [
+          'Okna Info i Ustawień w aplikacji webowej zostały powiększone i obniżone z dużym, kontrastowym kodem QR ułatwiającym skanowanie z telefonu.',
+          'Dodano czytelny kod QR w oknie "O aplikacji" w aplikacji mobilnej Android.'
+        ]
+      }
+    ]
+  },
   {
     version: '1.12',
     date: '2026-10-31',
     time: '11:15 CET',
     title: 'Wydanie 1.12 – Wydruk listy zakupów w PDF, poprawka PDF jadłospisu i ergonomia EAN',
-    badge: 'Aktualna',
-    badgeType: 'emerald',
+    badge: 'Poprzednia',
+    badgeType: 'slate',
     changes: [
       {
         category: 'Wydruk i eksport listy zakupów (Web & Mobile)',
@@ -16,7 +54,7 @@ export const CHANGELOG_DATA = [
           'Dodano generowanie i pobieranie listy zakupów w formacie PDF podzielonej na działy (Warzywa, Owoce, Nabiał, Mięso itd.) z polami do odhaczania.',
           'W aplikacji mobilnej dodano przycisk pobierania PDF listy zakupów w nagłówku oraz pod wyborem zakresu dat.',
           'W aplikacji webowej dodano przycisk "Pobierz PDF" w widoku listy zakupów obok opcji drukowania i kopiowania do schowka.',
-          'Uwzględnienie filtrów marketu (Lidl, Biedronka, Kaufland, Carrefour) przy generowaniu pliku PDF.'
+          'Uwzględnienie filtrów marketu (Lidl, Biedronka, Netto, Kaufland, Carrefour) przy generowaniu pliku PDF.'
         ]
       },
       {
@@ -104,7 +142,7 @@ export const CHANGELOG_DATA = [
       {
         category: 'Interfejs i Weryfikacja Wdrożenia',
         items: [
-          'Dodano wskaźnik wersji (v1.9) w nagłówku Panelu Dietetyka ułatwiający weryfikację załadowania najnowszego kodu w przeglądarce.',
+          'Dodano wskaźnik wersji w nagłówku Panelu Dietetyka ułatwiający weryfikację załadowania najnowszego kodu w przeglądarce.',
           'Rozwiązano potencjalne problemy z niewidocznymi przyciskami usuwania przy długich formularzach.'
         ]
       }

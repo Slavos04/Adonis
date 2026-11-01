@@ -192,11 +192,11 @@ export function SettingsModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1100 }}>
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1100, alignItems: 'flex-start', paddingTop: '4rem', overflowY: 'auto' }}>
       <div
         className="modal-content glass-panel"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: '540px', width: '90%', maxHeight: '85vh', overflowY: 'auto', padding: '1.75rem' }}
+        style={{ maxWidth: '620px', width: '95%', margin: '0 auto', maxHeight: '88vh', overflowY: 'auto', padding: '1.75rem' }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>

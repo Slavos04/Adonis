@@ -2,6 +2,8 @@ package com.adonis.app.ui.components
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,10 +14,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.adonis.app.R
 
 @Composable
 fun AppInfoDialog(
@@ -57,7 +62,7 @@ fun AppInfoDialog(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "1.4",
+                        text = "v1.13",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -93,6 +98,38 @@ fun AppInfoDialog(
                         FeatureRow("Inteligentna lista zakupów (tryb One-Stop-Shop)")
                         FeatureRow("Wykresy wagi, talii i dynamiczne BMI z normą WHO (18.5 – 24.9)")
                         FeatureRow("Czat z dietetykiem w czasie rzeczywistym")
+                    }
+                }
+
+                // Kod QR do aplikacji mobilnej
+                Surface(
+                    color = Color.White,
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "POBIERZ APLIKACJĘ MOBILNĄ",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E293B)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Image(
+                            painter = painterResource(id = R.drawable.adonis_qr),
+                            contentDescription = "Kod QR do pobrania aplikacji",
+                            modifier = Modifier.size(140.dp)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Zeskanuj kod aparatem telefonu",
+                            fontSize = 10.sp,
+                            color = Color(0xFF64748B)
+                        )
                     }
                 }
 

@@ -457,6 +457,12 @@ body::after {
   border: 1px solid rgba(227, 30, 36, 0.5);
 }
 
+.badge-netto {
+  background: rgba(234, 179, 8, 0.22);
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.45);
+}
+
 .badge-kaufland {
   background: rgba(217, 4, 41, 0.25);
   color: #ff6b81;
@@ -569,10 +575,11 @@ body::after {
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(8px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 100;
-  padding: 1.5rem;
+  padding: 3.5rem 1.5rem 2rem;
+  overflow-y: auto;
 }
 
 .modal-content {

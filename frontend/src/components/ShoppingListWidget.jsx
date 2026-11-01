@@ -58,6 +58,7 @@ export function ShoppingListWidget() {
       }
       if (storeFilter === 'LIDL') return item.store === 'Lidl';
       if (storeFilter === 'BIEDRONKA') return item.store === 'Biedronka';
+      if (storeFilter === 'NETTO') return item.store === 'Netto';
       if (storeFilter === 'KAUFLAND') return item.store === 'Kaufland';
       if (storeFilter === 'CARREFOUR') return item.store === 'Carrefour';
       return true;
@@ -144,6 +145,7 @@ export function ShoppingListWidget() {
     const s = (store || '').toLowerCase();
     if (s === 'lidl') return 'badge-lidl';
     if (s === 'biedronka') return 'badge-biedronka';
+    if (s === 'netto') return 'badge-netto';
     if (s === 'kaufland') return 'badge-kaufland';
     if (s === 'carrefour') return 'badge-carrefour';
     return 'badge-emerald';
@@ -277,6 +279,7 @@ export function ShoppingListWidget() {
             { id: 'Kaufland', label: '🔴 Kaufland', badge: 'badge-kaufland' },
             { id: 'Carrefour', label: '🔵 Carrefour', badge: 'badge-carrefour' },
             { id: 'Biedronka', label: '🟡 Biedronka', badge: 'badge-biedronka' },
+            { id: 'Netto', label: '🟡 Netto', badge: 'badge-netto' },
             { id: 'Lidl', label: '🔷 Lidl', badge: 'badge-lidl' },
           ].map((s) => (
             <button
@@ -340,6 +343,12 @@ export function ShoppingListWidget() {
               className={`btn btn-sm ${storeFilter === 'BIEDRONKA' ? 'btn-primary' : 'btn-secondary'}`}
             >
               Biedronka ({items.filter((i) => i.store === 'Biedronka').length})
+            </button>
+            <button
+              onClick={() => setStoreFilter('NETTO')}
+              className={`btn btn-sm ${storeFilter === 'NETTO' ? 'btn-primary' : 'btn-secondary'}`}
+            >
+              Netto ({items.filter((i) => i.store === 'Netto').length})
             </button>
           </div>
 

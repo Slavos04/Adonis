@@ -111,6 +111,27 @@ async def get_product_by_barcode(request, barcode: str):
     off_data = await off_client.get_product_by_barcode(barcode)
     if not off_data:
         raise HttpError(404, "Nie znaleziono produktu o podanym kodzie kreskowym.")
+
+    # Automatyczny zapis do lokalnej bazy Adonis (Local Cache / Crowdsourcing)
+    try:
+        store_val = off_data.get('store') or 'Ogolne'
+        if store_val not in [c[0] for c in StoreChoice.choices]:
+            store_val = 'Ogolne'
+        await Product.objects.acreate(
+            name=(off_data.get('name') or f"Produkt {barcode}").strip(),
+            brand=(off_data.get('brand') or '').strip(),
+            store=store_val,
+            barcode=barcode.strip(),
+            calories_per_100g=Decimal(str(off_data.get('calories_per_100g', 0.0))),
+            protein_per_100g=Decimal(str(off_data.get('protein_per_100g', 0.0))),
+            fat_per_100g=Decimal(str(off_data.get('fat_per_100g', 0.0))),
+            carbs_per_100g=Decimal(str(off_data.get('carbs_per_100g', 0.0))),
+            unit=off_data.get('unit') or 'g',
+            category='Inne'
+        )
+    except Exception:
+        pass
+
     return off_data
 
 import os

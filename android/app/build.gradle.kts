@@ -12,8 +12,8 @@ android {
         applicationId = "com.adonis.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 12
-        versionName = "1.12.0"
+        versionCode = 13
+        versionName = "1.13.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

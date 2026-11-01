@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 class StoreChoice(models.TextChoices):
     LIDL = 'Lidl', 'Lidl'
     BIEDRONKA = 'Biedronka', 'Biedronka'
+    NETTO = 'Netto', 'Netto'
     KAUFLAND = 'Kaufland', 'Kaufland'
     CARREFOUR = 'Carrefour', 'Carrefour'
     OGOLNE = 'Ogolne', 'Ogólne / Inne'

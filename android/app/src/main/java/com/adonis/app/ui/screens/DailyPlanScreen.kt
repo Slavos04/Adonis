@@ -146,6 +146,65 @@ fun DailyPlanScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+        // Nazwa aktualnego jadłospisu na koncie pacjenta
+        if (!planResponse?.activePackageName.isNullOrBlank()) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                Icons.Default.MenuBook,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = "Aktualny jadłospis:",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = planResponse?.activePackageName ?: "",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                        Surface(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = "Aktywny",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
         // Wiersz nawigacji z kafelkiem "Załaduj jadłospis" na lewo od daty
         item {
             Row(
@@ -435,12 +494,9 @@ fun DailyPlanScreen(
                         if (!recipe.ingredients.isNullOrEmpty()) {
                             Text("Składniki:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             recipe.ingredients.forEach { ing ->
-                                val genderInfo = if (ing.amountFemaleG != null && ing.amountMaleG != null) {
-                                    " (👩 ${ing.amountFemaleG.toInt()}g | 👨 ${ing.amountMaleG.toInt()}g)"
-                                } else ""
                                 val measureInfo = if (!ing.kitchenMeasure.isNullOrBlank()) " (${ing.kitchenMeasure})" else ""
                                 Text(
-                                    text = "• ${ing.product.name} — ${ing.amountG} ${ing.unit}$measureInfo$genderInfo (${ing.product.store})",
+                                    text = "• ${ing.product.name} — ${ing.amountG} ${ing.unit}$measureInfo (${ing.product.store})",
                                     fontSize = 12.sp,
                                     modifier = Modifier.padding(vertical = 1.dp)
                                 )
@@ -765,17 +821,35 @@ fun MealItemCard(
                     }
                 }
 
-                // Radiobox / ptaszek do oznaczania zjedzonego
-                IconButton(
-                    onClick = onToggle,
-                    modifier = Modifier.size(30.dp)
+                // Radiobox / oznaczenie zjedzonego z nożem i widelcem oraz znikającym pytajnikiem
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clickable(onClick = onToggle)
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
                 ) {
                     Icon(
                         imageVector = if (meal.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
                         contentDescription = if (meal.isCompleted) "Zjedzone" else "Oznacz zjedzone",
                         tint = if (meal.isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(22.dp)
                     )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        imageVector = Icons.Default.Restaurant,
+                        contentDescription = null,
+                        tint = if (meal.isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    if (!meal.isCompleted) {
+                        Text(
+                            text = "?",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 2.dp)
+                        )
+                    }
                 }
             }
 

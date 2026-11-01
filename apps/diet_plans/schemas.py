@@ -40,6 +40,7 @@ class DailyMealPlanOutSchema(Schema):
     date: date
     day_name: Optional[str] = ""
     notes: Optional[str] = ""
+    active_package_name: Optional[str] = ""
     meals: List[PlannedMealOutSchema]
     total_calories: float
     total_protein_g: float
@@ -59,6 +60,7 @@ class WeeklyDaySummarySchema(Schema):
 class WeeklyMealPlanOutSchema(Schema):
     start_date: date
     end_date: date
+    active_package_name: Optional[str] = ""
     days: List[WeeklyDaySummarySchema]
 
 class PlannedMealInputSchema(Schema):

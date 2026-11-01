@@ -18,7 +18,7 @@ from .schemas import (
     MealSubstituteSchema
 )
 from .services import generate_smart_shopping_list, normalize_shopping_category, SHOPPING_CATEGORY_ORDER
-from apps.recipes.models import Recipe
+from apps.recipes.models import Recipe, Product, StoreChoice
 from apps.authentication.models import User, UserRole
 from apps.authentication.security import JWTAuth
 from apps.chat.models import Notification
@@ -288,11 +288,17 @@ def serialize_daily_plan(plan: DailyMealPlan) -> dict:
     day_idx = plan.date.weekday()
     day_name = POLISH_DAYS[day_idx] if 0 <= day_idx < 7 else ""
 
+    active_pkg_name = ""
+    assignment = DietPlanTemplateAssignment.objects.filter(patient=plan.patient).order_by('-start_date', '-id').first()
+    if assignment and assignment.template:
+        active_pkg_name = assignment.template.name
+
     return {
         "id": plan.id,
         "date": plan.date,
         "day_name": day_name,
         "notes": plan.notes,
+        "active_package_name": active_pkg_name,
         "meals": meals_out,
         "total_calories": round(tot_cal, 1),
         "total_protein_g": round(tot_p, 1),
@@ -491,9 +497,15 @@ def get_weekly_plan(request, start_date: Optional[date] = None, patient_id: Opti
             "meals_preview": meals_preview
         })
 
+    active_pkg_name = ""
+    assignment = DietPlanTemplateAssignment.objects.filter(patient=target_patient).order_by('-start_date', '-id').first()
+    if assignment and assignment.template:
+        active_pkg_name = assignment.template.name
+
     return {
         "start_date": week_start,
         "end_date": week_end,
+        "active_package_name": active_pkg_name,
         "days": days_summary
     }
 
@@ -1109,6 +1121,47 @@ def substitute_meal(request, meal_id: int, payload: MealSubstituteSchema):
     meal.is_completed = True
     meal.save()
 
+    # Automatyczne dodawanie produktów wpisanych/zeskanowanych przez pacjenta do bazy Product
+    for it in payload.items:
+        bcode = (it.barcode or '').strip()
+        pname = (it.name or '').strip()
+        if bcode and not Product.objects.filter(barcode=bcode).exists():
+            w = float(it.weight_g or 100.0)
+            factor = (100.0 / w) if w > 0 else 1.0
+            try:
+                Product.objects.create(
+                    name=pname or f"Produkt {bcode}",
+                    barcode=bcode,
+                    store='Ogolne',
+                    brand='',
+                    calories_per_100g=Decimal(str(round(float(it.calories or 0) * factor, 1))),
+                    protein_per_100g=Decimal(str(round(float(it.protein_g or 0) * factor, 1))),
+                    fat_per_100g=Decimal(str(round(float(it.fat_g or 0) * factor, 1))),
+                    carbs_per_100g=Decimal(str(round(float(it.carbs_g or 0) * factor, 1))),
+                    unit='g',
+                    category='Inne'
+                )
+            except Exception:
+                pass
+        elif pname and len(pname) > 2 and not Product.objects.filter(name__iexact=pname).exists():
+            w = float(it.weight_g or 100.0)
+            factor = (100.0 / w) if w > 0 else 1.0
+            try:
+                Product.objects.create(
+                    name=pname,
+                    barcode=bcode if bcode else None,
+                    store='Ogolne',
+                    brand='',
+                    calories_per_100g=Decimal(str(round(float(it.calories or 0) * factor, 1))),
+                    protein_per_100g=Decimal(str(round(float(it.protein_g or 0) * factor, 1))),
+                    fat_per_100g=Decimal(str(round(float(it.fat_g or 0) * factor, 1))),
+                    carbs_per_100g=Decimal(str(round(float(it.carbs_g or 0) * factor, 1))),
+                    unit='g',
+                    category='Inne'
+                )
+            except Exception:
+                pass
+
     return {
         "message": "Posiłek został pomyślnie zamieniony.",
         "meal_id": meal.id,
@@ -1140,6 +1193,25 @@ def revert_meal_substitution(request, meal_id: int):
     meal.save()
 
     return {"message": "Przywrócono oryginalny posiłek.", "meal_id": meal.id}
+
+@router.get("/active-package", auth=JWTAuth())
+def get_active_package(request, patient_id: Optional[int] = None):
+    """Zwraca dane o aktualnie przypisanym pakiecie jadłospisu pacjenta."""
+    user = request.auth_user
+    target_patient = user
+    if user.role in [UserRole.ADMIN, UserRole.DIETITIAN] and patient_id:
+        target_patient = User.objects.filter(id=patient_id).first() or user
+    assignment = DietPlanTemplateAssignment.objects.filter(patient=target_patient).order_by('-start_date', '-id').first()
+    if assignment and assignment.template:
+        return {
+            "id": assignment.template.id,
+            "name": assignment.template.name,
+            "start_date": str(assignment.start_date),
+            "end_date": str(assignment.end_date) if assignment.end_date else None,
+            "dietitian_name": assignment.dietitian.get_full_name() if assignment.dietitian else "Dietetyk Kliniki",
+            "notes": assignment.notes or ""
+        }
+    return None
 
 @router.get("/shopping-list", response=List[ShoppingListItemOutSchema], auth=JWTAuth())
 def get_shopping_list(

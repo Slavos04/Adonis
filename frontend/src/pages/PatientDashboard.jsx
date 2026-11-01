@@ -7,7 +7,7 @@ import { MonthlyMeasurementChart } from '../components/MonthlyMeasurementChart';
 import { PatientLoadPackageModal } from '../components/PatientLoadPackageModal';
 import {
   Flame, Calendar, ChevronLeft, ChevronRight, CheckCircle2, Circle,
-  Plus, Activity, Sparkles, Info, ChefHat, Clock, Package, X, Bell, History, RefreshCw, Download
+  Plus, Activity, Sparkles, Info, ChefHat, Clock, Package, X, Bell, History, RefreshCw, Download, Utensils
 } from 'lucide-react';
 
 
@@ -308,6 +308,42 @@ export function PatientDashboard() {
           </button>
         </div>
       </div>
+
+      {/* Prominent Active Diet Plan Banner */}
+      {(dailyPlan?.active_package_name || weeklyData?.active_package_name) && (
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(99, 102, 241, 0.14) 100%)',
+            border: '1px solid rgba(16, 185, 129, 0.4)',
+            borderRadius: '12px',
+            padding: '0.85rem 1.25rem',
+            marginBottom: '1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.6rem',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.25)'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ background: 'var(--accent-emerald)', padding: '0.5rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Package size={20} color="#fff" />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6ee7b7', fontWeight: 800 }}>
+                Aktualny jadłospis pacjenta:
+              </div>
+              <div style={{ fontSize: '1.08rem', fontWeight: 800, color: '#fff' }}>
+                {dailyPlan?.active_package_name || weeklyData?.active_package_name}
+              </div>
+            </div>
+          </div>
+          <span className="badge badge-emerald" style={{ fontWeight: 800, fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}>
+            ● Aktywny w realizacji
+          </span>
+        </div>
+      )}
 
       {/* New Package Notifications Banner */}
       {newPackageNotifs.map(notif => (
@@ -761,10 +797,15 @@ export function PatientDashboard() {
                         background: meal.is_completed ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.05)',
                         borderColor: meal.is_completed ? '#10b981' : 'var(--border-subtle)',
                         color: meal.is_completed ? '#34d399' : 'var(--text-muted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
                       }}
                     >
                       {meal.is_completed ? <CheckCircle2 size={16} /> : <Circle size={16} />}
-                      {meal.is_completed ? 'Zjedzone' : 'Oznacz jako zjedzone'}
+                      <Utensils size={14} />
+                      {!meal.is_completed && <span style={{ fontWeight: 800, color: 'var(--accent-emerald)', marginLeft: '-2px' }}>?</span>}
+                      {meal.is_completed ? 'Zjedzone' : 'Zjedzone?'}
                     </button>
                   </div>
 

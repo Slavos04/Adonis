@@ -479,9 +479,6 @@ export function PortionScalerModal({
                             </span>
                           )}
                         </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '2px' }}>
-                          👩 K: <strong style={{ color: '#f472b6' }}>{item.amount_female_g || Math.round(item.original_amount * 0.82)} {item.unit}</strong> | 👨 M: <strong style={{ color: '#60a5fa' }}>{item.amount_male_g || Math.round(item.original_amount * 1.18)} {item.unit}</strong>
-                        </div>
                       </div>
                     </div>
                   ))}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { Flame, Info, Mail, CheckCircle, ShieldCheck, Smartphone, Sparkles, X, Download, History, Copy, Check } from 'lucide-react';
 import { APP_VERSION } from '../version';
 import { ChangelogModal } from './ChangelogModal';
@@ -19,12 +20,14 @@ export function AppInfoModal({ isOpen, onClose }) {
 
   return (
     <>
-      <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1200 }}>
+      <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1200, alignItems: 'flex-start', paddingTop: '4rem', overflowY: 'auto' }}>
         <div
           className="modal-content"
           onClick={(e) => e.stopPropagation()}
           style={{
-            maxWidth: '560px',
+            maxWidth: '660px',
+            width: '95%',
+            margin: '0 auto',
             padding: '2rem',
             position: 'relative',
             borderRadius: '18px',
@@ -234,27 +237,21 @@ export function AppInfoModal({ isOpen, onClose }) {
               }}>
                 <div
                   style={{
-                    padding: '8px',
-                    background: 'rgba(15, 23, 42, 0.85)',
+                    padding: '12px',
+                    background: '#ffffff',
                     borderRadius: '16px',
                     boxShadow: '0 0 25px rgba(16,185,129,0.45), 0 4px 14px rgba(0,0,0,0.5)',
-                    border: '2px solid #34d399',
+                    border: '3px solid #34d399',
                     display: 'inline-block',
-                    position: 'relative',
-                    overflow: 'hidden'
+                    lineHeight: 0
                   }}
                   title="Zeskanuj aparatem telefonu"
                 >
-                  <img
-                    src="/AdonisQR.png"
-                    alt="Kod QR do pobrania Adonis"
-                    style={{
-                      width: '140px',
-                      height: '140px',
-                      display: 'block',
-                      borderRadius: '10px',
-                      objectFit: 'contain'
-                    }}
+                  <QRCodeSVG
+                    value={typeof window !== 'undefined' ? `${window.location.origin}/Adonis.apk` : 'https://adonis.slavosmm.duckdns.org/Adonis.apk'}
+                    size={170}
+                    level="H"
+                    includeMargin={false}
                   />
                 </div>
                 <span style={{

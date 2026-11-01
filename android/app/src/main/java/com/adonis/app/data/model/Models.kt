@@ -165,6 +165,7 @@ data class DailyMealPlanResponse(
     val id: Int,
     val date: String,
     val notes: String?,
+    @SerializedName("active_package_name") val activePackageName: String? = null,
     val meals: List<PlannedMeal>,
     @SerializedName("total_calories") val totalCalories: Double,
     @SerializedName("total_protein_g") val totalProteinG: Double,

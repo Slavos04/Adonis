@@ -24,6 +24,7 @@ function getStoreBadgeClass(store) {
   const s = (store || '').toLowerCase();
   if (s === 'lidl') return 'badge-lidl';
   if (s === 'biedronka') return 'badge-biedronka';
+  if (s === 'netto') return 'badge-netto';
   if (s === 'kaufland') return 'badge-kaufland';
   if (s === 'carrefour') return 'badge-carrefour';
   return 'badge-emerald';
@@ -1132,11 +1133,11 @@ export function DietitianDashboard() {
                           </div>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', marginTop: '0.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', alignItems: 'center' }}>
                           <button
                             onClick={() => setInspectingRecipeId(r.id)}
                             className="btn btn-secondary btn-sm"
-                            style={{ color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                            style={{ flex: 1, color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
                             title="Zobacz szczegóły, składniki i opis przepisu"
                           >
                             <Eye size={14} /> Szczegóły
@@ -1144,32 +1145,28 @@ export function DietitianDashboard() {
                           <button
                             onClick={() => openEditRecipeModal(r)}
                             className="btn btn-secondary btn-sm"
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
                             title="Edytuj dane i składniki przepisu"
                           >
                             <Edit3 size={14} /> Edytuj
                           </button>
+                          <button
+                            onClick={() => promptDeleteRecipe(r)}
+                            className="btn btn-secondary btn-sm"
+                            style={{
+                              padding: '0.4rem 0.6rem',
+                              color: '#f43f5e',
+                              borderColor: 'rgba(244,63,94,0.35)',
+                              background: 'rgba(244,63,94,0.08)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                            title="Usuń ten przepis z bazy danych"
+                          >
+                            <Trash2 size={15} />
+                          </button>
                         </div>
-                        <button
-                          onClick={() => promptDeleteRecipe(r)}
-                          className="btn btn-secondary btn-sm"
-                          style={{
-                            width: '100%',
-                            marginTop: '0.4rem',
-                            color: '#f43f5e',
-                            borderColor: 'rgba(244,63,94,0.35)',
-                            background: 'rgba(244,63,94,0.08)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '0.4rem',
-                            fontSize: '0.8rem',
-                            fontWeight: 600,
-                          }}
-                          title="Usuń ten przepis z bazy danych"
-                        >
-                          <Trash2 size={14} /> Usuń przepis
-                        </button>
                       </div>
                     </div>
                   ))}
@@ -2264,6 +2261,7 @@ export function DietitianDashboard() {
                   >
                     <option value="Lidl">Lidl</option>
                     <option value="Biedronka">Biedronka</option>
+                    <option value="Netto">Netto</option>
                     <option value="Kaufland">Kaufland</option>
                     <option value="Carrefour">Carrefour</option>
                     <option value="Ogolne">Ogólne / Inne</option>

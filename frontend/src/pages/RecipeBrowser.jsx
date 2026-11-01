@@ -9,6 +9,7 @@ function getStoreBadgeClass(store) {
   const s = (store || '').toLowerCase();
   if (s === 'lidl') return 'badge-lidl';
   if (s === 'biedronka') return 'badge-biedronka';
+  if (s === 'netto') return 'badge-netto';
   if (s === 'kaufland') return 'badge-kaufland';
   if (s === 'carrefour') return 'badge-carrefour';
   return 'badge-emerald';
@@ -283,6 +284,7 @@ export function RecipeBrowser() {
               { id: 'Carrefour', label: `Carrefour (${products.filter(p => p.store === 'Carrefour').length})` },
               { id: 'Lidl', label: `Lidl (${products.filter(p => p.store === 'Lidl').length})` },
               { id: 'Biedronka', label: `Biedronka (${products.filter(p => p.store === 'Biedronka').length})` },
+              { id: 'Netto', label: `Netto (${products.filter(p => p.store === 'Netto').length})` },
             ].map(s => (
               <button
                 key={s.id}
@@ -547,6 +549,7 @@ function BrowserEditProductModal({ product, onClose, onSuccess }) {
               <select className="form-input" value={form.store} onChange={e => setForm(f => ({ ...f, store: e.target.value }))}>
                 <option value="Lidl">Lidl</option>
                 <option value="Biedronka">Biedronka</option>
+                <option value="Netto">Netto</option>
                 <option value="Kaufland">Kaufland</option>
                 <option value="Carrefour">Carrefour</option>
                 <option value="Ogolne">Ogólne</option>

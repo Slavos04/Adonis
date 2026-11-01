@@ -375,7 +375,7 @@ def generate_shopping_list_pdf_buffer(
     else:
         meta_cells.append(Paragraph("<b>Lista Zakupów Adonis</b>", styles['meal_meta']))
 
-    store_label = f"Wszystkie zakupy w markecie: <b>{store_name}</b>" if store_name and store_name != 'Wszystkie' and store_name != 'OFF' else "Sklepy: <b>Lidl, Biedronka, Kaufland, Carrefour</b>"
+    store_label = f"Wszystkie zakupy w markecie: <b>{store_name}</b>" if store_name and store_name != 'Wszystkie' and store_name != 'OFF' else "Sklepy: <b>Lidl, Biedronka, Netto, Kaufland, Carrefour</b>"
     meta_cells.append(Paragraph(store_label, styles['meal_meta']))
 
     meta_table = Table([meta_cells], colWidths=[9*cm, 9*cm])
