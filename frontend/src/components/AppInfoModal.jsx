@@ -253,6 +253,14 @@ export function AppInfoModal({ isOpen, onClose }) {
                     size={170}
                     level="H"
                     includeMargin={false}
+                    imageSettings={{
+                      src: '/logo.png',
+                      x: undefined,
+                      y: undefined,
+                      height: 38,
+                      width: 38,
+                      excavate: true,
+                    }}
                   />
                 </div>
                 <span style={{
