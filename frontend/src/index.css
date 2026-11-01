@@ -172,40 +172,11 @@ body {
 }
 
 /* W przypadku aktywnego tła graficznego, usuwamy nieprzezroczysty kolor body */
+html.has-custom-bg,
 html.has-custom-bg body,
 body.has-custom-bg {
   background-color: transparent !important;
   background-image: var(--theme-pattern) !important;
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: var(--custom-bg-image, none);
-  background-size: cover;
-  background-position: center center;
-  background-repeat: no-repeat;
-  z-index: -2;
-  pointer-events: none;
-  filter: blur(var(--custom-bg-blur, 0px));
-  transition: filter 0.3s ease;
-}
-
-body::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--custom-bg-overlay, transparent);
-  z-index: -1;
-  pointer-events: none;
-  transition: background-color 0.3s ease;
 }
 
 /* ─── GLASSMORPHISM ──────────────────────────────────────────────────────────── */

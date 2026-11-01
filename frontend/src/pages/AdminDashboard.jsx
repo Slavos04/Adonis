@@ -1250,12 +1250,13 @@ function ThemeStudioSection({ onToast }) {
     try {
       const res = await recipesApi.uploadImage(file);
       setBgImageUrl(res.image_url);
-      saveCustomThemeSettings({ bgImage: res.image_url });
-      onToast('Wgrane zdjęcie zostało ustawione jako tło aplikacji!');
+      saveCustomThemeSettings({ bgImage: res.image_url, overlay: bgOverlay, blur: bgBlur });
+      onToast('Wgrane zdjęcie zostało zapisane na serwerze i ustawione jako tło aplikacji!');
     } catch (err) {
       alert(`Błąd uploadu zdjęcia tła: ${err.message}`);
     } finally {
       setUploading(false);
+      e.target.value = '';
     }
   }
 
@@ -1540,22 +1541,109 @@ function ThemeStudioSection({ onToast }) {
             <label style={{ fontSize: '0.85rem', fontWeight: 700, display: 'block', marginBottom: '0.5rem', color: '#fff' }}>
               3. Własne Zdjęcie jako Tło Całej Aplikacji:
             </label>
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
               <input
                 className="form-input"
-                placeholder="Wklej adres URL zdjęcia (np. Unsplash)..."
+                placeholder="Wklej adres URL zdjęcia (np. z Unsplash lub bezpośredni link)..."
                 value={bgImageUrl}
                 onChange={e => {
                   setBgImageUrl(e.target.value);
                   saveCustomThemeSettings({ bgImage: e.target.value.trim() });
                 }}
-                style={{ flex: 1, fontSize: '0.82rem' }}
+                style={{ flex: 1, minWidth: '220px', fontSize: '0.82rem' }}
               />
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  if (!bgImageUrl.trim()) {
+                    onToast('Wprowadź najpierw adres URL zdjęcia.');
+                    return;
+                  }
+                  saveCustomThemeSettings({ bgImage: bgImageUrl.trim(), overlay: bgOverlay, blur: bgBlur });
+                  onToast('Zastosowano tło z linku URL!');
+                }}
+                style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+              >
+                <Check size={14} /> Zastosuj URL
+              </button>
               <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                 <Upload size={14} /> {uploading ? 'Wgrywam...' : 'Wgraj z dysku'}
                 <input type="file" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} disabled={uploading} />
               </label>
             </div>
+
+            {/* Podgląd na żywo wybranego tła */}
+            {bgImageUrl ? (
+              <div style={{
+                position: 'relative',
+                height: '110px',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                border: '1px solid var(--accent-emerald)',
+                marginBottom: '0.75rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#000',
+              }}>
+                <img
+                  src={bgImageUrl}
+                  alt="Podgląd tła"
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    filter: bgBlur > 0 ? `blur(${bgBlur}px)` : 'none',
+                    transform: bgBlur > 0 ? 'scale(1.05)' : 'none',
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    const parent = e.currentTarget.parentElement;
+                    if (parent && !parent.querySelector('.bg-error-msg')) {
+                      const msg = document.createElement('div');
+                      msg.className = 'bg-error-msg';
+                      msg.style.cssText = 'padding: 0.5rem; text-align: center; color: #f87171; font-size: 0.76rem; z-index: 2;';
+                      msg.textContent = '⚠️ Nie można wczytać zdjęcia z tego URL (zewnętrzny serwer blokuje direct embedding lub link jest błędny). Użyj "Wgraj z dysku" lub innego linku.';
+                      parent.appendChild(msg);
+                    }
+                  }}
+                />
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundColor: `rgba(0,0,0,${bgOverlay})`,
+                }} />
+                <div style={{
+                  position: 'relative',
+                  zIndex: 2,
+                  textAlign: 'center',
+                  color: '#fff',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                  padding: '0.5rem',
+                }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#34d399' }}>✓ Podgląd tła aplikacji (Aktywne)</div>
+                  <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.85)', wordBreak: 'break-all' }}>
+                    {bgImageUrl.length > 60 ? bgImageUrl.substring(0, 57) + '...' : bgImageUrl}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                padding: '0.5rem 0.8rem',
+                borderRadius: '8px',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px dashed var(--border-subtle)',
+                fontSize: '0.74rem',
+                color: 'var(--text-dim)',
+                marginBottom: '0.75rem',
+                textAlign: 'center'
+              }}>
+                Brak niestandardowego tła graficznego (używane jest domyślne tło motywu Adonis).
+              </div>
+            )}
 
             {/* Presety obrazów */}
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>Szybkie presety wysokiej jakości:</div>
@@ -1567,6 +1655,7 @@ function ThemeStudioSection({ onToast }) {
                   onClick={() => {
                     setBgImageUrl(preset.url);
                     saveCustomThemeSettings({ bgImage: preset.url });
+                    onToast(`Zastosowano tło: ${preset.label}`);
                   }}
                   className="btn btn-secondary btn-sm"
                   style={{ fontSize: '0.72rem', padding: '0.25rem 0.55rem' }}
@@ -1580,6 +1669,7 @@ function ThemeStudioSection({ onToast }) {
                   onClick={() => {
                     setBgImageUrl('');
                     saveCustomThemeSettings({ bgImage: '' });
+                    onToast('Usunięto niestandardowe tło.');
                   }}
                   className="btn btn-secondary btn-sm"
                   style={{ fontSize: '0.72rem', padding: '0.25rem 0.55rem', color: 'var(--accent-rose)' }}

@@ -39,7 +39,30 @@ def list_recipes(
 
     return qs[offset:offset+limit]
 
-@router.get("/{recipe_id}", response=RecipeDetailOutSchema, auth=None)
+@router.post("/upload-image", auth=JWTAuth())
+def upload_recipe_image(request, file: UploadedFile = File(...)):
+    """Upload zdjęcia potrawy lub tła aplikacji do katalogu mediów serwera."""
+    user = request.auth_user
+    if user.role not in ['admin', 'dietitian']:
+        raise HttpError(403, "Brak uprawnień.")
+
+    ext = os.path.splitext(file.name)[1].lower()
+    if ext not in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
+        ext = '.jpg'
+
+    filename = f"recipe_{uuid.uuid4().hex}{ext}"
+    media_dir = settings.MEDIA_ROOT / 'recipes'
+    os.makedirs(media_dir, exist_ok=True)
+    target_path = media_dir / filename
+
+    with open(target_path, 'wb') as destination:
+        for chunk in file.chunks():
+            destination.write(chunk)
+
+    image_url = f"{settings.MEDIA_URL}recipes/{filename}"
+    return {"image_url": image_url}
+
+@router.get("/{int:recipe_id}", response=RecipeDetailOutSchema, auth=None)
 def get_recipe_detail(request, recipe_id: int):
     """Pobiera szczegółowe dane przepisu wraz z listą składników i gramaturą."""
     recipe = Recipe.objects.prefetch_related('ingredients__product').filter(id=recipe_id).first()
@@ -47,7 +70,7 @@ def get_recipe_detail(request, recipe_id: int):
         raise HttpError(404, "Nie znaleziono danego przepisu.")
     return recipe
 
-@router.get("/{recipe_id}/scale", response=ScaledRecipeOutSchema, auth=None)
+@router.get("/{int:recipe_id}/scale", response=ScaledRecipeOutSchema, auth=None)
 def scale_recipe_portions(request, recipe_id: int, portions: float = 1.0, gender: Optional[str] = "all"):
     """
     Automatyczne skalowanie porcji dań w locie z uwzględnieniem docelowej płci (gender).
@@ -201,29 +224,6 @@ def delete_product(request, product_id: int):
     prod.delete()
     return {"message": "Produkt został usunięty."}
 
-@router.post("/upload-image", auth=JWTAuth())
-def upload_recipe_image(request, file: UploadedFile = File(...)):
-    """Upload zdjęcia potrawy do katalogu mediów serwera."""
-    user = request.auth_user
-    if user.role not in ['admin', 'dietitian']:
-        raise HttpError(403, "Brak uprawnień.")
-
-    ext = os.path.splitext(file.name)[1].lower()
-    if ext not in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
-        ext = '.jpg'
-
-    filename = f"recipe_{uuid.uuid4().hex}{ext}"
-    media_dir = settings.MEDIA_ROOT / 'recipes'
-    os.makedirs(media_dir, exist_ok=True)
-    target_path = media_dir / filename
-
-    with open(target_path, 'wb') as destination:
-        for chunk in file.chunks():
-            destination.write(chunk)
-
-    image_url = f"{settings.MEDIA_URL}recipes/{filename}"
-    return {"image_url": image_url}
-
 @router.post("/", response=RecipeDetailOutSchema, auth=JWTAuth())
 def create_recipe(request, payload: RecipeCreateSchema):
     """Tworzenie nowego przepisu przez zalogowanego dietetyka lub administratora."""
@@ -255,7 +255,7 @@ def create_recipe(request, payload: RecipeCreateSchema):
     recipe.recalculate_macros_from_ingredients()
     return Recipe.objects.prefetch_related('ingredients__product').get(id=recipe.id)
 
-@router.put("/{recipe_id}", response=RecipeDetailOutSchema, auth=JWTAuth())
+@router.put("/{int:recipe_id}", response=RecipeDetailOutSchema, auth=JWTAuth())
 def update_recipe(request, recipe_id: int, payload: RecipeUpdateSchema):
     """Ręczna edycja przepisu (tytuł, instrukcja, zdjęcie, składniki) przez dietetyka."""
     user = request.auth_user
@@ -338,7 +338,7 @@ def get_recipe_usages_info(recipe_id: int):
         "template_usages": template_usages
     }
 
-@router.get("/{recipe_id}/usage", auth=JWTAuth())
+@router.get("/{int:recipe_id}/usage", auth=JWTAuth())
 def check_recipe_usage(request, recipe_id: int):
     """Pobiera listę miejsc (pakietów i planów pacjentów), w których użyty jest dany przepis."""
     recipe = Recipe.objects.filter(id=recipe_id).first()
@@ -346,7 +346,7 @@ def check_recipe_usage(request, recipe_id: int):
         raise HttpError(404, "Nie znaleziono przepisu.")
     return get_recipe_usages_info(recipe_id)
 
-@router.post("/{recipe_id}/replace", auth=JWTAuth())
+@router.post("/{int:recipe_id}/replace", auth=JWTAuth())
 def replace_recipe(request, recipe_id: int, payload: ReplaceRecipeSchema):
     """
     Zastępuje dany przepis innym przepisem we wszystkich szablonach i zaplanowanych posiłkach pacjentów,
@@ -405,7 +405,7 @@ def replace_recipe(request, recipe_id: int, payload: ReplaceRecipeSchema):
         "deleted_old": payload.delete_old
     }
 
-@router.delete("/{recipe_id}", auth=JWTAuth())
+@router.delete("/{int:recipe_id}", auth=JWTAuth())
 def delete_recipe(request, recipe_id: int, force: bool = False):
     """Usuwanie przepisu przez dietetyka lub administratora z blokadą integralności."""
     user = request.auth_user

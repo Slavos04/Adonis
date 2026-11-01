@@ -10,6 +10,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -64,10 +68,42 @@ class MainActivity : ComponentActivity() {
                 var showAppInfo by remember { mutableStateOf(false) }
                 val isDietitian = remember(isLoggedIn) { tokenManager.getUserRole() == "dietitian" }
 
+                var globalBgUrl by remember { mutableStateOf<String?>(null) }
+                var globalBgOverlay by remember { mutableStateOf(0.55f) }
+
+                LaunchedEffect(Unit) {
+                    try {
+                        val branding = apiService.getSystemBranding()
+                        if (branding.isActiveForAll && branding.globalBgImageUrl.isNotBlank()) {
+                            val url = if (branding.globalBgImageUrl.startsWith("/")) {
+                                "https://adonis.slavosmm.duckdns.org" + branding.globalBgImageUrl
+                            } else {
+                                branding.globalBgImageUrl
+                            }
+                            globalBgUrl = url
+                            globalBgOverlay = branding.globalBgOverlay
+                        }
+                    } catch (_: Exception) {}
+                }
+
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = if (globalBgUrl.isNullOrBlank()) MaterialTheme.colorScheme.background else Color.Transparent
                 ) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        if (!globalBgUrl.isNullOrBlank()) {
+                            AsyncImage(
+                                model = globalBgUrl,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = globalBgOverlay))
+                            )
+                        }
                     if (!isLoggedIn) {
                         LoginScreen(
                             apiService = apiService,

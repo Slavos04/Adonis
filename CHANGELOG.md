@@ -1,3 +1,14 @@
+## [1.14] – 2026-11-01 18:40 CET
+
+### Studio Motywów i Tła Aplikacji (Web & Android)
+- **Niezawodna warstwa tła (`GlobalCustomBackground`)**: Usunięto problematyczne pseudo-elementy CSS `body::before` z ujemnym z-index na rzecz dedykowanej warstwy DOM w `App.jsx`, gwarantującej natychmiastowe i bezbłędne wyświetlanie tła z linków URL, presetów oraz wgranych zdjęć.
+- **Podgląd na żywo (Live Preview)**: W Studio Motywów dodano kasetę natychmiastowego podglądu tła z obsługą błędów nieosiągalnych lub zablokowanych adresów URL (CORS/hotlinking) oraz dedykowany przycisk "Zastosuj URL".
+- **Poprawka wgrywania z dysku (405 Method Not Allowed & Routing)**: Przesunięto trasę `/api/recipes/upload-image` przed sparametryzowane trasy `/{int:recipe_id}`, eliminując konflikt dopasowania URL w Django Ninja.
+- **Serwowanie i streaming mediów**: Włączono bezpośrednie proxy dla ścieżki `/media/` z Nginx do backendu Django/Daphne oraz fallback przez `django.views.static.serve`, co trwale rozwiązuje problem rozbieżności wolumenów Dockera.
+- **Globalny branding dla wszystkich kont**: Administrator ma możliwość opublikowania tła globalnego jednym kliknięciem („Zastosuj jako tło globalne dla wszystkich kont”), które aplikowane jest w czasie rzeczywistym u wszystkich pacjentów i dietetyków w wersji Web i natywnej aplikacji Android.
+
+---
+
 ## [1.10] – 2026-10-29 14:50 CET
 
 ### Zamiana posiłków przez pacjenta ("Zamień posiłek")

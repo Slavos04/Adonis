@@ -11,6 +11,76 @@ import { MeasurementsPage } from './pages/MeasurementsPage';
 import { ChatWidget } from './components/ChatWidget';
 import { APP_VERSION } from './version';
 
+function GlobalCustomBackground() {
+  const [bgConfig, setBgConfig] = useState(() => ({
+    image: (typeof window !== 'undefined' ? localStorage.getItem('adonis_custom_bg_image') : '') || '',
+    overlay: (typeof window !== 'undefined' ? parseFloat(localStorage.getItem('adonis_custom_bg_overlay')) : 0.55) || 0.55,
+    blur: (typeof window !== 'undefined' ? parseInt(localStorage.getItem('adonis_custom_bg_blur')) : 0) || 0,
+  }));
+
+  React.useEffect(() => {
+    const update = () => {
+      setBgConfig({
+        image: localStorage.getItem('adonis_custom_bg_image') || '',
+        overlay: parseFloat(localStorage.getItem('adonis_custom_bg_overlay')) || 0.55,
+        blur: parseInt(localStorage.getItem('adonis_custom_bg_blur')) || 0,
+      });
+    };
+    window.addEventListener('adonis_custom_bg_changed', update);
+    window.addEventListener('adonis_themes_changed', update);
+    return () => {
+      window.removeEventListener('adonis_custom_bg_changed', update);
+      window.removeEventListener('adonis_themes_changed', update);
+    };
+  }, []);
+
+  if (!bgConfig.image) return null;
+
+  return (
+    <div
+      id="adonis-global-bg-container"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 0,
+        pointerEvents: 'none',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          top: -25,
+          left: -25,
+          right: -25,
+          bottom: -25,
+          backgroundImage: `url("${bgConfig.image}")`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center center',
+          backgroundRepeat: 'no-repeat',
+          filter: bgConfig.blur > 0 ? `blur(${bgConfig.blur}px)` : 'none',
+          transform: bgConfig.blur > 0 ? 'scale(1.06)' : 'none',
+          transition: 'filter 0.3s ease, background-image 0.4s ease',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: `rgba(0, 0, 0, ${bgConfig.overlay})`,
+          transition: 'background-color 0.3s ease',
+        }}
+      />
+    </div>
+  );
+}
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -81,10 +151,10 @@ function MainLayout() {
 
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      <main style={{ flex: 1, paddingBottom: '3rem' }}>
+      <main style={{ flex: 1, paddingBottom: '3rem', position: 'relative', zIndex: 1 }}>
         {activeTab === 'dashboard' && renderDashboard()}
 
         {activeTab === 'measurements' && <MeasurementsPage />}
@@ -123,6 +193,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
+        <GlobalCustomBackground />
         <MainLayout />
       </AuthProvider>
     </ErrorBoundary>

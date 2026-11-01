@@ -239,6 +239,8 @@ export function saveCustomThemeSettings({ bgImage, overlay, blur, pattern }) {
   if (blur != null) localStorage.setItem('adonis_custom_bg_blur', blur.toString());
   if (pattern != null) localStorage.setItem('adonis_custom_pattern', pattern);
   applyCustomThemeSettings();
+  window.dispatchEvent(new Event('adonis_custom_bg_changed'));
+  window.dispatchEvent(new Event('adonis_themes_changed'));
 }
 
 export function resetCustomThemeSettings() {
@@ -247,4 +249,6 @@ export function resetCustomThemeSettings() {
   localStorage.removeItem('adonis_custom_bg_blur');
   localStorage.removeItem('adonis_custom_pattern');
   applyCustomThemeSettings();
+  window.dispatchEvent(new Event('adonis_custom_bg_changed'));
+  window.dispatchEvent(new Event('adonis_themes_changed'));
 }

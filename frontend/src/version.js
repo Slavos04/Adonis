@@ -1,14 +1,33 @@
-export const APP_VERSION = '1.13';
+export const APP_VERSION = '1.14';
 export const APP_RELEASE_DATE = '2026-11-01';
 
 export const CHANGELOG_DATA = [
+  {
+    version: '1.14',
+    date: '2026-11-01',
+    time: '18:40 CET',
+    title: 'Wydanie 1.14 – Niezawodne tło graficzne (URL i pliki z dysku) oraz globalny branding',
+    badge: 'Aktualna',
+    badgeType: 'emerald',
+    changes: [
+      {
+        category: 'Studio Motywów i Tła (Admin & Cała Platforma)',
+        items: [
+          'Wdrożono natywny komponent GlobalCustomBackground eliminujący błędy ujemnego z-index w przeglądarkach i zapewniający 100% widoczności wybranego tła graficznego.',
+          'Dodano natychmiastowy podgląd na żywo tła (Live Preview) z weryfikacją dostępności zewnętrznych grafik (CORS / hotlinking) i dedykowany przycisk "Zastosuj URL".',
+          'Naprawiono błąd routingu 405 Method Not Allowed w /api/recipes/upload-image i skonfigurowano bezpośredni streaming plików mediów z backendu, umożliwiając bezbłędne wgrywanie zdjęć z dysku lokalnego.',
+          'Wdrożono globalną publikację tła dla wszystkich użytkowników (Web & Android).'
+        ]
+      }
+    ]
+  },
   {
     version: '1.13',
     date: '2026-11-01',
     time: '05:30 CET',
     title: 'Wydanie 1.13 – Auto-zapis produktów, Netto, kod QR mobile, czystsze gramatury i ergonomia',
-    badge: 'Aktualna',
-    badgeType: 'emerald',
+    badge: 'Poprzednia',
+    badgeType: 'indigo',
     changes: [
       {
         category: 'Baza produktów i automatyczne zapisywanie (Crowdsourcing)',
