@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { Flame, Info, Mail, CheckCircle, ShieldCheck, Smartphone, Sparkles, X, Download, History, Copy, Check } from 'lucide-react';
 import { APP_VERSION } from '../version';
@@ -18,9 +19,9 @@ export function AppInfoModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <>
-      <div className="modal-overlay" onClick={onClose} style={{ zIndex: 10000, alignItems: 'flex-start', paddingTop: '4rem', overflowY: 'auto' }}>
+      <div className="modal-overlay" onClick={onClose} style={{ zIndex: 99999, alignItems: 'flex-start', paddingTop: '4.5rem', overflowY: 'auto' }}>
         <div
           className="modal-content"
           onClick={(e) => e.stopPropagation()}
@@ -394,6 +395,7 @@ export function AppInfoModal({ isOpen, onClose }) {
         onClose={() => setShowChangelog(false)}
         onBack={() => setShowChangelog(false)}
       />
-    </>
+    </>,
+    document.body
   );
 }

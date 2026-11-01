@@ -1,12 +1,13 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X, History, Calendar, CheckCircle2, Tag, ArrowLeft } from 'lucide-react';
 import { APP_VERSION, APP_RELEASE_DATE, CHANGELOG_DATA } from '../version';
 
 export function ChangelogModal({ isOpen, onClose, onBack }) {
   if (!isOpen) return null;
 
-  return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 10100 }}>
+  return createPortal(
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 100000 }}>
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
@@ -165,6 +166,7 @@ export function ChangelogModal({ isOpen, onClose, onBack }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

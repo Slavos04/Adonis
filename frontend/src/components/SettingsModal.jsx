@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Settings, Bell, Lock, Palette, CheckCircle2, AlertCircle, Clock, Trash2, AlertTriangle } from 'lucide-react';
 import { authApi } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -191,8 +192,8 @@ export function SettingsModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 10000, alignItems: 'flex-start', paddingTop: '4rem', overflowY: 'auto' }}>
+  return createPortal(
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 99999, alignItems: 'flex-start', paddingTop: '4.5rem', overflowY: 'auto' }}>
       <div
         className="modal-content glass-panel"
         onClick={(e) => e.stopPropagation()}
@@ -518,6 +519,7 @@ export function SettingsModal({ isOpen, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
