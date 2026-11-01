@@ -20,7 +20,7 @@ export function AppInfoModal({ isOpen, onClose }) {
 
   return (
     <>
-      <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1200, alignItems: 'flex-start', paddingTop: '4rem', overflowY: 'auto' }}>
+      <div className="modal-overlay" onClick={onClose} style={{ zIndex: 10000, alignItems: 'flex-start', paddingTop: '4rem', overflowY: 'auto' }}>
         <div
           className="modal-content"
           onClick={(e) => e.stopPropagation()}

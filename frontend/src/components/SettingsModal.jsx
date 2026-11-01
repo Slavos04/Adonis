@@ -192,7 +192,7 @@ export function SettingsModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1100, alignItems: 'flex-start', paddingTop: '4rem', overflowY: 'auto' }}>
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 10000, alignItems: 'flex-start', paddingTop: '4rem', overflowY: 'auto' }}>
       <div
         className="modal-content glass-panel"
         onClick={(e) => e.stopPropagation()}
@@ -482,7 +482,7 @@ export function SettingsModal({ isOpen, onClose }) {
 
         {/* Modal usuwania konta */}
         {showDeleteModal && (
-          <div className="modal-overlay" onClick={() => setShowDeleteModal(false)} style={{ zIndex: 1300 }}>
+          <div className="modal-overlay" onClick={() => setShowDeleteModal(false)} style={{ zIndex: 10100 }}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', textAlign: 'center' }}>
               <AlertTriangle size={42} color="var(--accent-rose)" style={{ marginBottom: '1rem' }} />
               <h2 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '0.5rem' }}>Trwałe usunięcie konta</h2>

@@ -577,7 +577,7 @@ body::after {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  z-index: 100;
+  z-index: 10000;
   padding: 3.5rem 1.5rem 2rem;
   overflow-y: auto;
 }
@@ -897,15 +897,15 @@ html, body {
   }
 
   .modal-overlay {
-    padding: 0.5rem !important;
-    align-items: flex-end;
+    padding: 2.5rem 0.75rem 1.5rem !important;
+    align-items: flex-start !important;
+    z-index: 10000 !important;
   }
 
   .modal-content {
     padding: 1.25rem !important;
-    max-height: 94vh !important;
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
+    max-height: 90vh !important;
+    border-radius: var(--radius-lg) !important;
   }
 
   .user-name-text {

@@ -6,7 +6,7 @@ export function ChangelogModal({ isOpen, onClose, onBack }) {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1300 }}>
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 10100 }}>
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
