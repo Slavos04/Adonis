@@ -221,6 +221,7 @@ export const dietPlansApi = {
     const q = category ? `?category=${encodeURIComponent(category)}` : '';
     return apiRequest(`/diet-plans/templates${q}`);
   },
+  getPatientPackagesOverview: () => apiRequest('/diet-plans/patient-packages-overview'),
   createTemplate: (data) =>
     apiRequest('/diet-plans/templates', {
       method: 'POST',

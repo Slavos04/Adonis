@@ -277,6 +277,30 @@ data class PatientLoadPackageRequest(
     @SerializedName("start_date") val startDate: String? = null
 )
 
+data class PatientPackageItem(
+    @SerializedName("assignment_id") val assignmentId: Int? = null,
+    @SerializedName("template_id") val templateId: Int,
+    val name: String,
+    val category: String,
+    @SerializedName("target_gender") val targetGender: String? = "all",
+    @SerializedName("target_calories") val targetCalories: Int,
+    @SerializedName("meals_per_day") val mealsPerDay: Int,
+    val description: String? = null,
+    @SerializedName("start_date") val startDate: String? = null,
+    @SerializedName("end_date") val endDate: String? = null,
+    @SerializedName("dietitian_name") val dietitianName: String? = null,
+    val notes: String? = null,
+    @SerializedName("is_loaded") val isLoaded: Boolean = false,
+    @SerializedName("loaded_at") val loadedAt: String? = null,
+    @SerializedName("created_at") val createdAt: String? = null
+)
+
+data class PatientPackagesOverviewResponse(
+    @SerializedName("current_diet") val currentDiet: PatientPackageItem? = null,
+    @SerializedName("pending_diet") val pendingDiet: PatientPackageItem? = null,
+    @SerializedName("previous_diets") val previousDiets: List<PatientPackageItem> = emptyList()
+)
+
 data class PatientProfileResponse(
     val user: User,
     val profile: PatientProfile?

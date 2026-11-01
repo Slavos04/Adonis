@@ -1,68 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import { dietPlansApi } from '../api/client';
-import { Package, Calendar, Check, Search, Sparkles, X, ChevronRight, Layers, Flame, Clock } from 'lucide-react';
+import { Package, Calendar, Check, Search, Sparkles, X, Flame, Clock, Download, ArrowRight, RotateCcw, FileText, CheckCircle2 } from 'lucide-react';
 
 export function PatientLoadPackageModal({ isOpen, onClose, onPackageLoaded, initialStartDate }) {
-  const [templates, setTemplates] = useState([]);
+  const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
   const [startDate, setStartDate] = useState(initialStartDate || new Date().toISOString().split('T')[0]);
   const [search, setSearch] = useState('');
-  const [selectedGender, setSelectedGender] = useState('all'); // 'all', 'female', 'male'
-  const [selectedCategory, setSelectedCategory] = useState('Wszystkie');
-  const [submitting, setSubmitting] = useState(false);
+  const [submittingId, setSubmittingId] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
-      loadTemplates();
+      loadOverview();
       if (initialStartDate) setStartDate(initialStartDate);
     }
   }, [isOpen, initialStartDate]);
 
-  async function loadTemplates() {
+  async function loadOverview() {
     setLoading(true);
     try {
-      const data = await dietPlansApi.getTemplates();
-      setTemplates(data || []);
-      if (data && data.length > 0 && !selectedTemplateId) {
-        setSelectedTemplateId(data[0].id);
+      const data = await dietPlansApi.getPatientPackagesOverview();
+      setOverview(data || { current_diet: null, pending_diet: null, previous_diets: [] });
+      if (data?.pending_diet) {
+        setSelectedTemplateId(data.pending_diet.template_id);
+      } else if (data?.current_diet) {
+        setSelectedTemplateId(data.current_diet.template_id);
       }
     } catch (err) {
-      console.error('Błąd pobierania pakietów:', err);
+      console.error('Błąd pobierania podsumowania pakietów:', err);
     } finally {
       setLoading(false);
     }
   }
 
-  // Kategorie z listy szablonów
-  const categories = ['Wszystkie', ...new Set(templates.map(t => t.category).filter(Boolean))];
-
-  const filteredTemplates = templates.filter(t => {
-    const matchesCat = selectedCategory === 'Wszystkie' || t.category === selectedCategory;
-    const matchesGender = selectedGender === 'all' || t.target_gender === selectedGender || t.target_gender === 'all';
-    const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase()) ||
-      (t.description || '').toLowerCase().includes(search.toLowerCase()) ||
-      (t.category || '').toLowerCase().includes(search.toLowerCase());
-    return matchesCat && matchesGender && matchesSearch;
-  });
-
-  async function handleLoadPackage(e) {
-    e.preventDefault();
-    if (!selectedTemplateId) return;
-
-    setSubmitting(true);
+  async function handleLoadPackage(templateId, customStartDate) {
+    if (!templateId) return;
+    setSubmittingId(templateId);
     setSuccessMessage(null);
     try {
       const res = await dietPlansApi.loadPackageByPatient({
-        template_id: selectedTemplateId,
-        start_date: startDate,
+        template_id: templateId,
+        start_date: customStartDate || startDate,
       });
 
-      setSuccessMessage(res.message || 'Pakiet został pomyślnie załadowany!');
+      setSuccessMessage(res.message || 'Pakiet został pomyślnie załadowany do Twojego kalendarza!');
       if (onPackageLoaded) {
         onPackageLoaded();
       }
+      await loadOverview();
       setTimeout(() => {
         setSuccessMessage(null);
         onClose();
@@ -70,21 +57,28 @@ export function PatientLoadPackageModal({ isOpen, onClose, onPackageLoaded, init
     } catch (err) {
       alert(`Błąd ładowania pakietu: ${err.message}`);
     } finally {
-      setSubmitting(false);
+      setSubmittingId(null);
     }
   }
 
   if (!isOpen) return null;
 
-  const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
+  const currentDiet = overview?.current_diet;
+  const pendingDiet = overview?.pending_diet;
+  const previousDiets = (overview?.previous_diets || []).filter(d => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return d.name.toLowerCase().includes(q) || (d.category || '').toLowerCase().includes(q) || (d.notes || '').toLowerCase().includes(q);
+  });
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1200 }}>
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: '840px', maxHeight: '90vh', overflowY: 'auto', padding: '1.75rem' }}
+        style={{ maxWidth: '860px', maxHeight: '90vh', overflowY: 'auto', padding: '1.75rem' }}
       >
+        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
             <div style={{ background: 'linear-gradient(135deg, var(--accent-emerald), #059669)', padding: '0.6rem', borderRadius: '10px', color: '#fff' }}>
@@ -92,16 +86,17 @@ export function PatientLoadPackageModal({ isOpen, onClose, onPackageLoaded, init
             </div>
             <div>
               <h2 style={{ fontSize: '1.3rem', fontWeight: 800, margin: 0 }}>
-                Pakiety Diet od Dietetyka
+                Zarządzaj Jadłospisem i Pakietami Diety
               </h2>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-                Wybierz pakiet diety przesłany przez Twojego dietetyka i wdróż go do kalendarza
+                Przeglądaj swój aktualny jadłospis, oczekujące propozycje od dietetyka oraz historię przesłanych diet
               </p>
             </div>
           </div>
           <button onClick={onClose} className="btn btn-secondary btn-sm">✕</button>
         </div>
 
+        {/* Komunikat sukcesu */}
         {successMessage && (
           <div style={{
             background: 'rgba(16, 185, 129, 0.15)',
@@ -109,246 +104,354 @@ export function PatientLoadPackageModal({ isOpen, onClose, onPackageLoaded, init
             color: '#34d399',
             padding: '0.85rem 1rem',
             borderRadius: '8px',
-            marginBottom: '1rem',
+            marginBottom: '1.25rem',
             fontWeight: 700,
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
           }}>
-            <Check size={18} /> {successMessage}
+            <CheckCircle2 size={18} /> {successMessage}
           </div>
         )}
 
-        <form onSubmit={handleLoadPackage}>
-          {/* Wybór daty rozpoczęcia */}
-          <div style={{
-            background: 'rgba(255,255,255,0.03)',
-            padding: '1rem 1.25rem',
-            borderRadius: '10px',
-            border: '1px solid var(--border-subtle)',
-            marginBottom: '1.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '1rem',
-          }}>
+        {/* Globalna data rozpoczęcia dla ładowanych diet */}
+        <div style={{
+          background: 'rgba(255,255,255,0.03)',
+          padding: '0.85rem 1.15rem',
+          borderRadius: '10px',
+          border: '1px solid var(--border-subtle)',
+          marginBottom: '1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '0.85rem',
+        }}>
+          <div>
+            <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <Calendar size={15} color="var(--accent-emerald)" /> Data rozpoczęcia w kalendarzu przy ładowaniu diety:
+            </label>
+            <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+              Wskazany pakiet rozłoży zbilansowane posiłki od wybranego dnia w Twoim kalendarzu.
+            </div>
+          </div>
+          <input
+            type="date"
+            required
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            style={{
+              background: '#111827',
+              border: '1px solid var(--border-subtle)',
+              color: '#fff',
+              padding: '0.45rem 0.8rem',
+              borderRadius: '8px',
+              fontWeight: 700,
+              fontSize: '0.88rem',
+            }}
+          />
+        </div>
+
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-muted)' }}>
+            Ładowanie Twoich pakietów diety...
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+            {/* SEKCJA 1: DIETA OCZEKUJĄCA (Najwyższy priorytet - jeśli dietetyk przesłał nowy jadłospis) */}
             <div>
-              <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                <Calendar size={15} color="var(--accent-emerald)" /> Data rozpoczęcia jadłospisu w kalendarzu*:
-              </label>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px' }}>
-                Pakiet rozłoży posiłki na 7 kolejnych dni, a w razie braku nowej paczki będzie automatycznie kontynuowany.
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.65rem' }}>
+                <Clock size={16} color="#fbbf24" />
+                <h3 style={{ fontSize: '1.02rem', fontWeight: 800, margin: 0, color: '#fbbf24' }}>
+                  1. Dieta Oczekująca na Załadowanie
+                </h3>
+                <span className="badge" style={{ background: 'rgba(245,158,11,0.2)', color: '#fbbf24', fontSize: '0.7rem', fontWeight: 800 }}>
+                  Wymaga Twojego potwierdzenia
+                </span>
               </div>
-            </div>
-            <input
-              type="date"
-              required
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              style={{
-                background: '#111827',
-                border: '1px solid var(--border-subtle)',
-                color: '#fff',
-                padding: '0.5rem 0.85rem',
-                borderRadius: '8px',
-                fontWeight: 700,
-                fontSize: '0.9rem',
-              }}
-            />
-          </div>
 
-          {/* Wyszukiwarka i filtry kategorii */}
-          <div style={{ marginBottom: '1rem' }}>
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.65rem' }}>
-              <div style={{ position: 'relative', flex: 1 }}>
-                <Search size={15} color="var(--text-dim)" style={{ position: 'absolute', left: '10px', top: '11px' }} />
-                <input
-                  type="text"
-                  placeholder="Szukaj pakietu (np. lekkostrawna, Colitis ulcerosa, redukcyjna, płynna)..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  style={{
-                    width: '100%',
-                    background: '#111827',
-                    border: '1px solid var(--border-subtle)',
-                    color: '#fff',
-                    padding: '0.5rem 0.75rem 0.5rem 2.2rem',
-                    borderRadius: '8px',
-                    fontSize: '0.85rem',
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Pigułki filtrowania po płci */}
-            <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.65rem' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', alignSelf: 'center', marginRight: '0.2rem' }}>Płeć:</span>
-              {[
-                { id: 'all', label: 'Wszystkie' },
-                { id: 'female', label: '👩 Kobiety' },
-                { id: 'male', label: '👨 Mężczyźni' }
-              ].map(g => (
-                <button
-                  key={g.id}
-                  type="button"
-                  onClick={() => setSelectedGender(g.id)}
-                  style={{
-                    fontSize: '0.78rem',
-                    padding: '0.3rem 0.75rem',
-                    borderRadius: '8px',
-                    border: selectedGender === g.id ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.08)',
-                    cursor: 'pointer',
-                    background: selectedGender === g.id ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.03)',
-                    color: selectedGender === g.id ? '#34d399' : '#cbd5e1',
-                    fontWeight: selectedGender === g.id ? 800 : 500,
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  {g.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Pigułki kategorii */}
-            <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', paddingBottom: '0.3rem' }}>
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setSelectedCategory(cat)}
-                  style={{
-                    fontSize: '0.75rem',
-                    padding: '0.25rem 0.65rem',
-                    borderRadius: '6px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    background: selectedCategory === cat ? 'var(--accent-emerald)' : 'rgba(255,255,255,0.04)',
-                    color: selectedCategory === cat ? '#fff' : 'var(--text-muted)',
-                    fontWeight: selectedCategory === cat ? 700 : 500,
-                  }}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Lista dostępnych pakietów */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(245px, 1fr))',
-            gap: '0.85rem',
-            maxHeight: '360px',
-            overflowY: 'auto',
-            paddingRight: '4px',
-            marginBottom: '1.25rem',
-          }}>
-            {loading ? (
-              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                Ładowanie dostępnych pakietów...
-              </div>
-            ) : templates.length === 0 ? (
-              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)' }}>
-                <p style={{ fontWeight: 700, color: '#fff', fontSize: '1rem', marginBottom: '0.5rem' }}>Brak pakietów diet od dietetyka</p>
-                <p style={{ fontSize: '0.85rem', maxWidth: '500px', margin: '0 auto' }}>Twój dietetyk nie przesłał Ci jeszcze żadnego pakietu diety. Gdy dietetyk prześle Ci pakiet, pojawi się on w tym miejscu i będziesz mógł wdrożyć go na dowolny tydzień.</p>
-              </div>
-            ) : filteredTemplates.length === 0 ? (
-              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                Brak pakietów spełniających kryteria wyszukiwania.
-              </div>
-            ) : (
-              filteredTemplates.map(tpl => {
-                const isSelected = selectedTemplateId === tpl.id;
-                const genderBadge = tpl.target_gender === 'female' 
-                  ? { label: '👩 Kobieta', bg: 'rgba(236, 72, 153, 0.15)', color: '#f472b6', border: '1px solid rgba(236, 72, 153, 0.3)' }
-                  : tpl.target_gender === 'male'
-                  ? { label: '👨 Mężczyzna', bg: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)' }
-                  : { label: '🥗 Dla każdego', bg: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' };
-
-                return (
-                  <div
-                    key={tpl.id}
-                    onClick={() => setSelectedTemplateId(tpl.id)}
-                    style={{
-                      background: isSelected ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255,255,255,0.02)',
-                      border: isSelected ? '2px solid var(--accent-emerald)' : '1px solid var(--border-subtle)',
-                      borderRadius: '10px',
-                      padding: '1rem',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      transition: 'all 0.2s',
-                    }}
-                  >
+              {pendingDiet ? (
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(16, 185, 129, 0.08) 100%)',
+                  border: '2px solid rgba(245, 158, 11, 0.5)',
+                  borderRadius: '12px',
+                  padding: '1.15rem 1.25rem',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.75rem' }}>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem', gap: '0.4rem', flexWrap: 'wrap' }}>
-                        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-                          <span className="badge badge-emerald" style={{ fontSize: '0.68rem' }}>
-                            {tpl.category}
+                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginBottom: '0.35rem' }}>
+                        <span className="badge badge-emerald" style={{ fontSize: '0.72rem' }}>
+                          {pendingDiet.category}
+                        </span>
+                        <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: 700 }}>
+                          Przesłano: {pendingDiet.created_at ? new Date(pendingDiet.created_at).toLocaleDateString('pl-PL') : 'Ostatnio'}
+                        </span>
+                        {pendingDiet.dietitian_name && (
+                          <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                            • Dietetyk: {pendingDiet.dietitian_name}
                           </span>
-                          <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.45rem', borderRadius: '4px', background: genderBadge.bg, color: genderBadge.color, border: genderBadge.border, fontWeight: 700 }}>
-                            {genderBadge.label}
-                          </span>
-                        </div>
-                        {isSelected && (
-                          <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--accent-emerald)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
-                            <Check size={13} />
-                          </div>
                         )}
                       </div>
-
-                      <h4 style={{ fontSize: '0.95rem', fontWeight: 800, margin: '0 0 0.35rem 0', color: isSelected ? '#34d399' : '#fff' }}>
-                        {tpl.name}
+                      <h4 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#fff' }}>
+                        {pendingDiet.name}
                       </h4>
-
-                      <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0 0 0.75rem 0', lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        {tpl.description || 'Kompletny zbilansowany tygodniowy jadłospis z przepisami z Lidla i Biedronki.'}
+                      <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0.35rem 0 0 0', lineHeight: 1.4 }}>
+                        {pendingDiet.description || 'Nowy zbilansowany tygodniowy jadłospis przygotowany przez Twojego dietetyka.'}
                       </p>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.5rem', color: 'var(--text-dim)' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: '#fbbf24', fontWeight: 700 }}>
-                        <Flame size={12} /> {tpl.target_calories} kcal
-                      </span>
-                      <span>{tpl.meals_per_day} posiłków/dzień</span>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#34d399', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end' }}>
+                        <Flame size={16} color="#fbbf24" /> {pendingDiet.target_calories} kcal
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)' }}>
+                        {pendingDiet.meals_per_day} posiłków dziennie
+                      </div>
                     </div>
                   </div>
-                );
-              })
-            )}
-          </div>
 
-          {/* Podgląd wybranego pakietu i przyciski */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
-            <div>
-              {selectedTemplate ? (
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  Wybrany pakiet: <strong style={{ color: '#34d399' }}>{selectedTemplate.name}</strong> ({selectedTemplate.target_calories} kcal)
+                  {pendingDiet.notes && (
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', background: 'rgba(0,0,0,0.2)', padding: '0.45rem 0.75rem', borderRadius: '6px', marginBottom: '1rem' }}>
+                      💬 <em>Wskazówka dietetyka:</em> {pendingDiet.notes}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem', flexWrap: 'wrap' }}>
+                    <a
+                      href={dietPlansApi.getTemplatePdfUrl(pendingDiet.template_id)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-secondary btn-sm"
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', textDecoration: 'none' }}
+                    >
+                      <Download size={14} /> Pobierz PDF
+                    </a>
+                    <button
+                      type="button"
+                      disabled={submittingId === pendingDiet.template_id}
+                      onClick={() => handleLoadPackage(pendingDiet.template_id)}
+                      className="btn btn-primary btn-sm"
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 800 }}
+                    >
+                      <Package size={15} />
+                      {submittingId === pendingDiet.template_id ? 'Wdrażanie...' : `Załaduj ten jadłospis od ${startDate}`}
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <div style={{ fontSize: '0.8rem', color: 'var(--accent-rose)' }}>Wybierz pakiet z powyższej listy</div>
+                <div style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px dashed var(--border-subtle)',
+                  borderRadius: '10px',
+                  padding: '1rem',
+                  fontSize: '0.82rem',
+                  color: 'var(--text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}>
+                  <Check size={16} color="var(--accent-emerald)" />
+                  Brak oczekujących jadłospisów — wszystkie przesłane przez dietetyka plany zostały już przez Ciebie załadowane.
+                </div>
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button type="button" onClick={onClose} className="btn btn-secondary">
-                Anuluj
-              </button>
-              <button
-                type="submit"
-                disabled={!selectedTemplateId || submitting}
-                className="btn btn-primary"
-                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-              >
-                <Package size={16} />
-                {submitting ? 'Wdrażanie...' : 'Załaduj pakiet do kalendarza'}
-              </button>
+            {/* SEKCJA 2: DIETA AKTUALNA */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.65rem' }}>
+                <CheckCircle2 size={16} color="var(--accent-emerald)" />
+                <h3 style={{ fontSize: '1.02rem', fontWeight: 800, margin: 0 }}>
+                  2. Dieta Aktualna (W realizacji)
+                </h3>
+              </div>
+
+              {currentDiet ? (
+                <div style={{
+                  background: 'rgba(16, 185, 129, 0.08)',
+                  border: '1px solid rgba(16, 185, 129, 0.35)',
+                  borderRadius: '12px',
+                  padding: '1.1rem 1.25rem',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                    <div>
+                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginBottom: '0.3rem' }}>
+                        <span className="badge badge-emerald" style={{ fontSize: '0.7rem' }}>
+                          ● Aktualny plan
+                        </span>
+                        <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)' }}>
+                          {currentDiet.category}
+                        </span>
+                        {currentDiet.start_date && (
+                          <span style={{ fontSize: '0.74rem', color: '#6ee7b7', fontWeight: 700 }}>
+                            • Okres: od {currentDiet.start_date} {currentDiet.end_date ? `do ${currentDiet.end_date}` : ''}
+                          </span>
+                        )}
+                      </div>
+                      <h4 style={{ fontSize: '1.08rem', fontWeight: 800, margin: 0, color: '#fff' }}>
+                        {currentDiet.name}
+                      </h4>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0.3rem 0 0 0' }}>
+                        {currentDiet.description || 'Aktywny jadłospis w Twoim kalendarzu posiłków.'}
+                      </p>
+                    </div>
+
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#34d399', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end' }}>
+                        <Flame size={15} color="#fbbf24" /> {currentDiet.target_calories} kcal
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)' }}>
+                        {currentDiet.meals_per_day} posiłków dziennie
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem', marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <a
+                      href={dietPlansApi.getTemplatePdfUrl(currentDiet.template_id)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-secondary btn-sm"
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', textDecoration: 'none' }}
+                    >
+                      <Download size={14} /> Pobierz PDF jadłospisu
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '10px',
+                  padding: '1rem',
+                  fontSize: '0.82rem',
+                  color: 'var(--text-muted)',
+                }}>
+                  Brak aktywnego jadłospisu. Załaduj jadłospis z sekcji powyżej lub wybierz pakiet z historii.
+                </div>
+              )}
             </div>
+
+            {/* SEKCJA 3: WCZEŚNIEJSZE DIETY (W kolejności przesłania) */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <RotateCcw size={16} color="var(--text-muted)" />
+                  <h3 style={{ fontSize: '1.02rem', fontWeight: 800, margin: 0 }}>
+                    3. Wcześniejsze Diety (W kolejności przesłania)
+                  </h3>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)' }}>
+                    ({previousDiets.length})
+                  </span>
+                </div>
+
+                {previousDiets.length > 3 && (
+                  <div style={{ position: 'relative', width: '220px' }}>
+                    <Search size={14} color="var(--text-dim)" style={{ position: 'absolute', left: '8px', top: '9px' }} />
+                    <input
+                      type="text"
+                      placeholder="Szukaj w historii..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      style={{
+                        width: '100%',
+                        background: '#111827',
+                        border: '1px solid var(--border-subtle)',
+                        color: '#fff',
+                        padding: '0.35rem 0.5rem 0.35rem 1.8rem',
+                        borderRadius: '6px',
+                        fontSize: '0.78rem',
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {previousDiets.length === 0 ? (
+                <div style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '10px',
+                  padding: '1rem',
+                  fontSize: '0.82rem',
+                  color: 'var(--text-muted)',
+                }}>
+                  Brak wcześniejszych diet w historii Twojego konta.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', maxHeight: '280px', overflowY: 'auto', paddingRight: '4px' }}>
+                  {previousDiets.map(diet => (
+                    <div
+                      key={diet.assignment_id || diet.template_id}
+                      style={{
+                        background: 'rgba(255,255,255,0.02)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: '10px',
+                        padding: '0.85rem 1rem',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '0.65rem',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: '220px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem' }}>
+                          <span className="badge badge-slate" style={{ fontSize: '0.68rem' }}>
+                            {diet.category}
+                          </span>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                            Przesłano: {diet.created_at ? new Date(diet.created_at).toLocaleDateString('pl-PL') : 'Archiwum'}
+                          </span>
+                        </div>
+                        <h5 style={{ fontSize: '0.92rem', fontWeight: 700, margin: 0, color: '#fff' }}>
+                          {diet.name}
+                        </h5>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                          <span style={{ color: '#fbbf24', fontWeight: 700 }}>{diet.target_calories} kcal</span> • {diet.meals_per_day} posiłków/dzień
+                          {diet.dietitian_name && ` • Dietetyk: ${diet.dietitian_name}`}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <a
+                          href={dietPlansApi.getTemplatePdfUrl(diet.template_id)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn btn-secondary btn-sm"
+                          style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem', display: 'flex', alignItems: 'center', gap: '0.3rem', textDecoration: 'none' }}
+                          title="Pobierz PDF"
+                        >
+                          <Download size={13} /> PDF
+                        </a>
+                        <button
+                          type="button"
+                          disabled={submittingId === diet.template_id}
+                          onClick={() => handleLoadPackage(diet.template_id)}
+                          className="btn btn-secondary btn-sm"
+                          style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                        >
+                          <RotateCcw size={13} />
+                          {submittingId === diet.template_id ? 'Ładowanie...' : 'Załaduj ponownie'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
           </div>
-        </form>
+        )}
+
+        {/* Footer */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem', marginTop: '1.25rem' }}>
+          <button type="button" onClick={onClose} className="btn btn-secondary">
+            Zamknij
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -149,4 +149,26 @@ class PatientLoadPackageSchema(Schema):
     template_id: int
     start_date: Optional[date] = None
 
+class PatientPackageItemSchema(Schema):
+    assignment_id: Optional[int] = None
+    template_id: int
+    name: str
+    category: str
+    target_gender: str = "all"
+    target_calories: int
+    meals_per_day: int
+    description: Optional[str] = ""
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    dietitian_name: Optional[str] = ""
+    notes: Optional[str] = ""
+    is_loaded: bool = False
+    loaded_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+
+class PatientPackagesOverviewSchema(Schema):
+    current_diet: Optional[PatientPackageItemSchema] = None
+    pending_diet: Optional[PatientPackageItemSchema] = None
+    previous_diets: List[PatientPackageItemSchema] = []
+
 

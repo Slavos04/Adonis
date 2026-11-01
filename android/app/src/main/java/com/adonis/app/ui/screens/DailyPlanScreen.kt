@@ -77,7 +77,7 @@ fun DailyPlanScreen(
 
     // Gotowe pakiety jadłospisów
     var showLoadPackageDialog by remember { mutableStateOf(false) }
-    var packagesList by remember { mutableStateOf<List<DietPlanTemplate>>(emptyList()) }
+    var packagesOverview by remember { mutableStateOf<PatientPackagesOverviewResponse?>(null) }
     var isPackagesLoading by remember { mutableStateOf(false) }
     var packageActionStatus by remember { mutableStateOf<String?>(null) }
 
@@ -101,7 +101,7 @@ fun DailyPlanScreen(
             isPackagesLoading = true
             packageActionStatus = null
             try {
-                packagesList = apiService.getDietTemplates()
+                packagesOverview = apiService.getPatientPackagesOverview()
             } catch (_: Exception) {
             } finally {
                 isPackagesLoading = false
@@ -587,13 +587,13 @@ fun DailyPlanScreen(
         if (showLoadPackageDialog) {
             AlertDialog(
                 onDismissRequest = { showLoadPackageDialog = false },
-                title = { Text("Pakiety diet od dietetyka") },
+                title = { Text("Zarządzaj jadłospisem i pakietami") },
                 text = {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         packageActionStatus?.let { msg ->
                             Text(
                                 text = msg,
-                                color = if (msg.startsWith("Pomyślnie")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                color = if (msg.startsWith("Pomyślnie") || msg.startsWith("Pakiet")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                 fontSize = 12.sp,
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
@@ -603,20 +603,234 @@ fun DailyPlanScreen(
                             Box(modifier = Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator()
                             }
-                        } else if (packagesList.isEmpty()) {
+                        } else if (packagesOverview == null || (packagesOverview?.currentDiet == null && packagesOverview?.pendingDiet == null && packagesOverview?.previousDiets.isNullOrEmpty())) {
                             Text(
                                 text = "Brak pakietów diet przesłanych przez Twojego dietetyka. Skontaktuj się ze swoim dietetykiem na czacie, aby otrzymać spersonalizowany pakiet diety.",
                                 fontSize = 13.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         } else {
+                            val overview = packagesOverview!!
                             LazyColumn(
-                                modifier = Modifier.fillMaxWidth().heightIn(max = 380.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                items(packagesList) { pkg ->
+                                // 1. DIETA OCZEKUJĄCA
+                                item {
+                                    Text(
+                                        text = "1. Dieta Oczekująca na Załadowanie",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = Color(0xFFD97706)
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    if (overview.pendingDiet != null) {
+                                        val pending = overview.pendingDiet
+                                        Card(
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = Color(0xFFFEF3C7).copy(alpha = 0.5f)
+                                            ),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD97706)),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Column(modifier = Modifier.padding(10.dp)) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = pending.name,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 14.sp,
+                                                        color = MaterialTheme.colorScheme.onSurface,
+                                                        modifier = Modifier.weight(1f)
+                                                    )
+                                                    Surface(
+                                                        color = Color(0xFFD97706).copy(alpha = 0.15f),
+                                                        shape = RoundedCornerShape(4.dp)
+                                                    ) {
+                                                        Text(
+                                                            text = "${pending.targetCalories} kcal",
+                                                            fontSize = 11.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = Color(0xFFD97706),
+                                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                        )
+                                                    }
+                                                }
+                                                Text(
+                                                    text = "Kategoria: ${pending.category} • ${pending.mealsPerDay} posiłków/dzień",
+                                                    fontSize = 11.sp,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    modifier = Modifier.padding(vertical = 2.dp)
+                                                )
+                                                if (!pending.notes.isNullOrBlank()) {
+                                                    Text(
+                                                        text = "Wskazówka: ${pending.notes}",
+                                                        fontSize = 11.sp,
+                                                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        modifier = Modifier.padding(bottom = 6.dp)
+                                                    )
+                                                }
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    Button(
+                                                        onClick = {
+                                                            scope.launch {
+                                                                isPackagesLoading = true
+                                                                try {
+                                                                    apiService.loadDietPackage(
+                                                                        PatientLoadPackageRequest(
+                                                                            templateId = pending.templateId,
+                                                                            startDate = selectedDateStr.value
+                                                                        )
+                                                                    )
+                                                                    packageActionStatus = "Pomyślnie załadowano pakiet ${pending.name}"
+                                                                    loadPlan()
+                                                                    showLoadPackageDialog = false
+                                                                } catch (e: Exception) {
+                                                                    packageActionStatus = "Błąd: ${e.message}"
+                                                                } finally {
+                                                                    isPackagesLoading = false
+                                                                }
+                                                            }
+                                                        },
+                                                        modifier = Modifier.weight(1f),
+                                                        contentPadding = PaddingValues(vertical = 4.dp)
+                                                    ) {
+                                                        Text("Załaduj od ${selectedDateStr.value}", fontSize = 12.sp)
+                                                    }
+                                                    OutlinedButton(
+                                                        onClick = {
+                                                            val pdfUrl = AdonisApiClient.getTemplatePdfUrl(pending.templateId, tokenManager.getToken())
+                                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(pdfUrl))
+                                                            context.startActivity(intent)
+                                                        },
+                                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                                    ) {
+                                                        Icon(Icons.Default.Download, contentDescription = "Pobierz PDF", modifier = Modifier.size(16.dp))
+                                                        Spacer(modifier = Modifier.width(4.dp))
+                                                        Text("PDF", fontSize = 12.sp)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        Text(
+                                            text = "Brak oczekujących jadłospisów — realizujesz swój bieżący plan diety.",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                // 2. DIETA AKTUALNA
+                                item {
+                                    Text(
+                                        text = "2. Dieta Aktualna (W realizacji)",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    if (overview.currentDiet != null) {
+                                        val current = overview.currentDiet
+                                        Card(
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                                            ),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Column(modifier = Modifier.padding(10.dp)) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = current.name,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 14.sp,
+                                                        modifier = Modifier.weight(1f)
+                                                    )
+                                                    Surface(
+                                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                                        shape = RoundedCornerShape(4.dp)
+                                                    ) {
+                                                        Text(
+                                                            text = "${current.targetCalories} kcal",
+                                                            fontSize = 11.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = MaterialTheme.colorScheme.primary,
+                                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                        )
+                                                    }
+                                                }
+                                                Text(
+                                                    text = "Kategoria: ${current.category} • ${current.mealsPerDay} posiłków/dzień",
+                                                    fontSize = 11.sp,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    modifier = Modifier.padding(vertical = 2.dp)
+                                                )
+                                                if (current.startDate != null) {
+                                                    Text(
+                                                        text = "Okres: od ${current.startDate} do ${current.endDate ?: ""}",
+                                                        fontSize = 11.sp,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                                Spacer(modifier = Modifier.height(6.dp))
+                                                OutlinedButton(
+                                                    onClick = {
+                                                        val pdfUrl = AdonisApiClient.getTemplatePdfUrl(current.templateId, tokenManager.getToken())
+                                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(pdfUrl))
+                                                        context.startActivity(intent)
+                                                    },
+                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                                    modifier = Modifier.align(Alignment.End)
+                                                ) {
+                                                    Icon(Icons.Default.Download, contentDescription = "Pobierz PDF", modifier = Modifier.size(16.dp))
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Text("Pobierz PDF jadłospisu", fontSize = 12.sp)
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        Text(
+                                            text = "Brak aktywnego jadłospisu.",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                // 3. WCZEŚNIEJSZE DIETY
+                                item {
+                                    Text(
+                                        text = "3. Wcześniejsze diety (${overview.previousDiets.size})",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    if (overview.previousDiets.isEmpty()) {
+                                        Text(
+                                            text = "Brak wcześniejszych diet w historii.",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                items(overview.previousDiets) { prev ->
                                     Card(
-                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                        ),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Column(modifier = Modifier.padding(10.dp)) {
@@ -626,66 +840,24 @@ fun DailyPlanScreen(
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Text(
-                                                    text = pkg.name,
+                                                    text = prev.name,
                                                     fontWeight = FontWeight.Bold,
-                                                    fontSize = 14.sp,
+                                                    fontSize = 13.sp,
                                                     modifier = Modifier.weight(1f)
                                                 )
-                                                Surface(
-                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                                    shape = RoundedCornerShape(4.dp)
-                                                ) {
-                                                    Text(
-                                                        text = "${pkg.targetCalories} kcal",
-                                                        fontSize = 11.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = MaterialTheme.colorScheme.primary,
-                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                    )
-                                                }
-
-                                                val genderBadge = when(pkg.targetGender) {
-                                                    "female" -> "👩 Kobieta"
-                                                    "male" -> "👨 Mężczyzna"
-                                                    else -> "🥗 Dla każdego"
-                                                }
-                                                val genderColor = when(pkg.targetGender) {
-                                                    "female" -> Color(0xFFF472B6)
-                                                    "male" -> Color(0xFF60A5FA)
-                                                    else -> Color(0xFF34D399)
-                                                }
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Surface(
-                                                    color = genderColor.copy(alpha = 0.15f),
-                                                    shape = RoundedCornerShape(4.dp)
-                                                ) {
-                                                    Text(
-                                                        text = genderBadge,
-                                                        fontSize = 10.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = genderColor,
-                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                    )
-                                                }
-                                            }
-
-                                            if (pkg.category.isNotBlank()) {
                                                 Text(
-                                                    text = "Kategoria: ${pkg.category}",
+                                                    text = "${prev.targetCalories} kcal",
                                                     fontSize = 11.sp,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    modifier = Modifier.padding(vertical = 2.dp)
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary
                                                 )
                                             }
-
-                                            if (!pkg.description.isNullOrBlank()) {
-                                                Text(
-                                                    text = pkg.description,
-                                                    fontSize = 12.sp,
-                                                    modifier = Modifier.padding(top = 2.dp, bottom = 6.dp)
-                                                )
-                                            }
-
+                                            Text(
+                                                text = "Kategoria: ${prev.category} • Przesłano: ${prev.createdAt?.take(10) ?: ""}",
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.padding(vertical = 2.dp)
+                                            )
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -695,14 +867,13 @@ fun DailyPlanScreen(
                                                         scope.launch {
                                                             isPackagesLoading = true
                                                             try {
-                                                                val res = apiService.loadDietPackage(
+                                                                apiService.loadDietPackage(
                                                                     PatientLoadPackageRequest(
-                                                                        templateId = pkg.id,
+                                                                        templateId = prev.templateId,
                                                                         startDate = selectedDateStr.value
                                                                     )
                                                                 )
-                                                                val msg = (res["message"] as? String) ?: "Pakiet załadowany"
-                                                                packageActionStatus = msg
+                                                                packageActionStatus = "Pomyślnie załadowano pakiet ${prev.name}"
                                                                 loadPlan()
                                                                 showLoadPackageDialog = false
                                                             } catch (e: Exception) {
@@ -715,20 +886,19 @@ fun DailyPlanScreen(
                                                     modifier = Modifier.weight(1f),
                                                     contentPadding = PaddingValues(vertical = 4.dp)
                                                 ) {
-                                                    Text("Zastosuj od ${selectedDateStr.value}", fontSize = 12.sp)
+                                                    Text("Załaduj ponownie", fontSize = 11.sp)
                                                 }
-
                                                 OutlinedButton(
                                                     onClick = {
-                                                        val pdfUrl = AdonisApiClient.getTemplatePdfUrl(pkg.id, tokenManager.getToken())
+                                                        val pdfUrl = AdonisApiClient.getTemplatePdfUrl(prev.templateId, tokenManager.getToken())
                                                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(pdfUrl))
                                                         context.startActivity(intent)
                                                     },
                                                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                                                 ) {
-                                                    Icon(Icons.Default.Download, contentDescription = "Pobierz PDF pakietu", modifier = Modifier.size(16.dp))
+                                                    Icon(Icons.Default.Download, contentDescription = "PDF", modifier = Modifier.size(15.dp))
                                                     Spacer(modifier = Modifier.width(4.dp))
-                                                    Text("PDF", fontSize = 12.sp)
+                                                    Text("PDF", fontSize = 11.sp)
                                                 }
                                             }
                                         }
@@ -740,7 +910,7 @@ fun DailyPlanScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = { showLoadPackageDialog = false }) {
-                        Text("Anuluj")
+                        Text("Zamknij")
                     }
                 }
             )

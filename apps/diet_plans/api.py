@@ -3,7 +3,9 @@ from datetime import date, datetime, timedelta
 from typing import List, Optional
 from ninja.errors import HttpError
 from django.db import transaction
+from django.db.models import Q
 from django.http import HttpResponse
+from django.utils import timezone
 
 from .models import DailyMealPlan, PlannedMeal, ShoppingListItem, DietPlanTemplate, DietPlanTemplateAssignment
 from .pdf_importer import import_diet_from_pdf
@@ -15,7 +17,8 @@ from .schemas import (
     WeeklyMealPlanOutSchema, DietPlanTemplateCreateSchema,
     DietPlanTemplateOutSchema, ApplyTemplateToPatientSchema,
     AssignmentHistoryOutSchema, PatientLoadPackageSchema,
-    MealSubstituteSchema
+    MealSubstituteSchema, PatientPackagesOverviewSchema,
+    PatientPackageItemSchema
 )
 from .services import generate_smart_shopping_list, normalize_shopping_category, SHOPPING_CATEGORY_ORDER
 from apps.recipes.models import Recipe, Product, StoreChoice
@@ -110,14 +113,30 @@ def deploy_template_to_patient_days(template: DietPlanTemplate, patient: User, s
                     )
 
         end_date = start_date + timedelta(days=len(days_data) - 1)
-        DietPlanTemplateAssignment.objects.create(
+        pending_assignment = DietPlanTemplateAssignment.objects.filter(
             template=template,
             patient=patient,
-            dietitian=dietitian,
-            start_date=start_date,
-            end_date=end_date,
-            notes=notes or f"Wdrożono pakiet {template.name}"
-        )
+            is_loaded=False
+        ).order_by('-id').first()
+        if pending_assignment:
+            pending_assignment.start_date = start_date
+            pending_assignment.end_date = end_date
+            pending_assignment.is_loaded = True
+            pending_assignment.loaded_at = timezone.now()
+            if notes:
+                pending_assignment.notes = notes
+            pending_assignment.save()
+        else:
+            DietPlanTemplateAssignment.objects.create(
+                template=template,
+                patient=patient,
+                dietitian=dietitian,
+                start_date=start_date,
+                end_date=end_date,
+                notes=notes or f"Wdrożono pakiet {template.name}",
+                is_loaded=True,
+                loaded_at=timezone.now()
+            )
 
         # Wymóg 10: w zaleceniach zapisz tytuł bieżącego jadłospisu i date wprowadzenia, oraz historię przesłanych jadlospisów
         try:
@@ -616,6 +635,11 @@ def list_diet_templates(request, category: Optional[str] = None, target_gender: 
             dietitian__isnull=False
         ).values_list('template_id', flat=True).distinct()
         qs = DietPlanTemplate.objects.filter(id__in=assigned_template_ids)
+
+        # Pacjent widzi WYŁĄCZNIE dietę dopasowaną do swojej płci (lub uniwersalną 'all')
+        patient_gender = getattr(getattr(current_user, 'patient_profile', None), 'gender', None)
+        if patient_gender:
+            qs = qs.filter(Q(target_gender=patient_gender) | Q(target_gender='all'))
     else:
         qs = DietPlanTemplate.objects.all()
 
@@ -999,8 +1023,8 @@ def delete_diet_template(request, template_id: int):
 @router.post("/templates/{template_id}/send-to-patient", auth=JWTAuth())
 def send_template_to_patient(request, template_id: int, payload: ApplyTemplateToPatientSchema):
     """
-    Wdraża cały 7-dniowy pakiet diety na konto pacjenta od wybranej daty,
-    zapisuje potwierdzenie w historii przypisań i wysyła powiadomienie systemowe do pacjenta.
+    Dietetyk przesyła pakiet diety do pacjenta.
+    Pakiet pojawia się na koncie pacjenta jako 'Dieta oczekująca' (gotowa do wdrożenia).
     """
     current_user = request.auth_user
     if current_user.role not in [UserRole.ADMIN, UserRole.DIETITIAN]:
@@ -1014,28 +1038,35 @@ def send_template_to_patient(request, template_id: int, payload: ApplyTemplateTo
     if not patient:
         raise HttpError(404, "Nie znaleziono wskazanego pacjenta.")
 
-    days_assigned, start_d, end_d = deploy_template_to_patient_days(
+    days_count = len(template.days_data) if template.days_data else 7
+    end_d = payload.start_date + timedelta(days=days_count - 1)
+
+    assignment = DietPlanTemplateAssignment.objects.create(
         template=template,
         patient=patient,
-        start_date=payload.start_date,
         dietitian=current_user,
-        notes=payload.notes or f"Wdrożono pakiet {template.name}"
+        start_date=payload.start_date,
+        end_date=end_d,
+        notes=payload.notes or f"Jadłospis przesłany przez dietetyka: {template.name}",
+        is_loaded=False,
+        loaded_at=None
     )
 
     # Powiadomienie dla pacjenta
     Notification.objects.create(
         recipient=patient,
-        title=f"Nowy pakiet diety: {template.name}",
-        message=f"Twój dietetyk wdrożył dla Ciebie pakiet '{template.name}' ({template.category}) na okres od {payload.start_date} do {end_d}.",
+        title=f"Nowy jadłospis od dietetyka: {template.name}",
+        message=f"Twój dietetyk przesłał dla Ciebie nowy jadłospis '{template.name}' ({template.category}). Otwórz 'Załaduj pakiet diety', aby wdrożyć go do kalendarza.",
         notification_type=Notification.NotificationType.PLAN_UPDATE
     )
 
     return {
-        "message": f"Pakiet '{template.name}' został pomyślnie wdrożony do kalendarza pacjenta na {days_assigned} dni.",
-        "days_assigned": days_assigned,
+        "message": f"Pakiet '{template.name}' został pomyślnie przesłany do pacjenta (oczekuje na załadowanie w aplikacji).",
+        "days_assigned": days_count,
         "delivered_to": patient.get_full_name() or patient.email,
         "start_date": str(payload.start_date),
-        "end_date": str(end_d)
+        "end_date": str(end_d),
+        "status": "pending"
     }
 
 @router.post("/patient/load-package", auth=JWTAuth())
@@ -1194,6 +1225,85 @@ def revert_meal_substitution(request, meal_id: int):
 
     return {"message": "Przywrócono oryginalny posiłek.", "meal_id": meal.id}
 
+@router.get("/patient-packages-overview", response=PatientPackagesOverviewSchema, auth=JWTAuth())
+def get_patient_packages_overview(request):
+    """
+    Zwraca ustrukturyzowane podsumowanie pakietów diet dla pacjenta:
+    1. Dieta aktualna (bieżący wdrożony jadłospis)
+    2. Dieta oczekująca (ostatni jadłospis przesłany przez dietetyka, ale jeszcze nie załadowany przez pacjenta)
+    3. Wcześniejsze diety w kolejności przesłania
+    Wszystkie pozycje są ściśle przefiltrowane pod płeć pacjenta.
+    """
+    current_user = request.auth_user
+    if current_user.role != UserRole.PATIENT:
+        return {"current_diet": None, "pending_diet": None, "previous_diets": []}
+
+    patient_gender = getattr(getattr(current_user, 'patient_profile', None), 'gender', None)
+
+    # Pobieramy wszystkie przypisania pacjenta
+    assignments_qs = DietPlanTemplateAssignment.objects.filter(
+        patient=current_user
+    ).select_related('template', 'dietitian').order_by('-created_at', '-id')
+
+    # Filtrujemy wg płci pacjenta: tylko jedna płeć lub uniwersalne
+    if patient_gender:
+        assignments_qs = assignments_qs.filter(
+            Q(template__target_gender=patient_gender) | Q(template__target_gender='all')
+        )
+
+    assignments = list(assignments_qs)
+
+    def serialize_item(a):
+        d_name = a.dietitian.get_full_name() or a.dietitian.email if a.dietitian else "Dietetyk Kliniki"
+        return {
+            "assignment_id": a.id,
+            "template_id": a.template.id,
+            "name": a.template.name,
+            "category": a.template.category,
+            "target_gender": a.template.target_gender,
+            "target_calories": a.template.target_calories,
+            "meals_per_day": a.template.meals_per_day,
+            "description": a.template.description or "",
+            "start_date": a.start_date,
+            "end_date": a.end_date,
+            "dietitian_name": d_name,
+            "notes": a.notes or "",
+            "is_loaded": a.is_loaded,
+            "loaded_at": a.loaded_at,
+            "created_at": a.created_at
+        }
+
+    # 1. Dieta oczekująca: najnowsze przypisanie z is_loaded=False (ostatni przesłany jadłospis)
+    pending_assignment = next((a for a in assignments if not a.is_loaded), None)
+
+    # 2. Dieta aktualna: najnowsze załadowane przypisanie (is_loaded=True)
+    today = date.today()
+    loaded_assignments = [a for a in assignments if a.is_loaded]
+    current_assignment = next(
+        (a for a in loaded_assignments if a.start_date <= today <= a.end_date),
+        None
+    )
+    if not current_assignment and loaded_assignments:
+        current_assignment = loaded_assignments[0]
+
+    if not current_assignment and not pending_assignment and assignments:
+        current_assignment = assignments[0]
+
+    # 3. Wcześniejsze diety: wszystkie pozostałe przypisania w kolejności przesłania
+    excluded_ids = set()
+    if current_assignment:
+        excluded_ids.add(current_assignment.id)
+    if pending_assignment:
+        excluded_ids.add(pending_assignment.id)
+
+    previous_assignments = [a for a in assignments if a.id not in excluded_ids]
+
+    return {
+        "current_diet": serialize_item(current_assignment) if current_assignment else None,
+        "pending_diet": serialize_item(pending_assignment) if pending_assignment else None,
+        "previous_diets": [serialize_item(a) for a in previous_assignments]
+    }
+
 @router.get("/active-package", auth=JWTAuth())
 def get_active_package(request, patient_id: Optional[int] = None):
     """Zwraca dane o aktualnie przypisanym pakiecie jadłospisu pacjenta."""
@@ -1201,7 +1311,9 @@ def get_active_package(request, patient_id: Optional[int] = None):
     target_patient = user
     if user.role in [UserRole.ADMIN, UserRole.DIETITIAN] and patient_id:
         target_patient = User.objects.filter(id=patient_id).first() or user
-    assignment = DietPlanTemplateAssignment.objects.filter(patient=target_patient).order_by('-start_date', '-id').first()
+    assignment = DietPlanTemplateAssignment.objects.filter(patient=target_patient, is_loaded=True).order_by('-start_date', '-id').first()
+    if not assignment:
+        assignment = DietPlanTemplateAssignment.objects.filter(patient=target_patient).order_by('-start_date', '-id').first()
     if assignment and assignment.template:
         return {
             "id": assignment.template.id,

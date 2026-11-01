@@ -125,6 +125,9 @@ interface AdonisApiService {
     @GET("diet-plans/templates")
     suspend fun getDietTemplates(): List<DietPlanTemplate>
 
+    @GET("diet-plans/patient-packages-overview")
+    suspend fun getPatientPackagesOverview(): PatientPackagesOverviewResponse
+
     @POST("diet-plans/patient/load-package")
     suspend fun loadDietPackage(@Body request: PatientLoadPackageRequest): Map<String, Any>
 

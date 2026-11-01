@@ -57,6 +57,8 @@ class DietPlanTemplateAssignment(models.Model):
     start_date = models.DateField(_('data rozpoczęcia'))
     end_date = models.DateField(_('data zakończenia'))
     notes = models.TextField(_('notatki'), blank=True)
+    is_loaded = models.BooleanField(_('załadowany'), default=False)
+    loaded_at = models.DateTimeField(_('data załadowania'), null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
