@@ -5,7 +5,7 @@ import {
   Search, Eye, EyeOff, X, Plus, Eraser, ShoppingBag,
   Palette, Image, Upload, Sliders, Sparkles, Check, ArrowUpDown, Flame
 } from 'lucide-react';
-import { adminApi, recipesApi, dietPlansApi } from '../api/client';
+import { adminApi, recipesApi, dietPlansApi, authApi } from '../api/client';
 import { RecipeDeleteModal } from '../components/RecipeDeleteModal';
 import { useAuth } from '../context/AuthContext';
 import {
