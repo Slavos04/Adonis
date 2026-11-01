@@ -136,6 +136,7 @@ class MainActivity : ComponentActivity() {
                             )
                         } else {
                             Scaffold(
+                                containerColor = if (globalBgUrl.isNullOrBlank()) MaterialTheme.colorScheme.background else Color.Transparent,
                                 topBar = {
                                     TopAppBar(
                                         title = {
@@ -229,12 +230,12 @@ class MainActivity : ComponentActivity() {
                                             }
                                         },
                                         colors = TopAppBarDefaults.topAppBarColors(
-                                            containerColor = MaterialTheme.colorScheme.surface
+                                            containerColor = if (globalBgUrl.isNullOrBlank()) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
                                         )
                                     )
                                 },
                                 bottomBar = {
-                                    NavigationBar {
+                                    NavigationBar(containerColor = if (globalBgUrl.isNullOrBlank()) NavigationBarDefaults.containerColor else MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)) {
                                         if (isDietitian) {
                                             // Nawigacja Dietetyka
                                             NavigationBarItem(
@@ -291,7 +292,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             ) { innerPadding ->
-                                Surface(modifier = Modifier.padding(innerPadding)) {
+                                Surface(modifier = Modifier.padding(innerPadding), color = if (globalBgUrl.isNullOrBlank()) MaterialTheme.colorScheme.background else Color.Transparent) {
                                     if (isDietitian) {
                                         when (currentTab) {
                                             0 -> DietitianPatientsScreen(
@@ -329,4 +330,5 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
 }
