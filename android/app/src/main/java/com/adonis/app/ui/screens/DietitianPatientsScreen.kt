@@ -63,10 +63,27 @@ fun DietitianPatientsScreen(
     var showAddRecDialog by remember { mutableStateOf(false) }
     var showHistoryDialog by remember { mutableStateOf(false) }
     var showDeployPackageDialog by remember { mutableStateOf(false) }
+    var showAssignPatientDialog by remember { mutableStateOf(false) }
+    var allAvailablePatients by remember { mutableStateOf<List<User>>(emptyList()) }
+    var isLoadingAvailablePatients by remember { mutableStateOf(false) }
+    var assignSearchQuery by remember { mutableStateOf("") }
 
     // Templates for quick deployment
     var templates by remember { mutableStateOf<List<DietPlanTemplate>>(emptyList()) }
     var recommendationsHistory by remember { mutableStateOf<List<PatientRecommendation>>(emptyList()) }
+
+    LaunchedEffect(showAssignPatientDialog) {
+        if (showAssignPatientDialog) {
+            isLoadingAvailablePatients = true
+            try {
+                allAvailablePatients = apiService.getPatients(allPatients = true)
+            } catch (e: Exception) {
+                errorMessage = "Błąd pobierania listy pacjentów: ${e.localizedMessage}"
+            } finally {
+                isLoadingAvailablePatients = false
+            }
+        }
+    }
 
     // Load patients list
     val loadPatients: () -> Unit = {
@@ -150,19 +167,38 @@ fun DietitianPatientsScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Tytuł
-        Text(
-            text = "Kartoteka pacjentów",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            text = "Zarządzaj celami makro, zaleceniami oraz dietami swoich podopiecznych",
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
+        // Tytuł i przycisk przypisania pacjenta
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Kartoteka pacjentów",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = "Zarządzaj celami makro, zaleceniami oraz dietami swoich podopiecznych",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Button(
+                onClick = { showAssignPatientDialog = true },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+            ) {
+                Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Przypisz", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+        }
 
         // Sukces / Błąd Snackbary
         successMessage?.let { msg ->
@@ -222,6 +258,40 @@ fun DietitianPatientsScreen(
                 .padding(bottom = 12.dp),
             shape = RoundedCornerShape(12.dp)
         )
+
+        // Komunikat o braku pacjentów
+        if (patients.isEmpty()) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 14.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Nie masz jeszcze przypisanych pacjentów.",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Kliknij poniższy przycisk, aby dodać nowego pacjenta pod swoją opiekę.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Button(onClick = { showAssignPatientDialog = true }) {
+                        Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Przypisz pacjenta")
+                    }
+                }
+            }
+        }
 
         // Poziomy pasek wyboru pacjentów
         if (filteredPatients.isNotEmpty()) {
@@ -928,6 +998,150 @@ fun DietitianPatientsScreen(
             dismissButton = {
                 TextButton(onClick = { showDeployPackageDialog = false }) {
                     Text("Anuluj")
+                }
+            }
+        )
+    }
+
+    // Dialog przypisywania pacjenta pod opiekę
+    if (showAssignPatientDialog) {
+        val filteredAvailable = remember(allAvailablePatients, assignSearchQuery) {
+            if (assignSearchQuery.isBlank()) allAvailablePatients
+            else {
+                val q = assignSearchQuery.trim().lowercase()
+                allAvailablePatients.filter {
+                    it.email.lowercase().contains(q) ||
+                    it.firstName.lowercase().contains(q) ||
+                    it.lastName.lowercase().contains(q)
+                }
+            }
+        }
+
+        AlertDialog(
+            onDismissRequest = { showAssignPatientDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.PersonAdd, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Przypisz pacjenta", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = assignSearchQuery,
+                        onValueChange = { assignSearchQuery = it },
+                        placeholder = { Text("Szukaj pacjenta...") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 10.dp),
+                        singleLine = true
+                    )
+
+                    if (isLoadingAvailablePatients) {
+                        Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                        }
+                    } else if (filteredAvailable.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) {
+                            Text("Brak pacjentów", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 300.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(filteredAvailable) { p ->
+                                val isAlreadyMine = patients.any { it.id == p.id }
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (isAlreadyMine) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                                                         else MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                                            Text(
+                                                text = "${p.firstName} ${p.lastName}".ifBlank { p.username },
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp
+                                            )
+                                            Text(
+                                                text = p.email,
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Text(
+                                                text = if (isAlreadyMine) "Twój pacjent"
+                                                       else if (p.assignedDietitianName.isNullOrBlank()) "Brak przypisanego dietetyka"
+                                                       else "Opiekun: ${p.assignedDietitianName}",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = if (isAlreadyMine) MaterialTheme.colorScheme.primary
+                                                        else if (p.assignedDietitianName.isNullOrBlank()) Color(0xFFF59E0B)
+                                                        else Color.Gray
+                                            )
+                                        }
+
+                                        if (isAlreadyMine) {
+                                            TextButton(
+                                                onClick = {
+                                                    scope.launch {
+                                                        try {
+                                                            apiService.assignDietitian(p.id, 0)
+                                                            successMessage = "Zwolniono pacjenta z opieki."
+                                                            loadPatients()
+                                                            allAvailablePatients = apiService.getPatients(allPatients = true)
+                                                        } catch (e: Exception) {
+                                                            errorMessage = "Błąd: ${e.localizedMessage}"
+                                                        }
+                                                    }
+                                                }
+                                            ) {
+                                                Text("Zwolnij", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                                            }
+                                        } else {
+                                            Button(
+                                                onClick = {
+                                                    scope.launch {
+                                                        try {
+                                                            apiService.assignDietitian(p.id, 0)
+                                                            successMessage = "Pacjent ${p.firstName.ifBlank { p.email }} przypisany do Ciebie!"
+                                                            showAssignPatientDialog = false
+                                                            loadPatients()
+                                                            selectedPatientId = p.id
+                                                        } catch (e: Exception) {
+                                                            errorMessage = "Błąd: ${e.localizedMessage}"
+                                                        }
+                                                    }
+                                                },
+                                                shape = RoundedCornerShape(8.dp),
+                                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                            ) {
+                                                Text("Weź pod opiekę", fontSize = 11.sp)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showAssignPatientDialog = false }) {
+                    Text("Zamknij")
                 }
             }
         )

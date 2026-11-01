@@ -5,6 +5,7 @@ import { PortionScalerModal } from '../components/PortionScalerModal';
 import RecommendationsHistoryModal from '../components/RecommendationsHistoryModal';
 import { MonthlyMeasurementChart } from '../components/MonthlyMeasurementChart';
 import { PatientLoadPackageModal } from '../components/PatientLoadPackageModal';
+import { SettingsModal } from '../components/SettingsModal';
 import {
   Flame, Calendar, ChevronLeft, ChevronRight, CheckCircle2, Circle,
   Plus, Activity, Sparkles, Info, ChefHat, Clock, Package, X, Bell, History, RefreshCw, Download, Utensils
@@ -35,6 +36,7 @@ export function PatientDashboard() {
   const [showRecModal, setShowRecModal] = useState(false);
   const [recDismissed, setRecDismissed] = useState(false);
   const [showLoadPackageModal, setShowLoadPackageModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   useEffect(() => {
     if (profile?.official_recommendations) {
@@ -248,7 +250,26 @@ export function PatientDashboard() {
               {user?.first_name} {user?.last_name || ''}
             </h1>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginTop: '2px' }}>
-              {user?.email} • Opiekun: <strong style={{ color: 'var(--accent-emerald)' }}>{user?.assigned_dietitian_name || 'Dietetyk Adonis'}</strong>
+              {user?.email} • Opiekun: <strong style={{ color: 'var(--accent-emerald)' }}>{user?.assigned_dietitian_name || 'Brak'}</strong>
+              <button
+                type="button"
+                onClick={() => setShowSettingsModal(true)}
+                style={{
+                  background: 'rgba(16, 185, 129, 0.12)',
+                  border: '1px solid rgba(16, 185, 129, 0.35)',
+                  color: '#34d399',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  borderRadius: '4px',
+                  padding: '1px 6px',
+                  marginLeft: '6px',
+                  cursor: 'pointer',
+                  verticalAlign: 'middle',
+                }}
+                title="Zmień lub wybierz dietetyka prowadzącego"
+              >
+                (zmień)
+              </button>
             </div>
           </div>
         </div>
@@ -1035,6 +1056,8 @@ export function PatientDashboard() {
       />
 
       {/* Samodzielne ładowanie pakietów diet przez pacjenta Modal */}
+      <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
+
       <PatientLoadPackageModal
         isOpen={showLoadPackageModal}
         onClose={() => setShowLoadPackageModal(false)}

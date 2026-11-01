@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { authApi, measurementsApi, dietPlansApi, recipesApi } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import { ChatWidget } from '../components/ChatWidget';
 import RecommendationsHistoryModal from '../components/RecommendationsHistoryModal';
 import { PortionScalerModal } from '../components/PortionScalerModal';
 import { MonthlyMeasurementChart } from '../components/MonthlyMeasurementChart';
 import { PdfImportModal } from '../components/PdfImportModal';
 import { RecipeDeleteModal } from '../components/RecipeDeleteModal';
+import { AssignPatientModal } from '../components/AssignPatientModal';
 import { APP_VERSION } from '../version';
 
 import {
-  Users, UserCheck, ShieldAlert, FileText, Calendar, Plus,
+  Users, UserCheck, UserPlus, ShieldAlert, FileText, Calendar, Plus,
   Edit3, History, Save, Send, Utensils, Award, Layers, Sparkles,
   Trash2, AlertTriangle, Check, Upload, Image, Calculator, Flame,
   Search, Info, BookOpen, Clock, ChevronRight, Package, Eye, TrendingDown, Download
@@ -31,12 +33,14 @@ function getStoreBadgeClass(store) {
 }
 
 export function DietitianDashboard() {
+  const { user: currentDietitian } = useAuth();
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [selectedPatientProfile, setSelectedPatientProfile] = useState(null);
   const [activeTab, setActiveTab] = useState('packages'); // 'packages' | 'crud' | 'goals' | 'audit' | 'chat'
   const [loading, setLoading] = useState(true);
   const [inspectingRecipeId, setInspectingRecipeId] = useState(null);
+  const [showAssignModal, setShowAssignModal] = useState(false);
 
   // Recipes & Products state
   const [recipes, setRecipes] = useState([]);
@@ -165,6 +169,32 @@ export function DietitianDashboard() {
       console.error('Błąd ładowania danych początkowych:', err);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function refreshPatients(targetPatientId = null) {
+    try {
+      const patientsData = await authApi.getPatients();
+      setPatients(patientsData || []);
+      if (patientsData && patientsData.length > 0) {
+        if (targetPatientId) {
+          const found = patientsData.find((p) => p.id === targetPatientId);
+          if (found) {
+            selectPatient(found);
+            setSendPatientId(found.id.toString());
+            return;
+          }
+        }
+        if (!selectedPatient || !patientsData.some((p) => p.id === selectedPatient.id)) {
+          selectPatient(patientsData[0]);
+          setSendPatientId(patientsData[0].id.toString());
+        }
+      } else {
+        setSelectedPatient(null);
+        setSelectedPatientProfile(null);
+      }
+    } catch (err) {
+      console.error('Błąd odświeżania listy pacjentów:', err);
     }
   }
 
@@ -740,8 +770,32 @@ export function DietitianDashboard() {
               <Users size={20} color="#10b981" />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Aktywny pacjent
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Aktywny pacjent
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowAssignModal(true)}
+                  style={{
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.4)',
+                    color: '#34d399',
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    borderRadius: '5px',
+                    padding: '2px 8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                  title="Zarządzaj przypisanymi pacjentami lub dodaj nowego podopiecznego"
+                >
+                  <UserPlus size={13} />
+                  Przypisz pacjenta
+                </button>
               </div>
               <select
                 value={selectedPatient?.id || ''}
@@ -761,12 +815,21 @@ export function DietitianDashboard() {
                   marginTop: '0.2rem',
                 }}
               >
-                {patients.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.first_name} {p.last_name} ({p.email})
-                  </option>
-                ))}
+                {patients.length === 0 ? (
+                  <option value="">Brak przypisanych pacjentów (kliknij Przypisz pacjenta)</option>
+                ) : (
+                  patients.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.first_name || p.last_name ? `${p.first_name || ''} ${p.last_name || ''}`.trim() : 'Pacjent'} ({p.email})
+                    </option>
+                  ))
+                )}
               </select>
+              {patients.length === 0 && (
+                <div style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: '0.35rem', fontWeight: 600 }}>
+                  Nie masz jeszcze przypisanych pacjentów. Kliknij „Przypisz pacjenta”, aby dodać nowego.
+                </div>
+              )}
               {selectedPatientProfile?.birth_year && (
                 <span style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '0.2rem', display: 'block' }}>
                   Wiek: {new Date().getFullYear() - selectedPatientProfile.birth_year} lat (ur. {selectedPatientProfile.birth_year})
@@ -2420,6 +2483,16 @@ export function DietitianDashboard() {
           setRecipeToDelete(null);
           refreshRecipesAndProducts();
           refreshTemplates();
+        }}
+      />
+
+      {/* Modal przypisywania i zarządzania pacjentami */}
+      <AssignPatientModal
+        isOpen={showAssignModal}
+        onClose={() => setShowAssignModal(false)}
+        currentDietitian={currentDietitian}
+        onSuccess={async (patient, assignedToMe) => {
+          await refreshPatients(assignedToMe ? patient.id : null);
         }}
       />
     </div>

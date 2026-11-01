@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Settings, Bell, Lock, Palette, CheckCircle2, AlertCircle, Clock, Trash2, AlertTriangle } from 'lucide-react';
+import { X, Settings, Bell, Lock, Palette, CheckCircle2, AlertCircle, Clock, Trash2, AlertTriangle, Users } from 'lucide-react';
 import { authApi } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
 export function SettingsModal({ isOpen, onClose }) {
-  const { theme, setTheme, THEMES, user, logout } = useAuth();
+  const { theme, setTheme, THEMES, user, logout, refreshUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState(null);
   const [settingsError, setSettingsError] = useState(null);
+
+  // Dietitian choice (for patients)
+  const [dietitians, setDietitians] = useState([]);
+  const [selectedDietitianId, setSelectedDietitianId] = useState('');
+  const [savingDietitian, setSavingDietitian] = useState(false);
+  const [dietitianMsg, setDietitianMsg] = useState(null);
+  const [dietitianError, setDietitianError] = useState(null);
 
   // Notification toggles
   const [notifyDietPlan, setNotifyDietPlan] = useState(true);
@@ -56,12 +63,15 @@ export function SettingsModal({ isOpen, onClose }) {
       setPasswordError(null);
       setSettingsMsg(null);
       setSettingsError(null);
+      setDietitianMsg(null);
+      setDietitianError(null);
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setShowDeleteModal(false);
+      setSelectedDietitianId(user?.assigned_dietitian_id ? user.assigned_dietitian_id.toString() : '');
     }
-  }, [isOpen]);
+  }, [isOpen, user]);
 
   async function loadSettings() {
     setLoading(true);
@@ -81,8 +91,33 @@ export function SettingsModal({ isOpen, onClose }) {
       }
     } catch (_) {
       // Domyślne wartości pozostają
+    }
+
+    if (user?.role === 'patient') {
+      try {
+        const dList = await authApi.getDietitians();
+        setDietitians(dList || []);
+      } catch (_) {}
+    }
+
+    setLoading(false);
+  }
+
+  async function handleSaveDietitian() {
+    setSavingDietitian(true);
+    setDietitianMsg(null);
+    setDietitianError(null);
+    try {
+      const dId = selectedDietitianId ? parseInt(selectedDietitianId) : 0;
+      const res = await authApi.setMyDietitian(dId);
+      setDietitianMsg(res.message || 'Pomyślnie zaktualizowano dietetyka.');
+      if (refreshUser) {
+        await refreshUser();
+      }
+    } catch (err) {
+      setDietitianError('Błąd: ' + (err.message || 'Nie udało się zapisać wyboru'));
     } finally {
-      setLoading(false);
+      setSavingDietitian(false);
     }
   }
 
@@ -212,6 +247,60 @@ export function SettingsModal({ isOpen, onClose }) {
             <X size={16} />
           </button>
         </div>
+
+        {/* Sekcja: Wybór dietetyka (dla pacjentów) */}
+        {user?.role === 'patient' && (
+          <div style={{ marginBottom: '2rem', padding: '1.1rem', background: 'rgba(16, 185, 129, 0.06)', borderRadius: '10px', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+              <Users size={18} color="var(--accent-emerald)" />
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>Twój dietetyk prowadzący</h3>
+            </div>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.85rem', lineHeight: 1.4 }}>
+              Wskaż specjalistę, który układa Twoje jadłospisy, monitoruje postępy wagowe i kontaktuje się z Tobą na czacie.
+            </p>
+
+            {dietitianMsg && (
+              <div style={{ padding: '0.5rem 0.75rem', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                <CheckCircle2 size={15} /> {dietitianMsg}
+              </div>
+            )}
+            {dietitianError && (
+              <div style={{ padding: '0.5rem 0.75rem', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                <AlertCircle size={15} /> {dietitianError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <select
+                className="form-input"
+                style={{ flex: 1, minWidth: '220px', padding: '0.5rem 0.75rem', fontSize: '0.85rem', background: 'var(--bg-surface)' }}
+                value={selectedDietitianId}
+                onChange={(e) => setSelectedDietitianId(e.target.value)}
+              >
+                <option value="">Brak przypisanego dietetyka (samodzielnie)</option>
+                {dietitians.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.first_name || d.last_name ? `${d.first_name || ''} ${d.last_name || ''}`.trim() : 'Dietetyk'} ({d.email})
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={handleSaveDietitian}
+                disabled={savingDietitian}
+                style={{ padding: '0.5rem 1rem', fontSize: '0.84rem', fontWeight: 700, whiteSpace: 'nowrap' }}
+              >
+                {savingDietitian ? 'Zapisywanie...' : 'Zapisz dietetyka'}
+              </button>
+            </div>
+            {user?.assigned_dietitian_name && (
+              <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginTop: '0.5rem' }}>
+                Aktualnie przypisany: <strong style={{ color: 'var(--accent-emerald)' }}>{user.assigned_dietitian_name}</strong>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Sekcja 1: Powiadomienia (suwaki) */}
         <div style={{ marginBottom: '2rem' }}>

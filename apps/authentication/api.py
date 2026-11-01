@@ -177,17 +177,22 @@ def get_current_user_profile(request):
     }
 
 @router.get("/patients", response=List[UserOutSchema], auth=JWTAuth())
-def list_patients(request):
-    """Dla dietetyków i administratorów: lista przypisanych pacjentów."""
+def list_patients(request, unassigned_only: bool = False, all_patients: bool = False):
+    """Dla dietetyków i administratorów: lista pacjentów."""
     user = request.auth_user
     if user.role == UserRole.ADMIN:
         patients = User.objects.filter(role=UserRole.PATIENT)
     elif user.role == UserRole.DIETITIAN:
-        patients = User.objects.filter(role=UserRole.PATIENT, assigned_dietitian=user)
+        if unassigned_only:
+            patients = User.objects.filter(role=UserRole.PATIENT, assigned_dietitian__isnull=True)
+        elif all_patients:
+            patients = User.objects.filter(role=UserRole.PATIENT)
+        else:
+            patients = User.objects.filter(role=UserRole.PATIENT, assigned_dietitian=user)
     else:
         raise HttpError(403, "Brak uprawnień do przeglądania listy pacjentów.")
 
-    return [serialize_user(p) for p in patients]
+    return [serialize_user(p) for p in patients.order_by('last_name', 'first_name', 'email')]
 
 @router.get("/dietitians", response=List[UserOutSchema], auth=JWTAuth())
 def list_dietitians(request):
@@ -393,23 +398,77 @@ def add_patient_recommendation(request, patient_id: int, payload: AddRecommendat
 
 @router.post("/patients/{patient_id}/assign-dietitian", auth=JWTAuth())
 def assign_dietitian_to_patient(request, patient_id: int, dietitian_id: int):
-    """Administrator lub Dietetyk przypisuje pacjenta."""
+    """Administrator, Dietetyk lub Pacjent przypisuje/zmienia dietetyka."""
     current_user = request.auth_user
-    if current_user.role not in [UserRole.ADMIN, UserRole.DIETITIAN]:
-        raise HttpError(403, "Brak uprawnień.")
 
     patient = User.objects.filter(id=patient_id, role=UserRole.PATIENT).first()
     if not patient:
         raise HttpError(404, "Nie znaleziono pacjenta.")
 
-    dietitian = User.objects.filter(id=dietitian_id, role=UserRole.DIETITIAN).first()
+    if current_user.role == UserRole.PATIENT:
+        if current_user.id != patient.id:
+            raise HttpError(403, "Pacjent może przypisać dietetyka wyłącznie na własnym koncie.")
+    elif current_user.role == UserRole.DIETITIAN:
+        pass
+    elif current_user.role == UserRole.ADMIN:
+        pass
+    else:
+        raise HttpError(403, "Brak uprawnień do przypisywania dietetyka.")
+
+    from apps.chat.models import Notification
+
+    # Opcja odpięcia dietetyka (dietitian_id <= 0)
+    if dietitian_id <= 0:
+        if current_user.role == UserRole.DIETITIAN and patient.assigned_dietitian_id != current_user.id:
+            raise HttpError(403, "Możesz odpiąć wyłącznie pacjenta przypisanego do Ciebie.")
+        patient.assigned_dietitian = None
+        patient.save()
+        return {"message": f"Pacjent {patient.email} nie ma teraz przypisanego dietetyka.", "patient": serialize_user(patient)}
+
+    target_dietitian_id = current_user.id if current_user.role == UserRole.DIETITIAN else dietitian_id
+    dietitian = User.objects.filter(id=target_dietitian_id, role=UserRole.DIETITIAN, is_active=True).first()
     if not dietitian:
         raise HttpError(404, "Nie znaleziono dietetyka.")
 
     patient.assigned_dietitian = dietitian
     patient.save()
 
-    return {"message": f"Pacjent {patient.email} został pomyślnie przypisany do dietetyka {dietitian.email}."}
+    # Powiadomienie do pacjenta (gdy przypisał dietetyk lub admin)
+    if current_user.id != patient.id:
+        try:
+            Notification.objects.create(
+                recipient=patient,
+                title="Nowy opiekun dietetyczny",
+                message=f"Dietetyk {dietitian.get_full_name() or dietitian.email} objął Cię opieką.",
+                notification_type=Notification.NotificationType.SYSTEM
+            )
+        except Exception:
+            pass
+
+    # Powiadomienie do dietetyka (gdy przypisał pacjent)
+    if current_user.id == patient.id:
+        try:
+            Notification.objects.create(
+                recipient=dietitian,
+                title="Nowy pacjent pod Twoją opieką",
+                message=f"Pacjent {patient.get_full_name() or patient.email} wybrał Cię jako swojego dietetyka prowadzącego.",
+                notification_type=Notification.NotificationType.SYSTEM
+            )
+        except Exception:
+            pass
+
+    return {
+        "message": f"Pacjent {patient.email} został pomyślnie przypisany do dietetyka {dietitian.get_full_name() or dietitian.email}.",
+        "patient": serialize_user(patient)
+    }
+
+
+@router.post("/me/assign-dietitian", auth=JWTAuth())
+def assign_my_dietitian(request, dietitian_id: int):
+    """Pacjent: bezpośrednie przypisanie lub zmiana swojego dietetyka."""
+    if request.auth_user.role != UserRole.PATIENT:
+        raise HttpError(403, "Tylko pacjent może zmienić swojego dietetyka tą metodą.")
+    return assign_dietitian_to_patient(request, patient_id=request.auth_user.id, dietitian_id=dietitian_id)
 
 # ─── Admin-only endpoints ─────────────────────────────────────────────────────
 

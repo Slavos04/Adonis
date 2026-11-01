@@ -1,13 +1,26 @@
-export const APP_VERSION = '1.14';
+export const APP_VERSION = '1.15';
 export const APP_RELEASE_DATE = '2026-11-01';
 
 export const CHANGELOG_DATA = [
+  {
+    version: '1.15',
+    date: '2026-11-01',
+    time: '20:10 CET',
+    title: 'Wydanie 1.15 – Samodzielne przypisywanie i wybór dietetyka (Web & Android)',
+    badge: 'Aktualna',
+    highlights: [
+      'Konto Dietetyka: Bezpośrednie przypisywanie nowych podopiecznych pod opiekę („Przypisz pacjenta”) oraz zwalnianie opieki',
+      'Konto Pacjenta: Samodzielny wybór i zmiana dietetyka prowadzącego w Ustawieniach i Pulpicie',
+      'Aplikacja Mobilna (Android): Nowe moduły wyboru dietetyka w Ustawieniach oraz przypisywania w Kartotece dietetyka',
+      'Powiadomienia systemowe: Automatyczne powiadamianie pacjenta i dietetyka o objęciu opieką',
+    ],
+  },
   {
     version: '1.14',
     date: '2026-11-01',
     time: '18:40 CET',
     title: 'Wydanie 1.14 – Niezawodne tło graficzne (URL i pliki z dysku) oraz globalny branding',
-    badge: 'Aktualna',
+    badge: 'Wcześniejsza',
     badgeType: 'emerald',
     changes: [
       {

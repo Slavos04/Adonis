@@ -9,7 +9,8 @@ data class User(
     @SerializedName("first_name") val firstName: String,
     @SerializedName("last_name") val lastName: String,
     val role: String,
-    @SerializedName("assigned_dietitian_name") val assignedDietitianName: String?
+    @SerializedName("assigned_dietitian_name") val assignedDietitianName: String?,
+    @SerializedName("assigned_dietitian_id") val assignedDietitianId: Int? = null
 )
 
 data class PatientProfile(

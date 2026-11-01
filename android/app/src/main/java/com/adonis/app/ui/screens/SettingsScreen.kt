@@ -61,6 +61,13 @@ fun SettingsScreen(
     // Płeć
     var userGender by remember { mutableStateOf("male") }
 
+    // Dietetyk prowadzący (dla pacjenta)
+    var currentUserRole by remember { mutableStateOf<String?>(null) }
+    var currentDietitianName by remember { mutableStateOf<String?>(null) }
+    var currentDietitianId by remember { mutableStateOf<Int?>(null) }
+    var availableDietitians by remember { mutableStateOf<List<com.adonis.app.data.model.User>>(emptyList()) }
+    var isSavingDietitian by remember { mutableStateOf(false) }
+
     // Motyw
     var selectedTheme by remember { mutableStateOf(tokenManager?.getTheme() ?: "dark") }
 
@@ -93,7 +100,15 @@ fun SettingsScreen(
 
             try {
                 val me = apiService.getMyProfile()
+                currentUserRole = me.user.role
+                currentDietitianName = me.user.assignedDietitianName
+                currentDietitianId = me.user.assignedDietitianId
                 me.profile?.gender?.let { if (it.isNotBlank()) userGender = it }
+                if (me.user.role == "patient") {
+                    try {
+                        availableDietitians = apiService.getDietitians()
+                    } catch (_: Exception) {}
+                }
             } catch (_: Exception) {}
             finally {
                 isLoading = false
@@ -196,6 +211,103 @@ fun SettingsScreen(
                         fontSize = 13.sp
                     )
                 }
+            }
+
+            // SEKCJA: Wybór dietetyka (dla pacjenta)
+            if (currentUserRole == "patient") {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Twój dietetyk prowadzący", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+                        Text(
+                            "Wskaż specjalistę, który prowadzi Twoją dietę i monitoruje wyniki",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 2.dp, bottom = 10.dp)
+                        )
+
+                        Text(
+                            text = if (!currentDietitianName.isNullOrBlank()) "Aktualny opiekun: $currentDietitianName" else "Brak przypisanego dietetyka",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (!currentDietitianName.isNullOrBlank()) MaterialTheme.colorScheme.primary else Color(0xFFF59E0B),
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        var isDropdownExpanded by remember { mutableStateOf(false) }
+
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            OutlinedButton(
+                                onClick = { isDropdownExpanded = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp),
+                                enabled = !isSavingDietitian
+                            ) {
+                                Text(
+                                    text = if (!currentDietitianName.isNullOrBlank()) "Zmień dietetyka..." else "Wybierz dietetyka...",
+                                    fontSize = 13.sp
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = isDropdownExpanded,
+                                onDismissRequest = { isDropdownExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Brak dietetyka (samodzielnie)") },
+                                    onClick = {
+                                        isDropdownExpanded = false
+                                        scope.launch {
+                                            isSavingDietitian = true
+                                            try {
+                                                apiService.setMyDietitian(0)
+                                                currentDietitianName = null
+                                                currentDietitianId = null
+                                                statusMessage = "Zrezygnowano z przypisanego dietetyka"
+                                                isError = false
+                                            } catch (e: Exception) {
+                                                statusMessage = "Błąd: ${e.localizedMessage}"
+                                                isError = true
+                                            } finally {
+                                                isSavingDietitian = false
+                                            }
+                                        }
+                                    }
+                                )
+                                availableDietitians.forEach { d ->
+                                    val dName = "${d.firstName} ${d.lastName}".ifBlank { d.username }
+                                    DropdownMenuItem(
+                                        text = { Text("$dName (${d.email})") },
+                                        onClick = {
+                                            isDropdownExpanded = false
+                                            scope.launch {
+                                                isSavingDietitian = true
+                                                try {
+                                                    apiService.setMyDietitian(d.id)
+                                                    currentDietitianName = dName
+                                                    currentDietitianId = d.id
+                                                    statusMessage = "Wybrano dietetyka: $dName"
+                                                    isError = false
+                                                } catch (e: Exception) {
+                                                    statusMessage = "Błąd: ${e.localizedMessage}"
+                                                    isError = true
+                                                } finally {
+                                                    isSavingDietitian = false
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
             }
 
             // SEKCJA 1: Powiadomienia

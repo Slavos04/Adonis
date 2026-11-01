@@ -53,8 +53,22 @@ export const authApi = {
     }),
   getMe: () => apiRequest('/auth/me'),
   logout: () => apiRequest('/auth/logout', { method: 'POST' }),
-  getPatients: () => apiRequest('/auth/patients'),
+  getPatients: (params = {}) => {
+    const q = new URLSearchParams();
+    if (params.unassigned_only) q.append('unassigned_only', 'true');
+    if (params.all_patients) q.append('all_patients', 'true');
+    const qs = q.toString();
+    return apiRequest(`/auth/patients${qs ? `?${qs}` : ''}`);
+  },
   getDietitians: () => apiRequest('/auth/dietitians'),
+  assignDietitian: (patientId, dietitianId) =>
+    apiRequest(`/auth/patients/${patientId}/assign-dietitian?dietitian_id=${dietitianId}`, {
+      method: 'POST',
+    }),
+  setMyDietitian: (dietitianId) =>
+    apiRequest(`/auth/me/assign-dietitian?dietitian_id=${dietitianId}`, {
+      method: 'POST',
+    }),
   getPatientProfile: (patientId) => apiRequest(`/auth/patients/${patientId}/profile`),
   updatePatientProfile: (patientId, data) =>
     apiRequest(`/auth/patients/${patientId}/profile`, {

@@ -135,7 +135,24 @@ interface AdonisApiService {
     suspend fun loadDietPackage(@Body request: PatientLoadPackageRequest): Map<String, Any>
 
     @GET("auth/patients")
-    suspend fun getPatients(): List<User>
+    suspend fun getPatients(
+        @Query("unassigned_only") unassignedOnly: Boolean? = null,
+        @Query("all_patients") allPatients: Boolean? = null
+    ): List<User>
+
+    @GET("auth/dietitians")
+    suspend fun getDietitians(): List<User>
+
+    @POST("auth/patients/{patient_id}/assign-dietitian")
+    suspend fun assignDietitian(
+        @Path("patient_id") patientId: Int,
+        @Query("dietitian_id") dietitianId: Int
+    ): Map<String, Any>
+
+    @POST("auth/me/assign-dietitian")
+    suspend fun setMyDietitian(
+        @Query("dietitian_id") dietitianId: Int
+    ): Map<String, Any>
 
     @GET("auth/patients/{patient_id}/profile")
     suspend fun getPatientProfile(
