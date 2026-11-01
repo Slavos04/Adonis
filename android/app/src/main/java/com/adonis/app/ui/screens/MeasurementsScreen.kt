@@ -259,6 +259,7 @@ fun MeasurementsScreen(apiService: AdonisApiService) {
         var waistInput by remember { mutableStateOf("") }
         var notesInput by remember { mutableStateOf("") }
         var isSaving by remember { mutableStateOf(false) }
+        var dialogError by remember { mutableStateOf<String?>(null) }
 
         AlertDialog(
             onDismissRequest = { if (!isSaving) showAddDialog = false },
@@ -270,6 +271,15 @@ fun MeasurementsScreen(apiService: AdonisApiService) {
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    dialogError?.let { err ->
+                        Text(
+                            text = err,
+                            color = MaterialTheme.colorScheme.error,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
                     OutlinedTextField(
                         value = dateInput,
                         onValueChange = { dateInput = it },
@@ -339,7 +349,8 @@ fun MeasurementsScreen(apiService: AdonisApiService) {
                                     }
                                     showAddDialog = false
                                     loadData()
-                                } catch (_: Exception) {
+                                } catch (e: Exception) {
+                                    dialogError = "Błąd: ${e.localizedMessage ?: "Nie udało się zapisać pomiaru"}"
                                 } finally {
                                     isSaving = false
                                 }
