@@ -30,7 +30,17 @@ export async function apiRequest(endpoint, options = {}) {
     let errorDetail = 'Wystąpił błąd podczas komunikacji z serwerem.';
     try {
       const errorData = await response.json();
-      errorDetail = errorData.detail || errorData.message || JSON.stringify(errorData);
+      if (typeof errorData.detail === 'string') {
+        errorDetail = errorData.detail;
+      } else if (Array.isArray(errorData.detail)) {
+        errorDetail = errorData.detail
+          .map((d) => (d.msg || (typeof d === 'string' ? d : JSON.stringify(d))))
+          .join(', ');
+      } else if (errorData.message) {
+        errorDetail = errorData.message;
+      } else {
+        errorDetail = JSON.stringify(errorData);
+      }
     } catch (_) {
       errorDetail = `Błąd HTTP ${response.status}: ${response.statusText}`;
     }

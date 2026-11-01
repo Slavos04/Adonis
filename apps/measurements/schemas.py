@@ -1,9 +1,10 @@
 from ninja import Schema
 from typing import List, Optional
-from datetime import date, datetime
+from datetime import date as dt_date, datetime as dt_datetime
 
 class MeasurementInputSchema(Schema):
-    date: Optional[date] = None
+    date: Optional[dt_date] = None
+    patient_id: Optional[int] = None
     weight: float
     height: Optional[float] = None
     waist_cm: Optional[float] = None
@@ -20,11 +21,11 @@ class AuditLogOutSchema(Schema):
     old_value: str
     new_value: str
     reason: str
-    created_at: datetime
+    created_at: dt_datetime
 
 class MeasurementOutSchema(Schema):
     id: int
-    date: date
+    date: dt_date
     weight: float
     waist_cm: Optional[float] = None
     chest_cm: Optional[float] = None

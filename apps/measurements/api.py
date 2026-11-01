@@ -68,13 +68,25 @@ def list_measurements(request, patient_id: Optional[int] = None):
 
 @router.post("/", response=MeasurementOutSchema, auth=JWTAuth())
 def add_measurement(request, payload: MeasurementInputSchema):
-    """Pacjent wprowadza codzienną wagę oraz obwody ciała."""
+    """Pacjent wprowadza codzienną wagę oraz obwody ciała, lub dietetyk dodaje pomiar dla pacjenta."""
     user = request.auth_user
     entry_date = payload.date or date.today()
 
+    target_patient = user
+    if user.role != UserRole.PATIENT:
+        if payload.patient_id:
+            found_patient = User.objects.filter(id=payload.patient_id, role=UserRole.PATIENT).first()
+            if not found_patient:
+                raise HttpError(404, "Nie znaleziono wskazanego pacjenta.")
+            if user.role == UserRole.DIETITIAN and found_patient.assigned_dietitian_id != user.id:
+                raise HttpError(403, "Możesz dodawać pomiary tylko dla swoich podopiecznych.")
+            target_patient = found_patient
+        else:
+            raise HttpError(400, "Wymagane ID pacjenta.")
+
     with transaction.atomic():
         measurement, created = Measurement.objects.update_or_create(
-            patient=user,
+            patient=target_patient,
             date=entry_date,
             defaults={
                 "weight": Decimal(str(payload.weight)),
@@ -87,7 +99,7 @@ def add_measurement(request, payload: MeasurementInputSchema):
         )
 
         ## Synchronizacja wagi bieżącej oraz wzrostu w profilu pacjenta (kluczowe do wyliczania BMI wg WHO)
-        profile, _ = PatientProfile.objects.get_or_create(user=user)
+        profile, _ = PatientProfile.objects.get_or_create(user=target_patient)
         profile.current_weight = measurement.weight
         update_fields = ['current_weight']
         if payload.height is not None and payload.height > 0:
