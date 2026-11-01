@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, PatientProfile, PatientRecommendation
+from .models import User, PatientProfile, PatientRecommendation, SystemGlobalBranding
 
 class PatientProfileInline(admin.StackedInline):
     model = PatientProfile
@@ -31,3 +31,7 @@ class PatientRecommendationAdmin(admin.ModelAdmin):
     list_display = ('patient', 'dietitian', 'title', 'created_at')
     search_fields = ('patient__email', 'patient__first_name', 'patient__last_name', 'dietitian__email', 'content')
     list_filter = ('created_at',)
+
+@admin.register(SystemGlobalBranding)
+class SystemGlobalBrandingAdmin(admin.ModelAdmin):
+    list_display = ('id', 'is_active_for_all', 'global_bg_image_url', 'global_bg_overlay', 'global_bg_blur', 'updated_at')
