@@ -210,3 +210,20 @@ class PasswordResetToken(models.Model):
     def __str__(self):
         return f"Reset dla {self.user.email} (kod: {self.code})"
 
+
+class SystemGlobalBranding(models.Model):
+    """Globalne ustawienia brandingu i tła aplikacji (dla wszystkich użytkowników Web & Mobile)."""
+    global_bg_image_url = models.CharField(_('globalny adres URL tła'), max_length=1000, blank=True, default='')
+    global_bg_overlay = models.FloatField(_('stopień przyciemnienia tła'), default=0.55)
+    global_bg_blur = models.IntegerField(_('stopień rozmycia tła px'), default=0)
+    is_active_for_all = models.BooleanField(_('aktywne dla wszystkich kont'), default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('globalny branding systemu')
+        verbose_name_plural = _('globalny branding systemu')
+
+    def __str__(self):
+        return f"Global Branding (aktywny: {self.is_active_for_all})"
+

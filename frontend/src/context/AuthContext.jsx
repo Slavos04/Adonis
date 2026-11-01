@@ -23,6 +23,23 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener('adonis_themes_changed', handleThemesChanged);
   }, []);
 
+  // Wczytanie globalnego brandingu z backendu jeśli aktywne dla wszystkich
+  const loadGlobalBranding = useCallback(async () => {
+    try {
+      const b = await authApi.getSystemBranding();
+      if (b && b.is_active_for_all) {
+        if (b.global_bg_image_url) {
+          localStorage.setItem('adonis_custom_bg_image', b.global_bg_image_url);
+        } else {
+          localStorage.removeItem('adonis_custom_bg_image');
+        }
+        localStorage.setItem('adonis_custom_bg_overlay', (b.global_bg_overlay ?? 0.55).toString());
+        localStorage.setItem('adonis_custom_bg_blur', (b.global_bg_blur ?? 0).toString());
+        applyCustomThemeSettings();
+      }
+    } catch (_) {}
+  }, []);
+
   // Apply theme to <html> element whenever it changes
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -32,8 +49,9 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     applyCustomThemeSettings();
+    loadGlobalBranding();
     checkCurrentUser();
-  }, []);
+  }, [loadGlobalBranding]);
 
   async function checkCurrentUser() {
     try {

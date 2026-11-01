@@ -202,10 +202,14 @@ export function applyCustomThemeSettings() {
     root.style.setProperty('--custom-bg-image', `url("${bgImg}")`);
     root.style.setProperty('--custom-bg-overlay', `rgba(0, 0, 0, ${overlay})`);
     root.style.setProperty('--custom-bg-blur', `${blur}px`);
+    root.classList.add('has-custom-bg');
+    if (document.body) document.body.classList.add('has-custom-bg');
   } else {
     root.style.removeProperty('--custom-bg-image');
     root.style.removeProperty('--custom-bg-overlay');
     root.style.removeProperty('--custom-bg-blur');
+    root.classList.remove('has-custom-bg');
+    if (document.body) document.body.classList.remove('has-custom-bg');
   }
 
   // 3. Deseń tła

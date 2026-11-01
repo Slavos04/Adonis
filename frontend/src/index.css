@@ -171,6 +171,13 @@ body {
   position: relative;
 }
 
+/* W przypadku aktywnego tła graficznego, usuwamy nieprzezroczysty kolor body */
+html.has-custom-bg body,
+body.has-custom-bg {
+  background-color: transparent !important;
+  background-image: var(--theme-pattern) !important;
+}
+
 body::before {
   content: '';
   position: fixed;

@@ -80,6 +80,12 @@ export const authApi = {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
+  getSystemBranding: () => apiRequest('/auth/system-branding'),
+  updateSystemBranding: (data) =>
+    apiRequest('/auth/system-branding', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
   changePassword: (data) =>
     apiRequest('/auth/change-password', {
       method: 'POST',

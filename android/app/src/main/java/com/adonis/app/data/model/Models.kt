@@ -262,6 +262,14 @@ data class ResetPasswordRequest(
     @SerializedName("new_password") val newPassword: String
 )
 
+data class SystemBrandingResponse(
+    @SerializedName("global_bg_image_url") val globalBgImageUrl: String = "",
+    @SerializedName("global_bg_overlay") val globalBgOverlay: Float = 0.55f,
+    @SerializedName("global_bg_blur") val globalBgBlur: Int = 0,
+    @SerializedName("is_active_for_all") val isActiveForAll: Boolean = false,
+    @SerializedName("updated_at") val updatedAt: String? = null
+)
+
 data class DietPlanTemplate(
     val id: Int,
     val name: String,

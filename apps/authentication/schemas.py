@@ -111,5 +111,12 @@ class ResetPasswordSchema(Schema):
     code: str
     new_password: str
 
+class SystemBrandingSchema(Schema):
+    global_bg_image_url: str = ""
+    global_bg_overlay: float = 0.55
+    global_bg_blur: int = 0
+    is_active_for_all: bool = False
+    updated_at: Optional[str] = None
+
 
 

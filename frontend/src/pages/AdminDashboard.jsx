@@ -1163,6 +1163,19 @@ function ThemeStudioSection({ onToast }) {
   const [bgOverlay, setBgOverlay] = useState(() => parseFloat(localStorage.getItem('adonis_custom_bg_overlay')) || 0.55);
   const [bgBlur, setBgBlur] = useState(() => parseInt(localStorage.getItem('adonis_custom_bg_blur')) || 0);
   const [uploading, setUploading] = useState(false);
+  const [isGlobalActive, setIsGlobalActive] = useState(false);
+  const [savingGlobal, setSavingGlobal] = useState(false);
+
+  useEffect(() => {
+    authApi.getSystemBranding().then(b => {
+      if (b) {
+        setIsGlobalActive(b.is_active_for_all || false);
+        if (b.global_bg_image_url && !localStorage.getItem('adonis_custom_bg_image')) {
+          setBgImageUrl(b.global_bg_image_url);
+        }
+      }
+    }).catch(() => {});
+  }, []);
 
   // Kreator nowego motywu
   const [showCreator, setShowCreator] = useState(false);
@@ -1176,14 +1189,41 @@ function ThemeStudioSection({ onToast }) {
 
   const allThemes = getAllThemeDetails();
 
-  function handleSaveAll() {
+  async function handleSaveAll() {
     saveCustomThemeSettings({
       bgImage: bgImageUrl.trim(),
       overlay: bgOverlay,
       blur: bgBlur,
       pattern: currentPattern,
     });
-    onToast('Ustawienia motywu i tła zostały zapisane i zastosowane w całej platformie!');
+
+    if (isGlobalActive) {
+      setSavingGlobal(true);
+      try {
+        await authApi.updateSystemBranding({
+          global_bg_image_url: bgImageUrl.trim(),
+          global_bg_overlay: bgOverlay,
+          global_bg_blur: bgBlur,
+          is_active_for_all: true,
+        });
+        onToast('Ustawienia zapisano lokalnie oraz opublikowano globalnie dla wszystkich kont i aplikacji!');
+      } catch (err) {
+        onToast(`Błąd zapisu globalnego: ${err.message}`);
+      } finally {
+        setSavingGlobal(false);
+      }
+    } else {
+      // Wyłącz jeśli odznaczone
+      try {
+        await authApi.updateSystemBranding({
+          global_bg_image_url: bgImageUrl.trim(),
+          global_bg_overlay: bgOverlay,
+          global_bg_blur: bgBlur,
+          is_active_for_all: false,
+        });
+      } catch (_) {}
+      onToast('Ustawienia motywu i tła zostały zapisane lokalnie w przeglądarce.');
+    }
   }
 
   function handleReset() {
@@ -1193,6 +1233,13 @@ function ThemeStudioSection({ onToast }) {
     setBgOverlay(0.55);
     setBgBlur(0);
     setCurrentPattern('default');
+    setIsGlobalActive(false);
+    authApi.updateSystemBranding({
+      global_bg_image_url: '',
+      global_bg_overlay: 0.55,
+      global_bg_blur: 0,
+      is_active_for_all: false,
+    }).catch(() => {});
     onToast('Przywrócono domyślne ustawienia wyglądu.');
   }
 
@@ -1261,8 +1308,8 @@ function ThemeStudioSection({ onToast }) {
           <button className="btn btn-secondary btn-sm" onClick={handleReset}>
             <RotateCcwIcon size={14} /> Przywróć Domyślne
           </button>
-          <button className="btn btn-primary btn-sm" onClick={handleSaveAll}>
-            <Check size={14} /> Zastosuj i Zapisz
+          <button className="btn btn-primary btn-sm" onClick={handleSaveAll} disabled={savingGlobal}>
+            <Check size={14} /> {savingGlobal ? 'Zapisuję...' : 'Zastosuj i Zapisz'}
           </button>
         </div>
       }
@@ -1582,6 +1629,34 @@ function ThemeStudioSection({ onToast }) {
                   }}
                   style={{ width: '100%', accentColor: 'var(--accent-emerald)', cursor: 'pointer' }}
                 />
+              </div>
+
+              {/* Przełącznik globalnego brandingu dla wszystkich kont */}
+              <div style={{
+                marginTop: '0.5rem',
+                paddingTop: '0.75rem',
+                borderTop: '1px solid rgba(255,255,255,0.08)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '0.75rem'
+              }}>
+                <div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#38bdf8' }}>
+                    🌐 Zastosuj jako tło globalne dla wszystkich kont
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                    Wymusi to tło dla wszystkich pacjentów i dietetyków (Web &amp; Aplikacja Mobilna).
+                  </div>
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={isGlobalActive}
+                    onChange={e => setIsGlobalActive(e.target.checked)}
+                    style={{ width: '18px', height: '18px', accentColor: '#38bdf8', cursor: 'pointer' }}
+                  />
+                </label>
               </div>
             </div>
           </div>

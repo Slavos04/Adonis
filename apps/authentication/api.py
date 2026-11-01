@@ -13,13 +13,14 @@ from typing import List
 
 from .models import (
     User, UserRole, PatientProfile, PatientRecommendation,
-    UserNotificationSettings, PasswordResetToken
+    UserNotificationSettings, PasswordResetToken, SystemGlobalBranding
 )
 from .schemas import (
     LoginSchema, RegisterSchema, UserOutSchema,
     PatientProfileOutSchema, PatientProfileUpdateSchema, AuthResponseSchema,
     PatientRecommendationOutSchema, AddRecommendationSchema, AdminUpdateUserSchema,
-    UserNotificationSettingsSchema, ChangePasswordSchema, ForgotPasswordSchema, ResetPasswordSchema
+    UserNotificationSettingsSchema, ChangePasswordSchema, ForgotPasswordSchema, ResetPasswordSchema,
+    SystemBrandingSchema
 )
 from .security import (
     generate_jwt_token, set_auth_cookie, clear_auth_cookie, JWTAuth
@@ -681,5 +682,52 @@ def reset_password(request, payload: ResetPasswordSchema):
     token_obj.save(update_fields=['is_used'])
 
     return {"message": "Hasło zostało pomyślnie zresetowane. Możesz się teraz zalogować nowym hasłem."}
+
+
+# ── Globalny Branding i Tło Systemu ──────────────────────────────────────────
+
+@router.get("/system-branding", response=SystemBrandingSchema, auth=None)
+def get_system_branding(request):
+    """Pobiera globalne ustawienia tła i brandingu aplikacji (publiczne dla Web & Mobile)."""
+    branding = SystemGlobalBranding.objects.first()
+    if not branding:
+        return {
+            "global_bg_image_url": "",
+            "global_bg_overlay": 0.55,
+            "global_bg_blur": 0,
+            "is_active_for_all": False,
+            "updated_at": None,
+        }
+    return {
+        "global_bg_image_url": branding.global_bg_image_url,
+        "global_bg_overlay": branding.global_bg_overlay,
+        "global_bg_blur": branding.global_bg_blur,
+        "is_active_for_all": branding.is_active_for_all,
+        "updated_at": branding.updated_at.isoformat() if branding.updated_at else None,
+    }
+
+
+@router.put("/system-branding", response=SystemBrandingSchema, auth=JWTAuth())
+def update_system_branding(request, payload: SystemBrandingSchema):
+    """Aktualizuje globalne tło aplikacji (wymaga uprawnień administratora)."""
+    user = request.auth_user
+    if user.role != UserRole.ADMIN:
+        raise HttpError(403, "Tylko administrator może zarządzać globalnym tłem i brandingiem aplikacji.")
+
+    branding, _ = SystemGlobalBranding.objects.get_or_create(id=1)
+    branding.global_bg_image_url = payload.global_bg_image_url.strip()
+    branding.global_bg_overlay = payload.global_bg_overlay
+    branding.global_bg_blur = payload.global_bg_blur
+    branding.is_active_for_all = payload.is_active_for_all
+    branding.updated_by = user
+    branding.save()
+
+    return {
+        "global_bg_image_url": branding.global_bg_image_url,
+        "global_bg_overlay": branding.global_bg_overlay,
+        "global_bg_blur": branding.global_bg_blur,
+        "is_active_for_all": branding.is_active_for_all,
+        "updated_at": branding.updated_at.isoformat() if branding.updated_at else None,
+    }
 
 

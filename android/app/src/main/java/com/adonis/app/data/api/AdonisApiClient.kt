@@ -113,6 +113,9 @@ interface AdonisApiService {
     @PUT("auth/settings")
     suspend fun updateSettings(@Body settings: UserNotificationSettings): UserNotificationSettings
 
+    @GET("auth/system-branding")
+    suspend fun getSystemBranding(): SystemBrandingResponse
+
     @POST("auth/change-password")
     suspend fun changePassword(@Body request: ChangePasswordRequest): Map<String, Any>
 
