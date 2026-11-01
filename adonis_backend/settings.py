@@ -126,3 +126,21 @@ JWT_EXPIRATION_MINUTES = int(os.getenv('JWT_EXPIRATION_MINUTES', '43200'))  # 30
 
 # Open Food Facts API
 OPEN_FOOD_FACTS_BASE_URL = os.getenv('OPEN_FOOD_FACTS_BASE_URL', 'https://world.openfoodfacts.org')
+
+# Security & Reverse Proxy Settings (CSRF & HTTPS)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+
+csrf_trusted_env = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+if csrf_trusted_env:
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_trusted_env.split(',') if origin.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = [
+        'https://adonis.slavosmm.duckdns.org',
+        'http://adonis.slavosmm.duckdns.org',
+        'http://localhost:8000',
+        'http://localhost:3000',
+        'http://127.0.0.1:8000',
+        'http://127.0.0.1:3000',
+    ]
