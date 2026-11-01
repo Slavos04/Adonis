@@ -167,7 +167,7 @@ fun DietitianPatientsScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Tytuł i przycisk przypisania pacjenta
+        // Tytuł i przyciski przypisania / odpięcia pacjenta
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -175,28 +175,54 @@ fun DietitianPatientsScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier.weight(1f).padding(end = 6.dp)) {
                 Text(
                     text = "Kartoteka pacjentów",
-                    fontSize = 24.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    text = "Zarządzaj celami makro, zaleceniami oraz dietami swoich podopiecznych",
-                    fontSize = 12.sp,
+                    text = "Cele makro, zalecenia i podopieczni",
+                    fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Button(
-                onClick = { showAssignPatientDialog = true },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                shape = RoundedCornerShape(8.dp),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-            ) {
-                Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Przypisz", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Button(
+                    onClick = { showAssignPatientDialog = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                ) {
+                    Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text("+ Przypisz", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+
+                if (currentPatient != null) {
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch {
+                                try {
+                                    apiService.assignDietitian(currentPatient.id, 0)
+                                    successMessage = "Zwolniono pacjenta ${currentPatient.firstName.ifBlank { currentPatient.email }} z opieki."
+                                    selectedPatientId = null
+                                    loadPatients()
+                                } catch (e: Exception) {
+                                    errorMessage = "Błąd odpinania: ${e.localizedMessage}"
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(15.dp), tint = MaterialTheme.colorScheme.error)
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("Odepnij", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                    }
+                }
             }
         }
 

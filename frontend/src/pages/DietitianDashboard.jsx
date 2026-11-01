@@ -11,7 +11,7 @@ import { AssignPatientModal } from '../components/AssignPatientModal';
 import { APP_VERSION } from '../version';
 
 import {
-  Users, UserCheck, UserPlus, ShieldAlert, FileText, Calendar, Plus,
+  Users, UserCheck, UserPlus, UserMinus, ShieldAlert, FileText, Calendar, Plus,
   Edit3, History, Save, Send, Utensils, Award, Layers, Sparkles,
   Trash2, AlertTriangle, Check, Upload, Image, Calculator, Flame,
   Search, Info, BookOpen, Clock, ChevronRight, Package, Eye, TrendingDown, Download
@@ -195,6 +195,21 @@ export function DietitianDashboard() {
       }
     } catch (err) {
       console.error('Błąd odświeżania listy pacjentów:', err);
+    }
+  }
+
+  async function handleUnassignSelectedPatient() {
+    if (!selectedPatient) return;
+    const pName = selectedPatient.first_name || selectedPatient.email;
+    if (!window.confirm(`Czy na pewno chcesz odpiąć pacjenta ${pName} ze swojej opieki? Pacjent nie będzie już widoczny na Twojej liście.`)) {
+      return;
+    }
+    try {
+      await authApi.assignDietitian(selectedPatient.id, 0);
+      alert(`Pacjent ${pName} został odpięty.`);
+      await refreshPatients();
+    } catch (err) {
+      alert('Błąd odpinania pacjenta: ' + (err.message || 'Nieznany błąd'));
     }
   }
 
@@ -770,32 +785,59 @@ export function DietitianDashboard() {
               <Users size={20} color="#10b981" />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Aktywny pacjent
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setShowAssignModal(true)}
-                  style={{
-                    background: 'rgba(16, 185, 129, 0.15)',
-                    border: '1px solid rgba(16, 185, 129, 0.4)',
-                    color: '#34d399',
-                    fontSize: '0.74rem',
-                    fontWeight: 700,
-                    borderRadius: '5px',
-                    padding: '2px 8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                  title="Zarządzaj przypisanymi pacjentami lub dodaj nowego podopiecznego"
-                >
-                  <UserPlus size={13} />
-                  Przypisz pacjenta
-                </button>
+                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowAssignModal(true)}
+                    style={{
+                      background: 'rgba(16, 185, 129, 0.18)',
+                      border: '1px solid rgba(16, 185, 129, 0.45)',
+                      color: '#34d399',
+                      fontSize: '0.76rem',
+                      fontWeight: 700,
+                      borderRadius: '6px',
+                      padding: '3px 9px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                    title="Dodaj lub przypisz nowego pacjenta pod opiekę"
+                  >
+                    <UserPlus size={14} />
+                    + Przypisz pacjenta
+                  </button>
+
+                  {selectedPatient && (
+                    <button
+                      type="button"
+                      onClick={handleUnassignSelectedPatient}
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.12)',
+                        border: '1px solid rgba(239, 68, 68, 0.35)',
+                        color: '#f87171',
+                        fontSize: '0.74rem',
+                        fontWeight: 600,
+                        borderRadius: '6px',
+                        padding: '3px 8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                      title="Odepnij aktywnego pacjenta ze swojej opieki"
+                    >
+                      <UserMinus size={13} />
+                      Odepnij pacjenta
+                    </button>
+                  )}
+                </div>
               </div>
               <select
                 value={selectedPatient?.id || ''}
