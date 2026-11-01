@@ -1,16 +1,20 @@
 
-from apps.diet_plans.models import PlannedMeal, DietPlanTemplate
-from django.db import transaction
-from ninja import Router
+import os
+import uuid
+from decimal import Decimal
 from typing import List, Optional
+from django.conf import settings
+from django.db import transaction
 from django.db.models import Q
+from ninja import Router, File, UploadedFile
 from ninja.errors import HttpError
 
-from .models import Recipe, Product, RecipeIngredient
+from apps.diet_plans.models import PlannedMeal, DietPlanTemplate
+from .models import Recipe, Product, RecipeIngredient, StoreChoice
 from .schemas import (
     ReplaceRecipeSchema,
     RecipeOutSchema, RecipeDetailOutSchema, ScaledRecipeOutSchema,
-    ProductOutSchema, RecipeCreateSchema
+    ProductOutSchema, RecipeCreateSchema, ProductCreateSchema, RecipeUpdateSchema
 )
 from .services import scale_recipe
 from .openfoodfacts import OpenFoodFactsClient
@@ -156,13 +160,6 @@ async def get_product_by_barcode(request, barcode: str):
         pass
 
     return off_data
-
-import os
-import uuid
-from decimal import Decimal
-from django.conf import settings
-from ninja import File, UploadedFile
-from .schemas import ProductCreateSchema, RecipeUpdateSchema
 
 @router.post("/products/", response=ProductOutSchema, auth=JWTAuth())
 def create_product(request, payload: ProductCreateSchema):
