@@ -657,6 +657,42 @@ export function PortionScalerModal({
                   </button>
                 </div>
 
+                {/* Szybki wybór owoców z bazy */}
+                <div style={{ marginBottom: '0.85rem' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                    Szybki wybór popularnych owoców z bazy:
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    {[
+                      { name: 'Jabłko', weight: 150, kcal: 52, p: 0.3, f: 0.2, c: 13.8 },
+                      { name: 'Banan', weight: 120, kcal: 89, p: 1.1, f: 0.3, c: 22.8 },
+                      { name: 'Pomarańcza', weight: 180, kcal: 47, p: 0.9, f: 0.1, c: 11.8 },
+                      { name: 'Mandarynka', weight: 70, kcal: 53, p: 0.8, f: 0.3, c: 13.3 },
+                      { name: 'Gruszka', weight: 150, kcal: 57, p: 0.4, f: 0.1, c: 15.2 },
+                      { name: 'Truskawki', weight: 100, kcal: 32, p: 0.7, f: 0.3, c: 7.7 },
+                      { name: 'Borówki', weight: 100, kcal: 57, p: 0.7, f: 0.3, c: 14.5 },
+                      { name: 'Kiwi', weight: 80, kcal: 61, p: 1.1, f: 0.5, c: 14.7 },
+                    ].map((f) => (
+                      <button
+                        key={f.name}
+                        type="button"
+                        onClick={() => {
+                          setItemName(f.name);
+                          setItemWeight(f.weight);
+                          setItemKcal(f.kcal);
+                          setItemP(f.p);
+                          setItemF(f.f);
+                          setItemC(f.c);
+                        }}
+                        className="btn btn-secondary btn-xs"
+                        style={{ fontSize: '0.75rem', padding: '0.25rem 0.55rem', background: 'rgba(255,255,255,0.05)' }}
+                      >
+                        {f.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* EAN Input Row */}
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.85rem' }}>
                   <input

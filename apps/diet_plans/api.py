@@ -428,6 +428,10 @@ def get_weekly_plan(request, start_date: Optional[date] = None, patient_id: Opti
     )
     plans_by_date = {p.date: p for p in plans}
 
+    patient_gender = 'all'
+    if hasattr(target_patient, 'patient_profile') and target_patient.patient_profile and target_patient.patient_profile.gender:
+        patient_gender = target_patient.patient_profile.gender.lower()
+
     # Sprawdzenie czy w danym tygodniu brakuje posiłków i automatyczne załadowanie pakietu
     missing_days = [
         week_start + timedelta(days=i)
@@ -464,6 +468,10 @@ def get_weekly_plan(request, start_date: Optional[date] = None, patient_id: Opti
             )
             plans_by_date = {p.date: p for p in plans}
 
+    patient_gender = 'all'
+    if hasattr(target_patient, 'patient_profile') and target_patient.patient_profile and target_patient.patient_profile.gender:
+        patient_gender = target_patient.patient_profile.gender.lower()
+
     days_summary = []
     for i in range(7):
         current_day = week_start + timedelta(days=i)
@@ -499,10 +507,17 @@ def get_weekly_plan(request, start_date: Optional[date] = None, patient_id: Opti
                 c_val = float(m.custom_carbs_g or 0.0)
                 title = f"Zamieniono: {m.custom_name}" if m.custom_name else recipe.title
             else:
-                cal = float(recipe.calories) * multiplier
-                p_val = float(recipe.protein_g) * multiplier
-                f_val = float(recipe.fat_g) * multiplier
-                c_val = float(recipe.carbs_g) * multiplier
+                if patient_gender in ('female', 'male'):
+                    macros = recipe.get_macros_for_gender(patient_gender)
+                    cal = float(macros['calories']) * multiplier
+                    p_val = float(macros['protein_g']) * multiplier
+                    f_val = float(macros['fat_g']) * multiplier
+                    c_val = float(macros['carbs_g']) * multiplier
+                else:
+                    cal = float(recipe.calories) * multiplier
+                    p_val = float(recipe.protein_g) * multiplier
+                    f_val = float(recipe.fat_g) * multiplier
+                    c_val = float(recipe.carbs_g) * multiplier
                 title = recipe.title
 
             tot_cal += cal

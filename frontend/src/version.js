@@ -11,6 +11,27 @@ export const CHANGELOG_DATA = [
     badgeType: 'emerald',
     changes: [
       {
+        category: 'Korekta bazy produktów i spójność kaloryczności (Web & Android)',
+        items: [
+          'Korekta kaloryczności napojów roślinnych i bulionów: Naprawiono błędną klasyfikację napojów migdałowych (z 650 kcal na 15 kcal/100g), kokosowych, owsianych i bulionów w bazie danych – usunięto anomalię 4607 kcal i 1586 kcal dla owsianek.',
+          'Pełna spójność wyliczeń: Ujednolicono algorytmy kalkulacji kalorii i makroskładników – wartości w podglądzie kalendarza tygodniowego są teraz identyczne z widokiem dziennym.',
+          'Baza standardowych owoców: Wprowadzono do bazy standardowe owoce (jabłka, banany, gruszki, pomarańcze, borówki, truskawki, kiwi itp.) wraz z przyciskami szybkiego wyboru w opcji zamiany posiłku.'
+        ]
+      },
+      {
+        category: 'Wybór daty wdrożenia pakietu jadłospisu (Web & Android)',
+        items: [
+          'Elastyczna data rozpoczęcia: Przy ładowaniu pakietu jadłospisu od dietetyka dodano możliwość wyboru daty startu – jednym kliknięciem [Od dziś], [Wg daty dietetyka] lub wybór dowolnej daty z kalendarza.'
+        ]
+      },
+      {
+        category: 'Optymalizacja interfejsu mobilnego',
+        items: [
+          'Jednoliniowe makroskładniki: Podsumowanie kalorii i B, T, W mieści się w jednej zwartej linii, eliminując rozbijanie na 3 wiersze.',
+          'Dopasowana wysokość okien: Wyeliminowano zbędną pustą przestrzeń w oknach dialogowych (okno opcji posiłku i ładowania pakietu dopasowuje się do zawartości).'
+        ]
+      },
+      {
         category: 'Nawigacja i kontrola jadłospisu (Android & Web)',
         items: [
           'Tygodniowy Kalendarz Jadłospisu: Naprawiono rozwijanie podglądu dań – lista posiłków i makroskładników wyświetla się teraz ponad wszystkimi kontenerami (jako pływające okno popover renderowane na zewnątrz formularza), gwarantując pełną widoczność bez obcinania przez krawędzie kasetki.',

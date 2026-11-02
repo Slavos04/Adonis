@@ -25,6 +25,9 @@ export function PatientLoadPackageModal({ isOpen, onClose, onPackageLoaded, init
       setOverview(data || { current_diet: null, pending_diet: null, previous_diets: [] });
       if (data?.pending_diet) {
         setSelectedTemplateId(data.pending_diet.template_id);
+        if (data.pending_diet.start_date) {
+          setStartDate(data.pending_diet.start_date);
+        }
       } else if (data?.current_diet) {
         setSelectedTemplateId(data.current_diet.template_id);
       }
@@ -128,12 +131,32 @@ export function PatientLoadPackageModal({ isOpen, onClose, onPackageLoaded, init
           gap: '0.85rem',
         }}>
           <div>
-            <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <Calendar size={15} color="var(--accent-emerald)" /> Data rozpoczęcia w kalendarzu przy ładowaniu diety:
+            <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <Calendar size={16} color="var(--accent-emerald)" /> Data rozpoczęcia diety w kalendarzu:
             </label>
-            <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', marginTop: '2px' }}>
-              Wskazany pakiet rozłoży zbilansowane posiłki od wybranego dnia w Twoim kalendarzu.
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              Wybierz, od którego dnia jadłospis ma zostać wdrożony:
             </div>
+            {pendingDiet?.start_date && (
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setStartDate(pendingDiet.start_date)}
+                  className={`btn btn-xs ${startDate === pendingDiet.start_date ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem' }}
+                >
+                  📅 Wg zaleceń dietetyka: {pendingDiet.start_date}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStartDate(new Date().toISOString().split('T')[0])}
+                  className={`btn btn-xs ${startDate === new Date().toISOString().split('T')[0] ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem' }}
+                >
+                  📅 Od dziś: {new Date().toISOString().split('T')[0]}
+                </button>
+              </div>
+            )}
           </div>
           <input
             type="date"
@@ -142,12 +165,12 @@ export function PatientLoadPackageModal({ isOpen, onClose, onPackageLoaded, init
             onChange={(e) => setStartDate(e.target.value)}
             style={{
               background: '#111827',
-              border: '1px solid var(--border-subtle)',
+              border: '1.5px solid var(--accent-emerald)',
               color: '#fff',
-              padding: '0.45rem 0.8rem',
+              padding: '0.5rem 0.9rem',
               borderRadius: '8px',
-              fontWeight: 700,
-              fontSize: '0.88rem',
+              fontWeight: 800,
+              fontSize: '0.92rem',
             }}
           />
         </div>

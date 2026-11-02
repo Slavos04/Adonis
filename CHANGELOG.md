@@ -1,5 +1,12 @@
 ## [1.19] – 2026-11-02 12:00 CET
 
+### Baza produktów, spójność kalorii i data wdrożenia jadłospisu (Web & Android)
+- **Korekta kaloryczności napojów roślinnych i bulionów**: Naprawiono błędną klasyfikację w bazie danych napojów migdałowych (obniżono z 650 kcal do 15 kcal/100g), kokosowych, owsianych i bulionów – usunięto problem zawyżonych kalorii owsianek (z 1586 kcal na 317 kcal) i całych dni (z 4607 kcal na 1777 kcal).
+- **Spójność wyliczeń kaloryczności**: Wyrównano logikę kalkulacji kalorii i makroskładników między podglądem tygodniowym kalendarza a widokiem dziennym (uwzględnianie płci pacjenta i składników).
+- **Elastyczna data wdrożenia pakietu**: Zarówno w aplikacji mobilnej, jak i webowej, dodano możliwość wyboru daty rozpoczęcia jadłospisu przy ładowaniu pakietu dietetyka (szybkie przyciski `[Od dziś]`, `[Wg daty dietetyka]` oraz kalendarz).
+- **Baza standardowych owoców i szybki wybór**: Wprowadzono do bazy standardowe owoce (jabłka, banany, pomarańcze, gruszki, truskawki, borówki itp.) oraz dodano przyciski szybkiego wyboru w oknie zamiany posiłku.
+- **Optymalizacja okien mobilnych**: Zmniejszono zbędną wysokość okien dialogowych (dopasowanie do zawartości) oraz sformatowano podsumowanie makroskładników w jednej linii bez rozbijania na 3 wiersze.
+
 ### Nawigacja po dniach jadłospisu, sumy dnia & kontrola kalorii (Android & Web)
 - **Tygodniowy Kalendarz Jadłospisu (Web)**: Naprawiono rozwijanie podglądu posiłków i makroskładników – lista wyświetla się jako uniezależnione, pływające okno (popover przez React Portal do `document.body`), rozwijające się na zewnątrz poza granice formularza kalendarza. Wyeliminowano ucinanie podglądu przez pasek przewijania (`overflow`) oraz dodano obsługę przypięcia po kliknięciu i zamykanie przyciskiem ✕.
 - **Nawigacja po dniach (< i >)**: Dedykowana, czytelna karta zmiany dni jadłospisu z wyrazistymi przyciskami `<` i `>` oraz możliwością natychmiastowego otwarcia kalendarza (`DatePickerDialog`) i przyciskiem powrotu do dnia dzisiejszego.

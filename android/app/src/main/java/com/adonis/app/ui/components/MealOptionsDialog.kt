@@ -1,6 +1,8 @@
 package com.adonis.app.ui.components
 
 import android.widget.Toast
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -159,7 +161,8 @@ fun MealOptionsDialog(
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
-                .fillMaxHeight(0.9f),
+                .wrapContentHeight()
+                .heightIn(max = 640.dp),
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 6.dp
@@ -382,6 +385,57 @@ fun MealOptionsDialog(
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
+                                Text("Szybki wybór popularnych owoców:", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState())
+                                        .padding(vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    val quickFruits = listOf(
+                                        Triple("Jabłko", 150.0, 52.0),
+                                        Triple("Banan", 120.0, 89.0),
+                                        Triple("Pomarańcza", 180.0, 47.0),
+                                        Triple("Mandarynka", 70.0, 53.0),
+                                        Triple("Gruszka", 150.0, 57.0),
+                                        Triple("Truskawki", 100.0, 32.0),
+                                        Triple("Borówki", 100.0, 57.0),
+                                        Triple("Kiwi", 80.0, 61.0)
+                                    )
+                                    quickFruits.forEach { (name, defWeight, kcal) ->
+                                        Surface(
+                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                            shape = RoundedCornerShape(8.dp),
+                                            modifier = Modifier.clickable {
+                                                inputItemName = name
+                                                inputWeight = defWeight.toInt().toString()
+                                                inputKcal100g = kcal.toInt().toString()
+                                                inputP100g = when (name) {
+                                                    "Banan", "Kiwi" -> "1.1"
+                                                    else -> "0.5"
+                                                }
+                                                inputF100g = "0.2"
+                                                inputC100g = when (name) {
+                                                    "Banan" -> "22.8"
+                                                    "Jabłko" -> "13.8"
+                                                    "Gruszka" -> "15.2"
+                                                    else -> "10.0"
+                                                }
+                                            }
+                                        ) {
+                                            Text(
+                                                text = name,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(6.dp))
                                 Text("Pobierz z bazy kodów kreskowych (EAN):", fontSize = 12.sp, fontWeight = FontWeight.Bold)
 
                                 // Pełna szerokość pola EAN z ikoną aparatu

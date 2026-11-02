@@ -26,6 +26,8 @@ def categorize_product_by_name(name: str) -> str:
         return 'Owoce'
     if any(k in n for k in ['pomidor', 'ogórek', 'papryk', 'cukini', 'marchew', 'cebul', 'czosnek', 'sałat', 'szpinak', 'jarmuż', 'roszponk', 'rukol', 'pieczark', 'brokuł', 'bakłażan', 'rzodkiewk', 'kapar', 'groszek', 'soczewic', 'ciecierzyc', 'cieciork', 'fasol', 'burak', 'włoszczyzn', 'kiełki']):
         return 'Warzywa'
+    if any(k in n for k in ['napój', 'mleko roślinne']):
+        return 'Nabiał'
     if any(k in n for k in ['twaróg', 'serek', 'ser ', 'ser,', 'jogurt', 'mleko', 'maślank', 'kefir', 'feta', 'ricotta', 'camembert', 'edamski', 'kozi', 'mozzarella']):
         return 'Nabiał'
     if any(k in n for k in ['kurczak', 'indyk', 'wieprzow', 'wołow', 'szynka', 'schab', 'polędwic', 'kiełbas', 'parówk', 'mięso']):

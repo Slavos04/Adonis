@@ -77,6 +77,7 @@ fun DailyPlanScreen(
 
     // Gotowe pakiety jadłospisów
     var showLoadPackageDialog by remember { mutableStateOf(false) }
+    var packageCustomStartDate by remember { mutableStateOf<String?>(null) }
     var packagesOverview by remember { mutableStateOf<PatientPackagesOverviewResponse?>(null) }
     var isPackagesLoading by remember { mutableStateOf(false) }
     var packageActionStatus by remember { mutableStateOf<String?>(null) }
@@ -400,30 +401,31 @@ fun DailyPlanScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Column {
-                                    Text("Kalorie", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    val goalCalText = plan.dailyCaloriesGoal?.let { " / $it" } ?: ""
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Kalorie", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    val goalCalText = plan.dailyCaloriesGoal?.let { "/$it" } ?: ""
                                     Text(
                                         "${plan.totalCalories.toInt()}$goalCalText kcal",
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp,
+                                        fontSize = 11.sp,
+                                        maxLines = 1,
                                         color = if (plan.isCaloriesExceeded == true) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                                     )
                                 }
-                                Column {
-                                    Text("Białko", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    val pGoal = plan.proteinGoalG?.let { " / ${it.toInt()}g" } ?: "g"
-                                    Text("${plan.totalProteinG}$pGoal", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Białko", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    val pGoal = plan.proteinGoalG?.let { "/${it.toInt()}" } ?: ""
+                                    Text("${plan.totalProteinG.toInt()}${pGoal}g", fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1)
                                 }
-                                Column {
-                                    Text("Tłuszcz", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    val fGoal = plan.fatGoalG?.let { " / ${it.toInt()}g" } ?: "g"
-                                    Text("${plan.totalFatG}$fGoal", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Tłuszcz", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    val fGoal = plan.fatGoalG?.let { "/${it.toInt()}" } ?: ""
+                                    Text("${plan.totalFatG.toInt()}${fGoal}g", fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1)
                                 }
-                                Column {
-                                    Text("Węgle", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    val cGoal = plan.carbsGoalG?.let { " / ${it.toInt()}g" } ?: "g"
-                                    Text("${plan.totalCarbsG}$cGoal", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Węgle", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    val cGoal = plan.carbsGoalG?.let { "/${it.toInt()}" } ?: ""
+                                    Text("${plan.totalCarbsG.toInt()}${cGoal}g", fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1)
                                 }
                             }
 
@@ -772,6 +774,70 @@ fun DailyPlanScreen(
                                                         modifier = Modifier.padding(bottom = 6.dp)
                                                     )
                                                 }
+                                                val defaultTargetDate = pending.startDate ?: selectedDateStr.value
+                                                val effectiveStartDate = packageCustomStartDate ?: defaultTargetDate
+
+                                                Surface(
+                                                    color = MaterialTheme.colorScheme.surface,
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(vertical = 6.dp)
+                                                ) {
+                                                    Column(modifier = Modifier.padding(8.dp)) {
+                                                        Text("Data wdrożenia jadłospisu:", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            Button(
+                                                                onClick = { packageCustomStartDate = selectedDateStr.value },
+                                                                colors = ButtonDefaults.buttonColors(
+                                                                    containerColor = if (effectiveStartDate == selectedDateStr.value) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                                                    contentColor = if (effectiveStartDate == selectedDateStr.value) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                                                ),
+                                                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                                            ) {
+                                                                Text("Od dziś (${selectedDateStr.value})", fontSize = 10.sp)
+                                                            }
+                                                            if (!pending.startDate.isNullOrBlank() && pending.startDate != selectedDateStr.value) {
+                                                                Button(
+                                                                    onClick = { packageCustomStartDate = pending.startDate },
+                                                                    colors = ButtonDefaults.buttonColors(
+                                                                        containerColor = if (effectiveStartDate == pending.startDate) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                                                        contentColor = if (effectiveStartDate == pending.startDate) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                                                    ),
+                                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                                                ) {
+                                                                    Text("Wg dietetyka (${pending.startDate})", fontSize = 10.sp)
+                                                                }
+                                                            }
+                                                        }
+                                                        Text(
+                                                            text = "📅 Start: $effectiveStartDate (kliknij, aby zmienić)",
+                                                            fontSize = 11.sp,
+                                                            color = MaterialTheme.colorScheme.primary,
+                                                            fontWeight = FontWeight.Bold,
+                                                            modifier = Modifier
+                                                                .clickable {
+                                                                    val c = Calendar.getInstance()
+                                                                    android.app.DatePickerDialog(
+                                                                        context,
+                                                                        { _, y, m, d ->
+                                                                            val chosenCal = Calendar.getInstance().apply { set(y, m, d) }
+                                                                            packageCustomStartDate = sdf.format(chosenCal.time)
+                                                                        },
+                                                                        c.get(Calendar.YEAR),
+                                                                        c.get(Calendar.MONTH),
+                                                                        c.get(Calendar.DAY_OF_MONTH)
+                                                                    ).show()
+                                                                }
+                                                                .padding(top = 4.dp)
+                                                        )
+                                                    }
+                                                }
+
                                                 Row(
                                                     modifier = Modifier.fillMaxWidth(),
                                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -784,7 +850,7 @@ fun DailyPlanScreen(
                                                                     apiService.loadDietPackage(
                                                                         PatientLoadPackageRequest(
                                                                             templateId = pending.templateId,
-                                                                            startDate = selectedDateStr.value
+                                                                            startDate = effectiveStartDate
                                                                         )
                                                                     )
                                                                     packageActionStatus = "Pomyślnie załadowano pakiet ${pending.name}"
@@ -800,7 +866,7 @@ fun DailyPlanScreen(
                                                         modifier = Modifier.weight(1f),
                                                         contentPadding = PaddingValues(vertical = 4.dp)
                                                     ) {
-                                                        Text("Załaduj od ${selectedDateStr.value}", fontSize = 12.sp)
+                                                        Text("Załaduj od $effectiveStartDate", fontSize = 12.sp)
                                                     }
                                                     OutlinedButton(
                                                         onClick = {
