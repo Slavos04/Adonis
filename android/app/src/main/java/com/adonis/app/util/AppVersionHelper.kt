@@ -9,9 +9,9 @@ object AppVersionHelper {
     fun getVersionName(context: Context): String {
         return try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            pInfo.versionName ?: "1.18.0"
+            pInfo.versionName ?: "1.19.0"
         } catch (_: Exception) {
-            "1.18.0"
+            "1.19.0"
         }
     }
 
@@ -28,7 +28,7 @@ object AppVersionHelper {
                 pInfo.versionCode.toLong()
             }
         } catch (_: Exception) {
-            18L
+            19L
         }
     }
 }

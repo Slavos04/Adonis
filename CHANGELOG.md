@@ -1,3 +1,47 @@
+## [1.19] – 2026-11-02 12:00 CET
+
+### Nawigacja po dniach jadłospisu, sumy dnia & kontrola kalorii (Android & Web)
+- **Nawigacja po dniach (< i >)**: Dedykowana, czytelna karta zmiany dni jadłospisu z wyrazistymi przyciskami `<` i `>` oraz możliwością natychmiastowego otwarcia kalendarza (`DatePickerDialog`) i przyciskiem powrotu do dnia dzisiejszego.
+- **Dynamiczne przeliczanie sum dnia**: W oknie skalowania posiłku dodano przycisk trwałego zapisu porcji do dnia (`POST /api/diet-plans/meals/{id}/portions`), co natychmiast aktualizuje sumy kalorii i makroskładników (B, T, W) w podsumowaniu dnia.
+- **Cel kaloryczny i ostrzeżenie (❗)**: Wyświetlanie dziennego limitu kalorii ustalonego przez dietetyka oraz czerwonego wykrzyknika `❗` przy dacie i pod makroskładnikami w przypadku przekroczenia limitu.
+- **Lista zakupów z ikoną domku**: Przeniesiono funkcję „Mam w domu” w postaci ikony domku pod checkbox, uwalniając przestrzeń i eliminując wielowierszowe łamanie nazw produktów.
+- **Zwięzłe miary kuchenne**: Skrócono etykiety miar (np. „2 garście”, „1 opak.”, „1 kubek”) dla optymalnej czytelności na ekranach telefonów.
+
+---
+
+## [1.18] – 2026-11-02 08:35 CET
+
+### Miary kuchenne i Changelog w aplikacji mobilnej
+- **Automatyczne miary kuchenne w aplikacji mobilnej**: Przeliczanie składników na łyżki, łyżeczki, szklanki, garście, plastry i sztuki w całej aplikacji Android.
+- **Changelog w oknie O aplikacji**: Dodano pełną historię zmian dostępną bezpośrednio w aplikacji mobilnej.
+- **Dynamiczny numer wersji**: Aplikacja pobiera i wyświetla rzeczywisty numer wersji z pakietu Androida.
+
+---
+
+## [1.17] – 2026-11-02 06:30 CET
+
+### Mnożnik listy zakupów i ujednolicenie składników
+- **Mnożnik listy zakupów (x0.5, x1, x1.5, x2, x3)**: Skalowanie listy zakupów do robienia większych zapasów z uwzględnieniem w PDF.
+- **Czyste składniki**: Usunięto zbędny znacznik „ogólne” przy składnikach – nazwa marketu pojawia się tylko przy konkretnych dyskontach.
+
+---
+
+## [1.16] – 2026-11-01 21:15 CET
+
+### Naprawa zapisu pomiarów i walidacji
+- **Pomiary ciała**: Naprawiono błąd zapisu wagi i obwodu talii w bazie danych (usunięcie konfliktu w Pydantic).
+- **Pomiary Dietetyka**: Bezpośrednie wprowadzanie pomiarów dla podopiecznych przez dietetyka.
+
+---
+
+## [1.15] – 2026-11-01 19:40 CET
+
+### Samodzielne przypisywanie dietetyka
+- **Konto Dietetyka**: Przypisywanie i odpinanie pacjentów z poziomu kartoteki.
+- **Konto Pacjenta**: Wybór dietetyka prowadzącego w Ustawieniach profilu.
+
+---
+
 ## [1.14] – 2026-11-01 18:40 CET
 
 ### Studio Motywów i Tła Aplikacji (Web & Android)

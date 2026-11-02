@@ -1,12 +1,12 @@
-export const APP_VERSION = '1.18';
+export const APP_VERSION = '1.19';
 export const APP_RELEASE_DATE = '2026-11-02';
 
 export const CHANGELOG_DATA = [
   {
-    version: '1.18',
+    version: '1.19',
     date: '2026-11-02',
-    time: '08:35 CET',
-    title: 'Wydanie 1.18 – Nawigacja jadłospisu, sumy dnia & miary kuchenne',
+    time: '12:00 CET',
+    title: 'Wydanie 1.19 – Nawigacja jadłospisu, sumy dnia & kontrola kalorii',
     badge: 'Aktualna',
     badgeType: 'emerald',
     changes: [
@@ -23,7 +23,24 @@ export const CHANGELOG_DATA = [
         items: [
           'Zwięzłe miary kuchenne: Skrócono opisy (np. „2 garście”, „1 opak.”) eliminując rozbijanie nazw produktów na wiele wierszy.',
           'Lista Zakupów Android: Przeniesiono funkcję „Mam w domu” w postaci ikony domku pod checkbox, uwalniając przestrzeń dla nazw i ilości produktów.',
-          'Miary kuchenne: Automatyczne przeliczanie składników na łyżki, łyżeczki, szklanki, garście, plastry i sztuki w całej aplikacji mobilnej.'
+          'Zapis porcji: W oknie skalowania posiłku dodano przycisk trwałego zapisu porcji do dnia.'
+        ]
+      }
+    ]
+  },
+  {
+    version: '1.18',
+    date: '2026-11-02',
+    time: '08:35 CET',
+    title: 'Wydanie 1.18 – Miary kuchenne w aplikacji mobilnej i dynamiczne przeliczanie',
+    badge: 'Wcześniejsza',
+    badgeType: 'emerald',
+    changes: [
+      {
+        category: 'Miary kuchenne (łyżki, szklanki, garście, plastry)',
+        items: [
+          'Aplikacja Mobilna (Android): Dodano automatyczne wyświetlanie miar kuchennych (np. 1 łyżka, 1 szklanka, 2 garście, 1/2 kostki) w oknie opcji i szczegółów posiłku obok gramatury.',
+          'Backend & Skalowanie: Wprowadzono dynamiczne przeliczanie miar kuchennych w czasie rzeczywistym podczas zmiany wielkości porcji posiłku.'
         ]
       }
     ]

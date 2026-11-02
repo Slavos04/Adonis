@@ -52,9 +52,9 @@ android/build/
 android/.kotlin/
 *.apk
 !/Adonis.apk
-!/Adonis-fit-and-eat-v1.16.apk
 !/Adonis-fit-and-eat-v1.17.apk
 !/Adonis-fit-and-eat-v1.18.apk
+!/Adonis-fit-and-eat-v1.19.apk
 *.aab
 local.properties
 
