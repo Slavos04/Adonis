@@ -413,29 +413,29 @@ fun MealOptionsDialog(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // BARCODE SCANNING / EAN SEARCH ROW
+                        // FORMULARZ SKŁADNIKA: WYSZUKIWANIE, SZYBKI WYBÓR, EAN
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
                         ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                // Wyszukiwanie po nazwie
-                                Text("Wyszukaj składnik po nazwie w bazie:", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Column(modifier = Modifier.padding(8.dp)) {
+                                // 1. Wyszukaj składnik
+                                Text("Wyszukaj składnik:", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     OutlinedTextField(
                                         value = nameSearchInput,
                                         onValueChange = { nameSearchInput = it },
-                                        placeholder = { Text("np. pomidor, chleb, szynka...") },
+                                        placeholder = { Text("Co szukasz?", fontSize = 12.sp) },
                                         modifier = Modifier.weight(1f),
                                         singleLine = true,
                                         trailingIcon = {
                                             if (nameSearchInput.isNotBlank()) {
                                                 IconButton(onClick = { nameSearchInput = ""; nameSearchResults = emptyList() }) {
-                                                    Icon(Icons.Default.Clear, contentDescription = "Wyczyść")
+                                                    Icon(Icons.Default.Clear, contentDescription = "Wyczyść", modifier = Modifier.size(16.dp))
                                                 }
                                             }
                                         }
@@ -443,12 +443,12 @@ fun MealOptionsDialog(
                                     Button(
                                         onClick = { searchProductsByName(nameSearchInput) },
                                         enabled = !isSearchingName && nameSearchInput.trim().length >= 2,
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                                     ) {
                                         if (isSearchingName) {
                                             CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                                         } else {
-                                            Icon(Icons.Default.Search, contentDescription = "Szukaj")
+                                            Icon(Icons.Default.Search, contentDescription = "Szukaj", modifier = Modifier.size(16.dp))
                                         }
                                     }
                                 }
@@ -462,50 +462,64 @@ fun MealOptionsDialog(
                                     ) {
                                         Column(modifier = Modifier.padding(6.dp)) {
                                             Row(
-                                                modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                                                modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                Text("Znaleziono (${nameSearchResults.size}) - dotknij, aby wybrać:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                                 Text(
-                                                    "✕ Zamknij",
+                                                    "Wyniki (${nameSearchResults.size}):",
                                                     fontSize = 11.sp,
-                                                    color = MaterialTheme.colorScheme.error,
-                                                    modifier = Modifier.clickable { nameSearchResults = emptyList() }
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.weight(1f)
                                                 )
+                                                IconButton(
+                                                    onClick = { nameSearchResults = emptyList() },
+                                                    modifier = Modifier.size(28.dp)
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.Close,
+                                                        contentDescription = "Zamknij",
+                                                        tint = MaterialTheme.colorScheme.error,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                }
                                             }
                                             nameSearchResults.take(8).forEach { prod ->
                                                 Row(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
                                                         .clickable { selectProduct(prod) }
-                                                        .padding(vertical = 4.dp, horizontal = 6.dp),
+                                                        .padding(vertical = 3.dp, horizontal = 4.dp),
                                                     horizontalArrangement = Arrangement.SpaceBetween,
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     Column(modifier = Modifier.weight(1f)) {
-                                                        Text(prod.name, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                                        Text(prod.name, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
                                                         val storeText = if (prod.store.isNotBlank()) "[${prod.store}] " else ""
-                                                        Text(storeText + prod.brand, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                        Text(storeText + prod.brand, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                                                     }
                                                     Text("${prod.caloriesPer100g.toInt()} kcal", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                                 }
-                                                HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                                HorizontalDivider(modifier = Modifier.padding(vertical = 1.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                                             }
                                         }
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(3.dp))
 
-                                // Szybki wybór popularnych: Owoce, Warzywa, Pieczywo
+                                // 2. Szybki wybór kategorii (przewijany horyzontalnie)
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState())
+                                        .padding(vertical = 2.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Text("Szybki wybór:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    listOf("🍎 Owoce", "🥕 Warzywa", "🍞 Pieczywo").forEachIndexed { idx, label ->
+                                    listOf("🍎 Owoce", "🥕 Warzywa", "🍞 Pieczywo", "🥚 Inne").forEachIndexed { idx, label ->
                                         Surface(
                                             color = if (selectedQuickCat == idx) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                                             shape = RoundedCornerShape(6.dp),
@@ -513,10 +527,10 @@ fun MealOptionsDialog(
                                         ) {
                                             Text(
                                                 text = label,
-                                                fontSize = 10.sp,
+                                                fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = if (selectedQuickCat == idx) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                                             )
                                         }
                                     }
@@ -526,13 +540,15 @@ fun MealOptionsDialog(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .horizontalScroll(rememberScrollState())
-                                        .padding(vertical = 4.dp),
+                                        .padding(vertical = 3.dp),
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     val quickItems = when (selectedQuickCat) {
                                         0 -> listOf(
                                             Triple("Jabłko", 150, 52),
                                             Triple("Banan", 120, 89),
+                                            Triple("Winogrono", 100, 67),
+                                            Triple("Czereśnia", 100, 63),
                                             Triple("Pomarańcza", 180, 47),
                                             Triple("Mandarynka", 70, 53),
                                             Triple("Gruszka", 150, 57),
@@ -550,7 +566,11 @@ fun MealOptionsDialog(
                                             Triple("Cukinia", 150, 17),
                                             Triple("Pieczarki", 100, 22)
                                         )
-                                        else -> listOf(
+                                        2 -> listOf(
+                                            Triple("Chleb graham", 70, 230),
+                                            Triple("Bułka poznańska", 70, 285),
+                                            Triple("Bułka paryska", 80, 280),
+                                            Triple("Bagietka", 80, 275),
                                             Triple("Chleb żytni", 70, 225),
                                             Triple("Grahamka", 70, 255),
                                             Triple("Kajzerka", 60, 295),
@@ -558,6 +578,9 @@ fun MealOptionsDialog(
                                             Triple("Tostowy", 50, 250),
                                             Triple("Wafle ryżowe", 30, 380),
                                             Triple("Tortilla", 60, 310)
+                                        )
+                                        else -> listOf(
+                                            Triple("Jajko", 60, 140)
                                         )
                                     }
                                     quickItems.forEach { (name, defWeight, kcal) ->
@@ -570,10 +593,12 @@ fun MealOptionsDialog(
                                                 inputKcal100g = kcal.toString()
                                                 when (selectedQuickCat) {
                                                     0 -> {
-                                                        inputP100g = if (name in listOf("Banan", "Kiwi")) "1.1" else "0.5"
+                                                        inputP100g = if (name in listOf("Banan", "Kiwi")) "1.1" else "0.6"
                                                         inputF100g = "0.2"
                                                         inputC100g = when (name) {
                                                             "Banan" -> "22.8"
+                                                            "Winogrono" -> "18.1"
+                                                            "Czereśnia" -> "16.0"
                                                             "Jabłko" -> "13.8"
                                                             "Gruszka" -> "15.2"
                                                             else -> "10.0"
@@ -584,10 +609,17 @@ fun MealOptionsDialog(
                                                         inputF100g = "0.2"
                                                         inputC100g = if (name == "Marchew") "9.6" else "3.5"
                                                     }
+                                                    2 -> {
+                                                        inputP100g = "8.0"
+                                                        inputF100g = "2.0"
+                                                        inputC100g = if (name.contains("Wafle")) "81.0" else "50.0"
+                                                    }
                                                     else -> {
-                                                        inputP100g = "8.5"
-                                                        inputF100g = "2.5"
-                                                        inputC100g = if (name.contains("Wafle")) "81.0" else "48.0"
+                                                        if (name == "Jajko") {
+                                                            inputP100g = "12.5"
+                                                            inputF100g = "9.7"
+                                                            inputC100g = "0.7"
+                                                        }
                                                     }
                                                 }
                                             }
@@ -597,131 +629,128 @@ fun MealOptionsDialog(
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                                             )
                                         }
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text("Pobierz z bazy kodów kreskowych (EAN):", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(4.dp))
 
-                                // Pełna szerokość pola EAN z ikoną aparatu
-                                OutlinedTextField(
-                                    value = eanCodeInput,
-                                    onValueChange = { eanCodeInput = it },
-                                    label = { Text("Wpisz kod kreskowy (EAN)") },
-                                    placeholder = { Text("Wpisz cyfry kodu lub użyj aparatu...") },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
-                                    singleLine = true,
-                                    trailingIcon = {
-                                        IconButton(
-                                            onClick = {
-                                                barcodeScanner?.startScan()
-                                                    ?.addOnSuccessListener { barcode ->
-                                                        barcode.rawValue?.let { lookupBarcode(it) }
-                                                    }
-                                                    ?.addOnFailureListener {
-                                                        Toast.makeText(context, "Błąd skanera: ${it.message}", Toast.LENGTH_SHORT).show()
-                                                    }
-                                            }
-                                        ) {
-                                            Icon(
-                                                Icons.Default.PhotoCamera,
-                                                contentDescription = "Skanuj aparatem",
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
-                                    }
-                                )
-
-                                // Klawisz szukaj przeniesiony poniżej okna wpisywania EAN
-                                Button(
-                                    onClick = { lookupBarcode(eanCodeInput) },
-                                    enabled = !isSearchingEan && eanCodeInput.isNotBlank(),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(bottom = 6.dp)
+                                // 3. Pobierz z bazy kodów EAN
+                                Text("Pobierz z bazy kodów EAN:", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    if (isSearchingEan) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(16.dp),
-                                            strokeWidth = 2.dp,
-                                            color = MaterialTheme.colorScheme.onPrimary
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Wyszukiwanie w bazie...")
-                                    } else {
-                                        Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Szukaj w bazie kodów EAN")
+                                    OutlinedTextField(
+                                        value = eanCodeInput,
+                                        onValueChange = { eanCodeInput = it },
+                                        placeholder = { Text("Wpisz EAN", fontSize = 12.sp) },
+                                        modifier = Modifier.weight(1f),
+                                        singleLine = true,
+                                        trailingIcon = {
+                                            IconButton(
+                                                onClick = {
+                                                    barcodeScanner?.startScan()
+                                                        ?.addOnSuccessListener { barcode ->
+                                                            barcode.rawValue?.let { lookupBarcode(it) }
+                                                        }
+                                                        ?.addOnFailureListener {
+                                                            Toast.makeText(context, "Błąd skanera: ${it.message}", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                }
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.PhotoCamera,
+                                                    contentDescription = "Skanuj aparatem",
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                        }
+                                    )
+                                    Button(
+                                        onClick = { lookupBarcode(eanCodeInput) },
+                                        enabled = !isSearchingEan && eanCodeInput.isNotBlank(),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                    ) {
+                                        if (isSearchingEan) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(16.dp),
+                                                strokeWidth = 2.dp,
+                                                color = MaterialTheme.colorScheme.onPrimary
+                                            )
+                                        } else {
+                                            Text("Szukaj EAN", fontSize = 11.sp)
+                                        }
                                     }
                                 }
 
                                 if (eanNotFound) {
-                                    Text("⚠️ Nie znaleziono kodu w Open Food Facts. Wpisz dane ręcznie:", color = Color(0xFFFBBF24), fontSize = 11.sp)
+                                    Text("⚠️ Brak w bazie. Wpisz poniżej.", color = Color(0xFFFBBF24), fontSize = 10.sp, modifier = Modifier.padding(bottom = 2.dp))
                                 }
 
-                                // Item form fields
+                                // 4. Pola wartości odżywczych (zwięzłe B: T: W: Kcal)
                                 OutlinedTextField(
                                     value = inputItemName,
                                     onValueChange = { inputItemName = it },
-                                    label = { Text("Nazwa produktu") },
-                                    modifier = Modifier.fillMaxWidth()
+                                    label = { Text("Nazwa składnika", fontSize = 11.sp) },
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 3.dp),
+                                    singleLine = true
                                 )
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    OutlinedTextField(
-                                        value = inputWeight,
-                                        onValueChange = { inputWeight = it },
-                                        label = { Text("Waga (g)") },
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    OutlinedTextField(
-                                        value = inputKcal100g,
-                                        onValueChange = { inputKcal100g = it },
-                                        label = { Text("Kcal/100g") },
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     OutlinedTextField(
+                                        value = inputWeight,
+                                        onValueChange = { inputWeight = it },
+                                        label = { Text("Waga(g)", fontSize = 10.sp) },
+                                        modifier = Modifier.weight(1.1f),
+                                        singleLine = true
+                                    )
+                                    OutlinedTextField(
+                                        value = inputKcal100g,
+                                        onValueChange = { inputKcal100g = it },
+                                        label = { Text("Kcal", fontSize = 10.sp) },
+                                        modifier = Modifier.weight(1f),
+                                        singleLine = true
+                                    )
+                                    OutlinedTextField(
                                         value = inputP100g,
                                         onValueChange = { inputP100g = it },
-                                        label = { Text("Białko") },
-                                        modifier = Modifier.weight(1f)
+                                        label = { Text("B:", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
+                                        modifier = Modifier.weight(0.9f),
+                                        singleLine = true
                                     )
                                     OutlinedTextField(
                                         value = inputF100g,
                                         onValueChange = { inputF100g = it },
-                                        label = { Text("Tłuszcz") },
-                                        modifier = Modifier.weight(1f)
+                                        label = { Text("T:", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
+                                        modifier = Modifier.weight(0.9f),
+                                        singleLine = true
                                     )
                                     OutlinedTextField(
                                         value = inputC100g,
                                         onValueChange = { inputC100g = it },
-                                        label = { Text("Węgle") },
-                                        modifier = Modifier.weight(1f)
+                                        label = { Text("W:", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
+                                        modifier = Modifier.weight(0.9f),
+                                        singleLine = true
                                     )
                                 }
 
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
                                 Button(
                                     onClick = { handleAddItem() },
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
+                                    contentPadding = PaddingValues(vertical = 5.dp)
                                 ) {
                                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Dodaj ten produkt do posiłku")
+                                    Text("Dodaj składnik", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }

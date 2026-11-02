@@ -192,6 +192,8 @@ export function PortionScalerModal({
     fruits: [
       { name: 'Jabłko', weight: 150, kcal: 52, p: 0.3, f: 0.2, c: 13.8 },
       { name: 'Banan', weight: 120, kcal: 89, p: 1.1, f: 0.3, c: 22.8 },
+      { name: 'Winogrono', weight: 100, kcal: 67, p: 0.6, f: 0.2, c: 18.1 },
+      { name: 'Czereśnia', weight: 100, kcal: 63, p: 1.0, f: 0.2, c: 16.0 },
       { name: 'Pomarańcza', weight: 180, kcal: 47, p: 0.9, f: 0.1, c: 11.8 },
       { name: 'Mandarynka', weight: 70, kcal: 53, p: 0.8, f: 0.3, c: 13.3 },
       { name: 'Gruszka', weight: 150, kcal: 57, p: 0.4, f: 0.1, c: 15.2 },
@@ -210,14 +212,20 @@ export function PortionScalerModal({
       { name: 'Pieczarki świeże', weight: 100, kcal: 22, p: 3.1, f: 0.3, c: 3.3 },
     ],
     bread: [
+      { name: 'Chleb graham', weight: 70, kcal: 230, p: 7.5, f: 1.5, c: 46.0 },
+      { name: 'Bułka poznańska', weight: 70, kcal: 285, p: 8.5, f: 2.5, c: 56.0 },
+      { name: 'Bułka paryska', weight: 80, kcal: 280, p: 8.0, f: 2.0, c: 57.0 },
+      { name: 'Bagietka', weight: 80, kcal: 275, p: 8.5, f: 1.2, c: 57.0 },
       { name: 'Chleb żytni razowy', weight: 70, kcal: 225, p: 5.8, f: 1.7, c: 45.0 },
       { name: 'Bułka grahamka', weight: 70, kcal: 255, p: 8.7, f: 1.8, c: 51.5 },
       { name: 'Bułka kajzerka', weight: 60, kcal: 295, p: 8.4, f: 3.6, c: 57.0 },
       { name: 'Chleb pszenno-żytni', weight: 70, kcal: 245, p: 6.8, f: 1.3, c: 51.0 },
-      { name: 'Chleb tostowy pełnoziarnisty', weight: 50, kcal: 250, p: 8.5, f: 3.5, c: 44.0 },
       { name: 'Wafle ryżowe', weight: 30, kcal: 380, p: 8.0, f: 2.5, c: 81.0 },
-      { name: 'Tortilla pszenna (wrap)', weight: 60, kcal: 310, p: 8.0, f: 7.0, c: 52.0 },
+      { name: 'Tortilla pszenna', weight: 60, kcal: 310, p: 8.0, f: 7.0, c: 52.0 },
     ],
+    other: [
+      { name: 'Jajko (kurze)', weight: 60, kcal: 140, p: 12.5, f: 9.7, c: 0.7 }
+    ]
   };
 
   async function handleLookupEan(barcodeToSearch) {
@@ -839,6 +847,14 @@ export function PortionScalerModal({
                       style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem' }}
                     >
                       🍞 Pieczywo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setQuickCategory('other')}
+                      className={`btn btn-xs ${quickCategory === 'other' ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem' }}
+                    >
+                      🥚 Inne
                     </button>
                   </div>
                   <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
