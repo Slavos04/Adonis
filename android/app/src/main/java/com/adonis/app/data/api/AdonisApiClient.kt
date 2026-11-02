@@ -299,7 +299,8 @@ object AdonisApiClient {
         startDate: String,
         endDate: String,
         store: String? = null,
-        token: String? = null
+        token: String? = null,
+        multiplier: Float? = null
     ): String {
         val base = baseUrl.trimEnd('/')
         val params = mutableListOf("start_date=$startDate", "end_date=$endDate")
@@ -308,6 +309,9 @@ object AdonisApiClient {
         }
         if (!token.isNullOrBlank()) {
             params.add("token=$token")
+        }
+        if (multiplier != null && multiplier != 1.0f) {
+            params.add("multiplier=$multiplier")
         }
         return "$base/diet-plans/shopping-list/pdf?" + params.joinToString("&")
     }

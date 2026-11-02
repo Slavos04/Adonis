@@ -278,14 +278,14 @@ fun MealOptionsDialog(
                             }
 
                             Text(
-                                "Składniki z dyskontów (Lidl/Biedronka):",
+                                "Składniki:",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp,
                                 modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
                             )
                             res.ingredients.forEach { ing ->
                                 Text(
-                                    "• ${ing.productName} (${ing.store}): ${ing.scaledAmount} ${ing.unit}",
+                                    "• ${ing.productName}${if (isDiscountStore(ing.store)) " (${ing.store})" else ""}: ${ing.scaledAmount} ${ing.unit}",
                                     fontSize = 12.sp,
                                     modifier = Modifier.padding(vertical = 2.dp)
                                 )

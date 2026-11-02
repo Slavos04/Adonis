@@ -290,10 +290,11 @@ export const dietPlansApi = {
     if (token) url += `token=${encodeURIComponent(token)}&`;
     return url;
   },
-  getShoppingListPdfUrl: (startDate, endDate, store, patientId) => {
+  getShoppingListPdfUrl: (startDate, endDate, store, patientId, multiplier) => {
     let url = `${API_BASE}/diet-plans/shopping-list/pdf?start_date=${startDate}&end_date=${endDate}`;
     if (store && store !== 'Wszystkie' && store !== 'OFF') url += `&store=${encodeURIComponent(store)}`;
     if (patientId) url += `&patient_id=${patientId}`;
+    if (multiplier && multiplier !== 1) url += `&multiplier=${encodeURIComponent(multiplier)}`;
     const token = localStorage.getItem('token');
     if (token) url += `&token=${encodeURIComponent(token)}`;
     return url;

@@ -5,6 +5,22 @@ import {
   Trash2, Edit3, Camera, Plus, Check, RefreshCw, Barcode, AlertCircle 
 } from 'lucide-react';
 
+const DISCOUNT_STORES = ['lidl', 'biedronka', 'kaufland', 'carrefour', 'netto', 'auchan', 'dino', 'aldi'];
+const isDiscountStore = (store) => {
+  if (!store) return false;
+  return DISCOUNT_STORES.includes(store.toLowerCase().trim());
+};
+
+const getStoreBadgeClass = (store) => {
+  const s = (store || '').toLowerCase().trim();
+  if (s === 'lidl') return 'badge-lidl';
+  if (s === 'biedronka') return 'badge-biedronka';
+  if (s === 'netto') return 'badge-netto';
+  if (s === 'kaufland') return 'badge-kaufland';
+  if (s === 'carrefour') return 'badge-carrefour';
+  return 'badge-emerald';
+};
+
 export function PortionScalerModal({ 
   recipeId, 
   initialPortions = 1.0, 
@@ -445,7 +461,7 @@ export function PortionScalerModal({
                 </div>
 
                 {/* Ingredients table */}
-                <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.6rem' }}>Składniki z Dyskontów (dla {portions}x porcji):</h3>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.6rem' }}>Składniki (dla {portions}x porcji):</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '1.25rem' }}>
                   {scaledData.ingredients.map((item) => (
                     <div
@@ -462,10 +478,12 @@ export function PortionScalerModal({
                     >
                       <div>
                         <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{item.product_name}</div>
-                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.2rem' }}>
-                          <span className={`badge ${item.store === 'Lidl' ? 'badge-lidl' : item.store === 'Biedronka' ? 'badge-biedronka' : 'badge-emerald'}`}>
-                            {item.store}
-                          </span>
+                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.2rem', alignItems: 'center' }}>
+                          {isDiscountStore(item.store) && (
+                            <span className={`badge ${getStoreBadgeClass(item.store)}`}>
+                              {item.store}
+                            </span>
+                          )}
                           {item.brand && <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{item.brand}</span>}
                         </div>
                       </div>

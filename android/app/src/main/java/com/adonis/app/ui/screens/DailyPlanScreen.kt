@@ -496,7 +496,7 @@ fun DailyPlanScreen(
                             recipe.ingredients.forEach { ing ->
                                 val measureInfo = if (!ing.kitchenMeasure.isNullOrBlank()) " (${ing.kitchenMeasure})" else ""
                                 Text(
-                                    text = "• ${ing.product.name} — ${ing.amountG} ${ing.unit}$measureInfo (${ing.product.store})",
+                                    text = "• ${ing.product.name} — ${ing.amountG} ${ing.unit}$measureInfo${if (isDiscountStore(ing.product.store)) " (${ing.product.store})" else ""}",
                                     fontSize = 12.sp,
                                     modifier = Modifier.padding(vertical = 1.dp)
                                 )

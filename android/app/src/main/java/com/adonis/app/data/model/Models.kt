@@ -389,3 +389,9 @@ data class DietPlanTemplateCreateRequest(
     @SerializedName("meals_per_day") val mealsPerDay: Int = 4,
     @SerializedName("days_data") val daysData: List<TemplateDayInput>
 )
+
+fun isDiscountStore(store: String?): Boolean {
+    if (store.isNullOrBlank()) return false
+    val s = store.trim().lowercase()
+    return s in listOf("lidl", "biedronka", "netto", "kaufland", "carrefour", "auchan", "dino", "aldi")
+}

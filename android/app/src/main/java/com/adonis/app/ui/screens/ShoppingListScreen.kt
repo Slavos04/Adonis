@@ -11,6 +11,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Scale
+import com.adonis.app.data.model.isDiscountStore
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -53,6 +55,7 @@ fun ShoppingListScreen(apiService: AdonisApiService, tokenManager: TokenManager?
     var items by remember { mutableStateOf<List<ShoppingListItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var selectedStoreFilter by remember { mutableStateOf("Wszystkie") }
+    var multiplier by remember { mutableStateOf(1.0f) }
     val scope = rememberCoroutineScope()
 
     val availableStores = listOf("Wszystkie", "Lidl", "Biedronka", "Netto", "Kaufland", "Carrefour")
@@ -203,7 +206,7 @@ fun ShoppingListScreen(apiService: AdonisApiService, tokenManager: TokenManager?
                                 startDate = startDate,
                                 endDate = endDate,
                                 store = if (selectedStoreFilter != "Wszystkie") selectedStoreFilter else null,
-                                token = token
+                                token = token, multiplier = if (multiplier != 1.0f) multiplier else null
                             )
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(pdfUrl))
                             context.startActivity(intent)
@@ -335,7 +338,7 @@ fun ShoppingListScreen(apiService: AdonisApiService, tokenManager: TokenManager?
                                 startDate = startDate,
                                 endDate = endDate,
                                 store = if (selectedStoreFilter != "Wszystkie") selectedStoreFilter else null,
-                                token = token
+                                token = token, multiplier = if (multiplier != 1.0f) multiplier else null
                             )
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(pdfUrl))
                             context.startActivity(intent)
@@ -346,6 +349,112 @@ fun ShoppingListScreen(apiService: AdonisApiService, tokenManager: TokenManager?
                         Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("Drukuj / Pobierz PDF listy zakupów", fontSize = 12.sp)
+                    }
+                }
+            }
+        }
+
+        // Karta mnożnika listy zakupów
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (multiplier != 1.0f)
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                    else
+                        MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Scale,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Mnożnik zakupów (wielkość):",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Text(
+                            text = "x${if (multiplier % 1f == 0f) multiplier.toInt().toString() else multiplier.toString()}",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        listOf(0.5f, 1.0f, 1.5f, 2.0f, 3.0f).forEach { m ->
+                            val isSelected = multiplier == m
+                            Surface(
+                                shape = MaterialTheme.shapes.small,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                                tonalElevation = 1.dp,
+                                modifier = Modifier.clickable { multiplier = m }
+                            ) {
+                                Text(
+                                    text = "x${if (m % 1f == 0f) m.toInt().toString() else m.toString()}",
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(4.dp))
+
+                        Surface(
+                            shape = MaterialTheme.shapes.small,
+                            color = MaterialTheme.colorScheme.surface,
+                            tonalElevation = 1.dp,
+                            modifier = Modifier.clickable {
+                                multiplier = maxOf(0.5f, (Math.round((multiplier - 0.5f) * 10.0) / 10.0).toFloat())
+                            }
+                        ) {
+                            Text(
+                                text = "—",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                            )
+                        }
+
+                        Surface(
+                            shape = MaterialTheme.shapes.small,
+                            color = MaterialTheme.colorScheme.surface,
+                            tonalElevation = 1.dp,
+                            modifier = Modifier.clickable {
+                                multiplier = minOf(10.0f, (Math.round((multiplier + 0.5f) * 10.0) / 10.0).toFloat())
+                            }
+                        ) {
+                            Text(
+                                text = "+",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -590,17 +699,19 @@ fun ShoppingListScreen(apiService: AdonisApiService, tokenManager: TokenManager?
                                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                                         modifier = Modifier.padding(top = 2.dp)
                                     ) {
-                                        Surface(
-                                            color = getStoreBadgeColor(item.store),
-                                            shape = MaterialTheme.shapes.extraSmall
-                                        ) {
-                                            Text(
-                                                text = item.store,
-                                                fontSize = 9.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color.White,
-                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                            )
+                                        if (isDiscountStore(item.store)) {
+                                            Surface(
+                                                color = getStoreBadgeColor(item.store),
+                                                shape = MaterialTheme.shapes.extraSmall
+                                            ) {
+                                                Text(
+                                                    text = item.store,
+                                                    fontSize = 9.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.White,
+                                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                                )
+                                            }
                                         }
 
                                         if (item.brand.isNotBlank()) {
@@ -626,11 +737,18 @@ fun ShoppingListScreen(apiService: AdonisApiService, tokenManager: TokenManager?
 
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(
-                                    text = "${item.amount} ${item.unit}",
+                                    text = "${formatScaledAmount(item.amount, multiplier)} ${item.unit}",
                                     fontWeight = FontWeight.ExtraBold,
                                     fontSize = 14.sp,
                                     color = MaterialTheme.colorScheme.primary
                                 )
+                                    if (multiplier != 1.0f) {
+                                        Text(
+                                            text = "baza: ${if (item.amount % 1.0 == 0.0) item.amount.toInt().toString() else item.amount.toString()} ${item.unit}",
+                                            fontSize = 9.sp,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                        )
+                                    }
 
                                 TextButton(
                                     onClick = { toggleSkipped(item) },
@@ -688,5 +806,14 @@ fun getStoreBadgeColor(store: String): Color {
         "kaufland" -> Color(0xFFC62828)
         "carrefour" -> Color(0xFF0284C7)
         else -> Color(0xFF4B5563)
+    }
+}
+
+fun formatScaledAmount(amount: Double, mult: Float): String {
+    val scaled = amount * mult
+    return if (scaled % 1.0 == 0.0) {
+        scaled.toInt().toString()
+    } else {
+        String.format(java.util.Locale.US, "%.1f", scaled)
     }
 }

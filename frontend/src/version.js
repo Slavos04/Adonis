@@ -1,13 +1,39 @@
-export const APP_VERSION = '1.16';
-export const APP_RELEASE_DATE = '2026-11-01';
+export const APP_VERSION = '1.17';
+export const APP_RELEASE_DATE = '2026-11-02';
 
 export const CHANGELOG_DATA = [
+  {
+    version: '1.17',
+    date: '2026-11-02',
+    time: '06:30 CET',
+    title: 'Wydanie 1.17 – Mnożnik listy zakupów i ujednolicenie składników posiłków',
+    badge: 'Aktualna',
+    badgeType: 'emerald',
+    changes: [
+      {
+        category: 'Składniki i przepisy (Web & Android)',
+        items: [
+          'Usunięto zbędny znacznik „ogólne” przy składnikach posiłków – oznaczenie marketu pojawia się wyłącznie przy produktach z konkretnego dyskontu (Lidl, Biedronka, Kaufland, Carrefour, Netto itp.).',
+          'Aplikacja Web: Zmieniono nagłówek sekcji w opcjach posiłku z „Składniki z Dyskontów” na przejrzyste „Składniki”.',
+          'Aplikacja Mobilna (Android): Ujednolicono listę składników i opisy w szczegółach posiłku.'
+        ]
+      },
+      {
+        category: 'Inteligentna lista zakupów (Web & Android)',
+        items: [
+          'Dodano mnożnik wielkości zakupów (x0.5, x1, x1.5, x2, x3 oraz przyciski +/-), umożliwiający dynamiczne skalowanie wszystkich gramatur i ilości produktów do zrobienia większych lub mniejszych zapasów.',
+          'Zaktualizowano opis listy zakupów, usuwając wymienianie pojedynczych sieci marketów.',
+          'Eksport PDF oraz kopiowanie do schowka automatycznie uwzględniają aktywny mnożnik zakupów.'
+        ]
+      }
+    ]
+  },
   {
     version: '1.16',
     date: '2026-11-01',
     time: '21:15 CET',
     title: 'Wydanie 1.16 – Naprawa zapisu pomiarów (waga, talia) i obsługa błędów',
-    badge: 'Aktualna',
+    badge: 'Wcześniejsza',
     badgeType: 'emerald',
     changes: [
       {

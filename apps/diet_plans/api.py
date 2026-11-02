@@ -1391,7 +1391,8 @@ def download_shopping_list_pdf(
     store: Optional[str] = None,
     meal_types: Optional[str] = None,
     patient_id: Optional[int] = None,
-    token: Optional[str] = None
+    token: Optional[str] = None,
+    multiplier: Optional[float] = 1.0
 ):
     """
     Generuje i zwraca plik PDF z listą zakupów zagregowaną według kategorii
@@ -1467,6 +1468,12 @@ def download_shopping_list_pdf(
     if store and store.lower() not in ('wszystkie', 'off', 'all', ''):
         items = [it for it in items if (it.get('store') or '').strip().lower() == store.strip().lower()]
 
+    # Aplikacja mnożnika ilości (jeśli podano inny niż 1.0)
+    mult = float(multiplier or 1.0)
+    if mult != 1.0:
+        for item in items:
+            item['amount'] = round(item['amount'] * mult, 1)
+
     # Grupowanie według kategorii
     grouped_items = {cat: [] for cat in SHOPPING_CATEGORY_ORDER}
     for item in items:
@@ -1478,7 +1485,8 @@ def download_shopping_list_pdf(
     filtered_grouped = {cat: items_list for cat, items_list in grouped_items.items() if len(items_list) > 0}
 
     patient_name = target_patient.get_full_name() or target_patient.username
-    title = f"Lista Zakupów: {start_date.strftime('%d.%m.%Y')} - {end_date.strftime('%d.%m.%Y')}"
+    mult_suffix = f" (Mnożnik x{mult:g})" if mult != 1.0 else ""
+    title = f"Lista Zakupów: {start_date.strftime('%d.%m.%Y')} - {end_date.strftime('%d.%m.%Y')}{mult_suffix}"
     subtitle = "Klinika Dietetyczna Adonis • Inteligentna lista zakupów"
 
     pdf_buffer = generate_shopping_list_pdf_buffer(

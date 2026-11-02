@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { dietPlansApi } from '../api/client';
-import { ShoppingBag, Check, EyeOff, Calendar, Copy, CheckCheck, Store, Printer, Sparkles, Download } from 'lucide-react';
+import { ShoppingBag, Check, EyeOff, Calendar, Copy, CheckCheck, Store, Printer, Sparkles, Download, Scale } from 'lucide-react';
+
+const DISCOUNT_STORES = ['lidl', 'biedronka', 'kaufland', 'carrefour', 'netto', 'auchan', 'dino', 'aldi'];
+const isDiscountStore = (store) => {
+  if (!store) return false;
+  return DISCOUNT_STORES.includes(store.toLowerCase().trim());
+};
+
+const formatScaledAmount = (amount, mult) => {
+  const val = Number(amount) * mult;
+  if (isNaN(val)) return amount;
+  return Number(val.toFixed(1));
+};
 
 export function ShoppingListWidget() {
   const today = new Date();
@@ -15,6 +27,7 @@ export function ShoppingListWidget() {
   const [endDate, setEndDate] = useState(formatDate(new Date(today.getTime() + 5 * 86400000)));
   const [storeFilter, setStoreFilter] = useState('ALL');
   const [oneStopStore, setOneStopStore] = useState('OFF'); // 'OFF' | 'Kaufland' | 'Carrefour' | 'Lidl' | 'Biedronka'
+  const [multiplier, setMultiplier] = useState(1.0);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -153,14 +166,15 @@ export function ShoppingListWidget() {
 
   function handleCopyToClipboard() {
     const storeLabel = oneStopStore !== 'OFF' ? ` w markecie ${oneStopStore}` : '';
+    const multLabel = multiplier !== 1 ? ` (Mnożnik: x${multiplier})` : '';
     const lines = [
-      `🛒 ADONIS — LISTA ZAKUPÓW${storeLabel} (${startDate} - ${endDate})`,
+      `🛒 ADONIS — LISTA ZAKUPÓW${storeLabel}${multLabel} (${startDate} - ${endDate})`,
       '----------------------------------------',
       ...displayItems
         .filter((i) => !i.is_skipped)
         .map(
           (i) =>
-            `[${i.is_bought ? 'X' : ' '}] ${i.product_name} - ${i.amount} ${i.unit} (${i.displayStore})`
+            `[${i.is_bought ? 'X' : ' '}] ${i.product_name} - ${formatScaledAmount(i.amount, multiplier)} ${i.unit}${isDiscountStore(i.displayStore) ? ` (${i.displayStore})` : ''}`
         ),
       '----------------------------------------',
       `Łącznie pozycji do kupienia: ${displayItems.filter((i) => !i.is_skipped).length}`,
@@ -180,7 +194,7 @@ export function ShoppingListWidget() {
             <h2 style={{ fontSize: '1.35rem', fontWeight: 800 }}>Inteligentna Lista Zakupów</h2>
           </div>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Automatyczna agregacja produktów z <strong>Kaufland</strong>, <strong>Carrefour</strong>, <strong>Lidl</strong> i <strong>Biedronka</strong> z opcją zrobienia całych zakupów w jednym wybranym markecie.
+            Automatyczna agregacja produktów z opcją zrobienia całych zakupów w jednym wybranym markecie.
           </p>
         </div>
 
@@ -226,7 +240,9 @@ export function ShoppingListWidget() {
             href={dietPlansApi.getShoppingListPdfUrl(
               startDate,
               endDate,
-              oneStopStore !== 'OFF' ? oneStopStore : (storeFilter !== 'ALL' ? storeFilter : null)
+              oneStopStore !== 'OFF' ? oneStopStore : (storeFilter !== 'ALL' ? storeFilter : null),
+              null,
+              multiplier !== 1 ? multiplier : null
             )}
             target="_blank"
             rel="noopener noreferrer"
@@ -236,6 +252,76 @@ export function ShoppingListWidget() {
           >
             <Download size={15} /> Pobierz PDF
           </a>
+        </div>
+      </div>
+
+      {/* Multiplier / Scale controls */}
+      <div
+        style={{
+          background: multiplier !== 1 ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.02)',
+          border: multiplier !== 1 ? '1px solid rgba(16,185,129,0.35)' : '1px solid var(--border-subtle)',
+          borderRadius: '12px',
+          padding: '0.85rem 1.25rem',
+          marginBottom: '1.25rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '0.75rem',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+          <Scale size={18} color="#10b981" />
+          <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>
+            Wielkość listy zakupów (mnożnik):
+          </span>
+          <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#34d399' }}>
+            x{multiplier}
+          </span>
+          {multiplier !== 1 && (
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              (wszystkie ilości produktów pomnożone x{multiplier})
+            </span>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+          {[0.5, 1.0, 1.5, 2.0, 3.0].map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMultiplier(m)}
+              className={`btn btn-sm ${multiplier === m ? 'btn-primary' : 'btn-secondary'}`}
+              style={{
+                fontSize: '0.82rem',
+                fontWeight: multiplier === m ? 800 : 500,
+                minWidth: '52px',
+                padding: '0.25rem 0.6rem',
+              }}
+            >
+              x{m}
+            </button>
+          ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginLeft: '0.35rem' }}>
+            <button
+              type="button"
+              onClick={() => setMultiplier((prev) => Math.max(0.5, parseFloat((prev - 0.5).toFixed(1))))}
+              className="btn btn-secondary btn-sm"
+              style={{ padding: '0.25rem 0.55rem', fontSize: '0.82rem', fontWeight: 800 }}
+              title="Zmniejsz o 0.5x"
+            >
+              -
+            </button>
+            <button
+              type="button"
+              onClick={() => setMultiplier((prev) => Math.min(10, parseFloat((prev + 0.5).toFixed(1))))}
+              className="btn btn-secondary btn-sm"
+              style={{ padding: '0.25rem 0.55rem', fontSize: '0.82rem', fontWeight: 800 }}
+              title="Zwiększ o 0.5x"
+            >
+              +
+            </button>
+          </div>
         </div>
       </div>
 
@@ -482,9 +568,11 @@ export function ShoppingListWidget() {
                         {item.product_name}
                       </div>
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.2rem', flexWrap: 'wrap' }}>
-                        <span className={`badge ${getStoreBadgeClass(item.displayStore)}`}>
-                          {item.displayStore}
-                        </span>
+                        {isDiscountStore(item.displayStore) && (
+                          <span className={`badge ${getStoreBadgeClass(item.displayStore)}`}>
+                            {item.displayStore}
+                          </span>
+                        )}
                         {item.isConverted && (
                           <span style={{ fontSize: '0.72rem', color: 'var(--accent-amber)', background: 'rgba(245,158,11,0.1)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
                             Odpowiednik w {item.displayStore} (baza: {item.originalStore})
@@ -508,9 +596,14 @@ export function ShoppingListWidget() {
                           textDecoration: item.is_skipped ? 'line-through' : 'none',
                         }}
                       >
-                        {item.amount}
+                        {formatScaledAmount(item.amount, multiplier)}
                       </span>{' '}
                       <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{item.unit}</span>
+                      {multiplier !== 1 && (
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                          (baza: {item.amount} {item.unit})
+                        </div>
+                      )}
                     </div>
 
                     {/* Skip / "Mam w lodówce" button */}
