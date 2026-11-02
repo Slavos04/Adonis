@@ -63,6 +63,12 @@ export function PortionScalerModal({
   const [cameraError, setCameraError] = useState(null);
   const videoRef = useRef(null);
 
+  // Ingredient search by name state
+  const [nameQuery, setNameQuery] = useState('');
+  const [isSearchingName, setIsSearchingName] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [quickCategory, setQuickCategory] = useState('fruits');
+
   useEffect(() => {
     if (recipeId) {
       fetchScaled(portions);
@@ -143,6 +149,76 @@ export function PortionScalerModal({
   function stopCamera() {
     setCameraActive(false);
   }
+
+  async function handleSearchByName() {
+    const q = nameQuery.trim();
+    if (!q || q.length < 2) return;
+    setIsSearchingName(true);
+    setSearchResults([]);
+    try {
+      const data = await recipesApi.products({ search: q, limit: 10 });
+      if (Array.isArray(data) && data.length > 0) {
+        setSearchResults(data);
+      } else {
+        const offData = await recipesApi.searchOpenFoodFacts(q);
+        setSearchResults(Array.isArray(offData) ? offData.slice(0, 8) : []);
+      }
+    } catch (err) {
+      console.error('Błąd wyszukiwania:', err);
+    } finally {
+      setIsSearchingName(false);
+    }
+  }
+
+  function handleSelectProduct(prod) {
+    const name = prod.name || prod.product_name || '';
+    const kcal = Math.round(Number(prod.calories_per_100g || prod.calories || 0));
+    const p = Number(prod.protein_per_100g || prod.protein_g || 0);
+    const f = Number(prod.fat_per_100g || prod.fat_g || 0);
+    const c = Number(prod.carbs_per_100g || prod.carbs_g || 0);
+    const code = prod.barcode || '';
+
+    setItemName(name);
+    setItemKcal100g(kcal);
+    setItemP100g(p);
+    setItemF100g(f);
+    setItemC100g(c);
+    if (code) setEanCode(code);
+    setSearchResults([]);
+    setNameQuery('');
+  }
+
+  const QUICK_PRODUCTS = {
+    fruits: [
+      { name: 'Jabłko', weight: 150, kcal: 52, p: 0.3, f: 0.2, c: 13.8 },
+      { name: 'Banan', weight: 120, kcal: 89, p: 1.1, f: 0.3, c: 22.8 },
+      { name: 'Pomarańcza', weight: 180, kcal: 47, p: 0.9, f: 0.1, c: 11.8 },
+      { name: 'Mandarynka', weight: 70, kcal: 53, p: 0.8, f: 0.3, c: 13.3 },
+      { name: 'Gruszka', weight: 150, kcal: 57, p: 0.4, f: 0.1, c: 15.2 },
+      { name: 'Truskawki', weight: 100, kcal: 32, p: 0.7, f: 0.3, c: 7.7 },
+      { name: 'Borówki', weight: 100, kcal: 57, p: 0.7, f: 0.3, c: 14.5 },
+      { name: 'Kiwi', weight: 80, kcal: 61, p: 1.1, f: 0.5, c: 14.7 },
+    ],
+    veggies: [
+      { name: 'Pomidor', weight: 120, kcal: 18, p: 0.9, f: 0.2, c: 3.9 },
+      { name: 'Ogórek', weight: 100, kcal: 14, p: 0.7, f: 0.1, c: 2.9 },
+      { name: 'Papryka czerwona', weight: 100, kcal: 31, p: 1.0, f: 0.3, c: 6.0 },
+      { name: 'Marchew', weight: 80, kcal: 41, p: 0.9, f: 0.2, c: 9.6 },
+      { name: 'Sałata lodowa', weight: 50, kcal: 14, p: 0.9, f: 0.1, c: 2.2 },
+      { name: 'Szpinak świeży', weight: 50, kcal: 23, p: 2.9, f: 0.4, c: 3.6 },
+      { name: 'Cukinia', weight: 150, kcal: 17, p: 1.2, f: 0.3, c: 3.1 },
+      { name: 'Pieczarki świeże', weight: 100, kcal: 22, p: 3.1, f: 0.3, c: 3.3 },
+    ],
+    bread: [
+      { name: 'Chleb żytni razowy', weight: 70, kcal: 225, p: 5.8, f: 1.7, c: 45.0 },
+      { name: 'Bułka grahamka', weight: 70, kcal: 255, p: 8.7, f: 1.8, c: 51.5 },
+      { name: 'Bułka kajzerka', weight: 60, kcal: 295, p: 8.4, f: 3.6, c: 57.0 },
+      { name: 'Chleb pszenno-żytni', weight: 70, kcal: 245, p: 6.8, f: 1.3, c: 51.0 },
+      { name: 'Chleb tostowy pełnoziarnisty', weight: 50, kcal: 250, p: 8.5, f: 3.5, c: 44.0 },
+      { name: 'Wafle ryżowe', weight: 30, kcal: 380, p: 8.0, f: 2.5, c: 81.0 },
+      { name: 'Tortilla pszenna (wrap)', weight: 60, kcal: 310, p: 8.0, f: 7.0, c: 52.0 },
+    ],
+  };
 
   async function handleLookupEan(barcodeToSearch) {
     const code = (barcodeToSearch || eanCode).trim();
@@ -657,32 +733,126 @@ export function PortionScalerModal({
                   </button>
                 </div>
 
-                {/* Szybki wybór owoców z bazy */}
+                {/* Wyszukiwanie składnika po nazwie */}
                 <div style={{ marginBottom: '0.85rem' }}>
                   <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                    Szybki wybór popularnych owoców z bazy:
+                    Wyszukaj składnik po nazwie (np. pomidor, chleb, szynka, serek):
                   </div>
-                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                    {[
-                      { name: 'Jabłko', weight: 150, kcal: 52, p: 0.3, f: 0.2, c: 13.8 },
-                      { name: 'Banan', weight: 120, kcal: 89, p: 1.1, f: 0.3, c: 22.8 },
-                      { name: 'Pomarańcza', weight: 180, kcal: 47, p: 0.9, f: 0.1, c: 11.8 },
-                      { name: 'Mandarynka', weight: 70, kcal: 53, p: 0.8, f: 0.3, c: 13.3 },
-                      { name: 'Gruszka', weight: 150, kcal: 57, p: 0.4, f: 0.1, c: 15.2 },
-                      { name: 'Truskawki', weight: 100, kcal: 32, p: 0.7, f: 0.3, c: 7.7 },
-                      { name: 'Borówki', weight: 100, kcal: 57, p: 0.7, f: 0.3, c: 14.5 },
-                      { name: 'Kiwi', weight: 80, kcal: 61, p: 1.1, f: 0.5, c: 14.7 },
-                    ].map((f) => (
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input
+                      type="text"
+                      value={nameQuery}
+                      onChange={(e) => setNameQuery(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSearchByName()}
+                      placeholder="Wpisz nazwę produktu..."
+                      className="form-control"
+                      style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '8px', fontSize: '0.85rem' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSearchByName}
+                      disabled={isSearchingName || nameQuery.trim().length < 2}
+                      className="btn btn-primary btn-sm"
+                      style={{ fontWeight: 700, minWidth: '90px' }}
+                    >
+                      {isSearchingName ? 'Szukam...' : 'Szukaj'}
+                    </button>
+                  </div>
+
+                  {/* Wyniki wyszukiwania po nazwie */}
+                  {searchResults.length > 0 && (
+                    <div style={{
+                      marginTop: '0.5rem',
+                      background: '#111827',
+                      border: '1.5px solid var(--accent-emerald)',
+                      borderRadius: '8px',
+                      padding: '0.5rem',
+                      maxHeight: '180px',
+                      overflowY: 'auto',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.35rem'
+                    }}>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', padding: '0 0.25rem', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Znaleziono {searchResults.length} pozycji (kliknij, aby wybrać):</span>
+                        <span style={{ cursor: 'pointer', color: '#f43f5e' }} onClick={() => setSearchResults([])}>✕ Zamknij</span>
+                      </div>
+                      {searchResults.map((prod, idx) => (
+                        <div
+                          key={prod.id || idx}
+                          onClick={() => handleSelectProduct(prod)}
+                          style={{
+                            background: 'rgba(255,255,255,0.04)',
+                            padding: '0.45rem 0.65rem',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            fontSize: '0.8rem',
+                            transition: 'background 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.15)'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                        >
+                          <div>
+                            <strong style={{ color: '#fff' }}>{prod.name || prod.product_name}</strong>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
+                              {prod.store ? `[${prod.store}] ` : ''}{prod.brand || ''}
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right', color: '#34d399', fontWeight: 700, fontSize: '0.78rem' }}>
+                            {Math.round(prod.calories_per_100g || prod.calories || 0)} kcal/100g
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Szybki wybór: Owoce, Warzywa, Pieczywo */}
+                <div style={{ marginBottom: '0.85rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                      Szybki wybór:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setQuickCategory('fruits')}
+                      className={`btn btn-xs ${quickCategory === 'fruits' ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem' }}
+                    >
+                      🍎 Owoce
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setQuickCategory('veggies')}
+                      className={`btn btn-xs ${quickCategory === 'veggies' ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem' }}
+                    >
+                      🥕 Warzywa
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setQuickCategory('bread')}
+                      className={`btn btn-xs ${quickCategory === 'bread' ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem' }}
+                    >
+                      🍞 Pieczywo
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                    {(QUICK_PRODUCTS[quickCategory] || []).map((f) => (
                       <button
                         key={f.name}
                         type="button"
                         onClick={() => {
                           setItemName(f.name);
                           setItemWeight(f.weight);
-                          setItemKcal(f.kcal);
-                          setItemP(f.p);
-                          setItemF(f.f);
-                          setItemC(f.c);
+                          setItemKcal100g(f.kcal);
+                          setItemP100g(f.p);
+                          setItemF100g(f.f);
+                          setItemC100g(f.c);
                         }}
                         className="btn btn-secondary btn-xs"
                         style={{ fontSize: '0.75rem', padding: '0.25rem 0.55rem', background: 'rgba(255,255,255,0.05)' }}

@@ -73,6 +73,40 @@ fun MealOptionsDialog(
 
     var isSavingSub by remember { mutableStateOf(false) }
 
+    // Wyszukiwanie składników po nazwie
+    var nameSearchInput by remember { mutableStateOf("") }
+    var isSearchingName by remember { mutableStateOf(false) }
+    var nameSearchResults by remember { mutableStateOf<List<Product>>(emptyList()) }
+    var selectedQuickCat by remember { mutableStateOf(0) } // 0: Owoce, 1: Warzywa, 2: Pieczywo
+
+    fun searchProductsByName(q: String) {
+        if (q.trim().length < 2) return
+        scope.launch {
+            isSearchingName = true
+            nameSearchResults = emptyList()
+            try {
+                nameSearchResults = apiService.getProducts(search = q.trim(), limit = 15)
+            } catch (e: Exception) {
+                Toast.makeText(context, "Błąd wyszukiwania: ${e.message}", Toast.LENGTH_SHORT).show()
+            } finally {
+                isSearchingName = false
+            }
+        }
+    }
+
+    fun selectProduct(prod: Product) {
+        inputItemName = prod.name
+        inputKcal100g = prod.caloriesPer100g.toInt().toString()
+        inputP100g = prod.proteinPer100g.toString()
+        inputF100g = prod.fatPer100g.toString()
+        inputC100g = prod.carbsPer100g.toString()
+        if (!prod.barcode.isNullOrBlank()) {
+            eanCodeInput = prod.barcode
+        }
+        nameSearchResults = emptyList()
+        nameSearchInput = ""
+    }
+
     val barcodeScanner = remember {
         try {
             GmsBarcodeScanning.getClient(context)
@@ -385,7 +419,109 @@ fun MealOptionsDialog(
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
-                                Text("Szybki wybór popularnych owoców:", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                // Wyszukiwanie po nazwie
+                                Text("Wyszukaj składnik po nazwie w bazie:", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = nameSearchInput,
+                                        onValueChange = { nameSearchInput = it },
+                                        placeholder = { Text("np. pomidor, chleb, szynka...") },
+                                        modifier = Modifier.weight(1f),
+                                        singleLine = true,
+                                        trailingIcon = {
+                                            if (nameSearchInput.isNotBlank()) {
+                                                IconButton(onClick = { nameSearchInput = ""; nameSearchResults = emptyList() }) {
+                                                    Icon(Icons.Default.Clear, contentDescription = "Wyczyść")
+                                                }
+                                            }
+                                        }
+                                    )
+                                    Button(
+                                        onClick = { searchProductsByName(nameSearchInput) },
+                                        enabled = !isSearchingName && nameSearchInput.trim().length >= 2,
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        if (isSearchingName) {
+                                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                        } else {
+                                            Icon(Icons.Default.Search, contentDescription = "Szukaj")
+                                        }
+                                    }
+                                }
+
+                                if (nameSearchResults.isNotEmpty()) {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.surface,
+                                        shape = RoundedCornerShape(8.dp),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                    ) {
+                                        Column(modifier = Modifier.padding(6.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text("Znaleziono (${nameSearchResults.size}) - dotknij, aby wybrać:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                                Text(
+                                                    "✕ Zamknij",
+                                                    fontSize = 11.sp,
+                                                    color = MaterialTheme.colorScheme.error,
+                                                    modifier = Modifier.clickable { nameSearchResults = emptyList() }
+                                                )
+                                            }
+                                            nameSearchResults.take(8).forEach { prod ->
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clickable { selectProduct(prod) }
+                                                        .padding(vertical = 4.dp, horizontal = 6.dp),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Column(modifier = Modifier.weight(1f)) {
+                                                        Text(prod.name, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                                        val storeText = if (prod.store.isNotBlank()) "[${prod.store}] " else ""
+                                                        Text(storeText + prod.brand, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                    }
+                                                    Text("${prod.caloriesPer100g.toInt()} kcal", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                                }
+                                                HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                // Szybki wybór popularnych: Owoce, Warzywa, Pieczywo
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text("Szybki wybór:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    listOf("🍎 Owoce", "🥕 Warzywa", "🍞 Pieczywo").forEachIndexed { idx, label ->
+                                        Surface(
+                                            color = if (selectedQuickCat == idx) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                            shape = RoundedCornerShape(6.dp),
+                                            modifier = Modifier.clickable { selectedQuickCat = idx }
+                                        ) {
+                                            Text(
+                                                text = label,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (selectedQuickCat == idx) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -393,34 +529,66 @@ fun MealOptionsDialog(
                                         .padding(vertical = 4.dp),
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    val quickFruits = listOf(
-                                        Triple("Jabłko", 150.0, 52.0),
-                                        Triple("Banan", 120.0, 89.0),
-                                        Triple("Pomarańcza", 180.0, 47.0),
-                                        Triple("Mandarynka", 70.0, 53.0),
-                                        Triple("Gruszka", 150.0, 57.0),
-                                        Triple("Truskawki", 100.0, 32.0),
-                                        Triple("Borówki", 100.0, 57.0),
-                                        Triple("Kiwi", 80.0, 61.0)
-                                    )
-                                    quickFruits.forEach { (name, defWeight, kcal) ->
+                                    val quickItems = when (selectedQuickCat) {
+                                        0 -> listOf(
+                                            Triple("Jabłko", 150, 52),
+                                            Triple("Banan", 120, 89),
+                                            Triple("Pomarańcza", 180, 47),
+                                            Triple("Mandarynka", 70, 53),
+                                            Triple("Gruszka", 150, 57),
+                                            Triple("Truskawki", 100, 32),
+                                            Triple("Borówki", 100, 57),
+                                            Triple("Kiwi", 80, 61)
+                                        )
+                                        1 -> listOf(
+                                            Triple("Pomidor", 120, 18),
+                                            Triple("Ogórek", 100, 14),
+                                            Triple("Papryka", 100, 31),
+                                            Triple("Marchew", 80, 41),
+                                            Triple("Sałata", 50, 14),
+                                            Triple("Szpinak", 50, 23),
+                                            Triple("Cukinia", 150, 17),
+                                            Triple("Pieczarki", 100, 22)
+                                        )
+                                        else -> listOf(
+                                            Triple("Chleb żytni", 70, 225),
+                                            Triple("Grahamka", 70, 255),
+                                            Triple("Kajzerka", 60, 295),
+                                            Triple("Pszenny", 70, 245),
+                                            Triple("Tostowy", 50, 250),
+                                            Triple("Wafle ryżowe", 30, 380),
+                                            Triple("Tortilla", 60, 310)
+                                        )
+                                    }
+                                    quickItems.forEach { (name, defWeight, kcal) ->
                                         Surface(
                                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                                             shape = RoundedCornerShape(8.dp),
                                             modifier = Modifier.clickable {
                                                 inputItemName = name
-                                                inputWeight = defWeight.toInt().toString()
-                                                inputKcal100g = kcal.toInt().toString()
-                                                inputP100g = when (name) {
-                                                    "Banan", "Kiwi" -> "1.1"
-                                                    else -> "0.5"
-                                                }
-                                                inputF100g = "0.2"
-                                                inputC100g = when (name) {
-                                                    "Banan" -> "22.8"
-                                                    "Jabłko" -> "13.8"
-                                                    "Gruszka" -> "15.2"
-                                                    else -> "10.0"
+                                                inputWeight = defWeight.toString()
+                                                inputKcal100g = kcal.toString()
+                                                when (selectedQuickCat) {
+                                                    0 -> {
+                                                        inputP100g = if (name in listOf("Banan", "Kiwi")) "1.1" else "0.5"
+                                                        inputF100g = "0.2"
+                                                        inputC100g = when (name) {
+                                                            "Banan" -> "22.8"
+                                                            "Jabłko" -> "13.8"
+                                                            "Gruszka" -> "15.2"
+                                                            else -> "10.0"
+                                                        }
+                                                    }
+                                                    1 -> {
+                                                        inputP100g = if (name in listOf("Szpinak", "Pieczarki")) "3.0" else "1.0"
+                                                        inputF100g = "0.2"
+                                                        inputC100g = if (name == "Marchew") "9.6" else "3.5"
+                                                    }
+                                                    else -> {
+                                                        inputP100g = "8.5"
+                                                        inputF100g = "2.5"
+                                                        inputC100g = if (name.contains("Wafle")) "81.0" else "48.0"
+                                                    }
                                                 }
                                             }
                                         ) {

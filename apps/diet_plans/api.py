@@ -83,6 +83,25 @@ def deploy_template_to_patient_days(template: DietPlanTemplate, patient: User, s
         return 0, start_date, start_date
 
     with transaction.atomic():
+        # Jeśli ten pakiet był już wcześniej wdrożony na inny zakres dat,
+        # czyścimy ewentualne stare dni, które znalazły się poza nowym zakresem
+        old_assignments = DietPlanTemplateAssignment.objects.filter(
+            template=template,
+            patient=patient,
+            is_loaded=True
+        )
+        for old_a in old_assignments:
+            if old_a.start_date and old_a.end_date and old_a.start_date != start_date:
+                curr_d = old_a.start_date
+                new_end_d = start_date + timedelta(days=len(days_data) - 1)
+                while curr_d <= old_a.end_date:
+                    if curr_d < start_date or curr_d > new_end_d:
+                        old_dp = DailyMealPlan.objects.filter(patient=patient, date=curr_d).first()
+                        if old_dp and template.name in (old_dp.notes or ""):
+                            old_dp.meals.all().delete()
+                            old_dp.delete()
+                    curr_d += timedelta(days=1)
+
         for i, day_info in enumerate(days_data):
             target_date = start_date + timedelta(days=i)
             daily_plan, _ = DailyMealPlan.objects.get_or_create(
@@ -127,16 +146,29 @@ def deploy_template_to_patient_days(template: DietPlanTemplate, patient: User, s
                 pending_assignment.notes = notes
             pending_assignment.save()
         else:
-            DietPlanTemplateAssignment.objects.create(
+            existing_loaded = DietPlanTemplateAssignment.objects.filter(
                 template=template,
                 patient=patient,
-                dietitian=dietitian,
-                start_date=start_date,
-                end_date=end_date,
-                notes=notes or f"Wdrożono pakiet {template.name}",
-                is_loaded=True,
-                loaded_at=timezone.now()
-            )
+                is_loaded=True
+            ).order_by('-id').first()
+            if existing_loaded:
+                existing_loaded.start_date = start_date
+                existing_loaded.end_date = end_date
+                existing_loaded.loaded_at = timezone.now()
+                if notes:
+                    existing_loaded.notes = notes
+                existing_loaded.save()
+            else:
+                DietPlanTemplateAssignment.objects.create(
+                    template=template,
+                    patient=patient,
+                    dietitian=dietitian,
+                    start_date=start_date,
+                    end_date=end_date,
+                    notes=notes or f"Wdrożono pakiet {template.name}",
+                    is_loaded=True,
+                    loaded_at=timezone.now()
+                )
 
         # Wymóg 10: w zaleceniach zapisz tytuł bieżącego jadłospisu i date wprowadzenia, oraz historię przesłanych jadlospisów
         try:

@@ -1,5 +1,10 @@
 ## [1.19] – 2026-11-02 12:00 CET
 
+### Wyszukiwanie składników po nazwie, baza warzyw i pieczywa oraz przeładowanie jadłospisu
+- **Wyszukiwanie składników po nazwie**: W oknie zamiany posiłku (Web i Android) wprowadzono pole wyszukiwania po nazwie obok skanera EAN. Wpisanie nazwy (np. pomidor, chleb, szynka) przeszukuje lokalną bazę oraz Open Food Facts, a kliknięcie na wynik automatycznie uzupełnia kalorie i makroskładniki.
+- **Baza popularnych warzyw i pieczywa**: Dodano do bazy oficjalne wartości odżywcze dla popularnych warzyw i pieczywa. W oknie zamiany posiłku wprowadzono podział szybkiego wyboru na: 🍎 Owoce, 🥕 Warzywa i 🍞 Pieczywo.
+- **Elastyczna zmiana terminu i ładowanie starszych diet**: Dodano przyciski `[Od dziś]`, `[Od jutra]`, `[Wg dietetyka]` oraz kalendarz w oknie pakietów diet. Użytkownik może w dowolnym momencie w trakcie trwania diety zmienić datę rozpoczęcia aktualnego planu lub załadować dowolny starszy jadłospis z historii, a system automatycznie synchronizuje i czyści przesunięte dni.
+
 ### Baza produktów, spójność kalorii i data wdrożenia jadłospisu (Web & Android)
 - **Korekta kaloryczności napojów roślinnych i bulionów**: Naprawiono błędną klasyfikację w bazie danych napojów migdałowych (obniżono z 650 kcal do 15 kcal/100g), kokosowych, owsianych i bulionów – usunięto problem zawyżonych kalorii owsianek (z 1586 kcal na 317 kcal) i całych dni (z 4607 kcal na 1777 kcal).
 - **Spójność wyliczeń kaloryczności**: Wyrównano logikę kalkulacji kalorii i makroskładników między podglądem tygodniowym kalendarza a widokiem dziennym (uwzględnianie płci pacjenta i składników).

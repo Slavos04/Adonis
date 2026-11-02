@@ -11,6 +11,21 @@ export const CHANGELOG_DATA = [
     badgeType: 'emerald',
     changes: [
       {
+        category: 'Wyszukiwanie składników po nazwie i baza warzyw oraz pieczywa (Web & Android)',
+        items: [
+          'Wyszukiwanie składników po nazwie: W oknie zamiany posiłku dodano wyszukiwarkę po nazwie produktu (działającą obok skanera EAN) – natychmiastowe wyszukiwanie w bazie i automatyczne wypełnianie kalorii oraz makroskładników (B, T, W).',
+          'Baza popularnych warzyw i pieczywa: Rozszerzono bazę o oficjalne wartości odżywcze warzyw (pomidor, ogórek, papryka, marchew, szpinak, cukinia, brokuł, pieczarki) oraz pieczywa (chleb żytni razowy, grahamka, kajzerka, chleb pszenny, tostowy, wafle ryżowe, tortilla).',
+          'Szybki wybór kategorii: Podzielono szybki wybór produktów na wygodne zakładki: 🍎 Owoce, 🥕 Warzywa i 🍞 Pieczywo.'
+        ]
+      },
+      {
+        category: 'Elastyczna zmiana i przeładowanie jadłospisu (Web & Android)',
+        items: [
+          'Zmiana daty wdrożenia i przeładowanie: Możliwość natychmiastowej zmiany daty obowiązywania aktualnego jadłospisu (przyciski [Od dziś], [Od jutra], [Wg dietetyka] lub kalendarz) oraz ładowania starszych jadłospisów z historii od dowolnie wybranego dnia.',
+          'Czyszczenie przesuniętych dni: System automatycznie synchronizuje i czyści przesunięte dni diety, eliminując powielanie posiłków.'
+        ]
+      },
+      {
         category: 'Korekta bazy produktów i spójność kaloryczności (Web & Android)',
         items: [
           'Korekta kaloryczności napojów roślinnych i bulionów: Naprawiono błędną klasyfikację napojów migdałowych (z 650 kcal na 15 kcal/100g), kokosowych, owsianych i bulionów w bazie danych – usunięto anomalię 4607 kcal i 1586 kcal dla owsianek.',

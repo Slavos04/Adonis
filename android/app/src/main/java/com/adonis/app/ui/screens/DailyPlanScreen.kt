@@ -711,10 +711,87 @@ fun DailyPlanScreen(
                             )
                         } else {
                             val overview = packagesOverview!!
+                            val defaultTargetDate = overview.pendingDiet?.startDate ?: selectedDateStr.value
+                            val effectiveStartDate = packageCustomStartDate ?: defaultTargetDate
+                            val tomorrowCal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
+                            val tomorrowStr = sdf.format(tomorrowCal.time)
+
                             LazyColumn(
-                                modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp),
+                                modifier = Modifier.fillMaxWidth().heightIn(max = 460.dp),
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
+                                // DATA WDROŻENIA JADŁOSPISU (GLOBALNA DLA WSZYSTKICH PAKIETÓW)
+                                item {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.surface,
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)
+                                    ) {
+                                        Column(modifier = Modifier.padding(8.dp)) {
+                                            Text("Data wdrożenia jadłospisu w kalendarzu:", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Button(
+                                                    onClick = { packageCustomStartDate = selectedDateStr.value },
+                                                    colors = ButtonDefaults.buttonColors(
+                                                        containerColor = if (effectiveStartDate == selectedDateStr.value) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                                        contentColor = if (effectiveStartDate == selectedDateStr.value) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                                    ),
+                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                                ) {
+                                                    Text("Od dziś (${selectedDateStr.value})", fontSize = 10.sp)
+                                                }
+                                                Button(
+                                                    onClick = { packageCustomStartDate = tomorrowStr },
+                                                    colors = ButtonDefaults.buttonColors(
+                                                        containerColor = if (effectiveStartDate == tomorrowStr) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                                        contentColor = if (effectiveStartDate == tomorrowStr) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                                    ),
+                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                                ) {
+                                                    Text("Od jutra ($tomorrowStr)", fontSize = 10.sp)
+                                                }
+                                                if (overview.pendingDiet?.startDate != null && overview.pendingDiet?.startDate != selectedDateStr.value) {
+                                                    Button(
+                                                        onClick = { packageCustomStartDate = overview.pendingDiet!!.startDate },
+                                                        colors = ButtonDefaults.buttonColors(
+                                                            containerColor = if (effectiveStartDate == overview.pendingDiet!!.startDate) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                                            contentColor = if (effectiveStartDate == overview.pendingDiet!!.startDate) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                                        ),
+                                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                                    ) {
+                                                        Text("Wg dietetyka (${overview.pendingDiet!!.startDate})", fontSize = 10.sp)
+                                                    }
+                                                }
+                                            }
+                                            Text(
+                                                text = "📅 Start: $effectiveStartDate (dotknij, aby wybrać inną datę)",
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier
+                                                    .clickable {
+                                                        val c = Calendar.getInstance()
+                                                        android.app.DatePickerDialog(
+                                                            context,
+                                                            { _, y, m, d ->
+                                                                val chosenCal = Calendar.getInstance().apply { set(y, m, d) }
+                                                                packageCustomStartDate = sdf.format(chosenCal.time)
+                                                            },
+                                                            c.get(Calendar.YEAR),
+                                                            c.get(Calendar.MONTH),
+                                                            c.get(Calendar.DAY_OF_MONTH)
+                                                        ).show()
+                                                    }
+                                                    .padding(top = 4.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
                                 // 1. DIETA OCZEKUJĄCA
                                 item {
                                     Text(
@@ -774,69 +851,7 @@ fun DailyPlanScreen(
                                                         modifier = Modifier.padding(bottom = 6.dp)
                                                     )
                                                 }
-                                                val defaultTargetDate = pending.startDate ?: selectedDateStr.value
-                                                val effectiveStartDate = packageCustomStartDate ?: defaultTargetDate
 
-                                                Surface(
-                                                    color = MaterialTheme.colorScheme.surface,
-                                                    shape = RoundedCornerShape(8.dp),
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(vertical = 6.dp)
-                                                ) {
-                                                    Column(modifier = Modifier.padding(8.dp)) {
-                                                        Text("Data wdrożenia jadłospisu:", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                                        Row(
-                                                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                                            verticalAlignment = Alignment.CenterVertically
-                                                        ) {
-                                                            Button(
-                                                                onClick = { packageCustomStartDate = selectedDateStr.value },
-                                                                colors = ButtonDefaults.buttonColors(
-                                                                    containerColor = if (effectiveStartDate == selectedDateStr.value) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                                                    contentColor = if (effectiveStartDate == selectedDateStr.value) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                                                                ),
-                                                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
-                                                            ) {
-                                                                Text("Od dziś (${selectedDateStr.value})", fontSize = 10.sp)
-                                                            }
-                                                            if (!pending.startDate.isNullOrBlank() && pending.startDate != selectedDateStr.value) {
-                                                                Button(
-                                                                    onClick = { packageCustomStartDate = pending.startDate },
-                                                                    colors = ButtonDefaults.buttonColors(
-                                                                        containerColor = if (effectiveStartDate == pending.startDate) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                                                        contentColor = if (effectiveStartDate == pending.startDate) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                                                                    ),
-                                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
-                                                                ) {
-                                                                    Text("Wg dietetyka (${pending.startDate})", fontSize = 10.sp)
-                                                                }
-                                                            }
-                                                        }
-                                                        Text(
-                                                            text = "📅 Start: $effectiveStartDate (kliknij, aby zmienić)",
-                                                            fontSize = 11.sp,
-                                                            color = MaterialTheme.colorScheme.primary,
-                                                            fontWeight = FontWeight.Bold,
-                                                            modifier = Modifier
-                                                                .clickable {
-                                                                    val c = Calendar.getInstance()
-                                                                    android.app.DatePickerDialog(
-                                                                        context,
-                                                                        { _, y, m, d ->
-                                                                            val chosenCal = Calendar.getInstance().apply { set(y, m, d) }
-                                                                            packageCustomStartDate = sdf.format(chosenCal.time)
-                                                                        },
-                                                                        c.get(Calendar.YEAR),
-                                                                        c.get(Calendar.MONTH),
-                                                                        c.get(Calendar.DAY_OF_MONTH)
-                                                                    ).show()
-                                                                }
-                                                                .padding(top = 4.dp)
-                                                        )
-                                                    }
-                                                }
 
                                                 Row(
                                                     modifier = Modifier.fillMaxWidth(),
@@ -948,18 +963,48 @@ fun DailyPlanScreen(
                                                     )
                                                 }
                                                 Spacer(modifier = Modifier.height(6.dp))
-                                                OutlinedButton(
-                                                    onClick = {
-                                                        val pdfUrl = AdonisApiClient.getTemplatePdfUrl(current.templateId, tokenManager.getToken())
-                                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(pdfUrl))
-                                                        context.startActivity(intent)
-                                                    },
-                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                                                    modifier = Modifier.align(Alignment.End)
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                                 ) {
-                                                    Icon(Icons.Default.Download, contentDescription = "Pobierz PDF", modifier = Modifier.size(16.dp))
-                                                    Spacer(modifier = Modifier.width(4.dp))
-                                                    Text("Pobierz PDF jadłospisu", fontSize = 12.sp)
+                                                    Button(
+                                                        onClick = {
+                                                            scope.launch {
+                                                                isPackagesLoading = true
+                                                                try {
+                                                                    apiService.loadDietPackage(
+                                                                        PatientLoadPackageRequest(
+                                                                            templateId = current.templateId,
+                                                                            startDate = effectiveStartDate
+                                                                        )
+                                                                    )
+                                                                    packageActionStatus = "Pomyślnie zaktualizowano termin pakietu ${current.name}"
+                                                                    loadPlan()
+                                                                    showLoadPackageDialog = false
+                                                                } catch (e: Exception) {
+                                                                    packageActionStatus = "Błąd: ${e.message}"
+                                                                } finally {
+                                                                    isPackagesLoading = false
+                                                                }
+                                                            }
+                                                        },
+                                                        modifier = Modifier.weight(1f),
+                                                        contentPadding = PaddingValues(vertical = 4.dp)
+                                                    ) {
+                                                        Text("Przeładuj od $effectiveStartDate", fontSize = 12.sp)
+                                                    }
+                                                    OutlinedButton(
+                                                        onClick = {
+                                                            val pdfUrl = AdonisApiClient.getTemplatePdfUrl(current.templateId, tokenManager.getToken())
+                                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(pdfUrl))
+                                                            context.startActivity(intent)
+                                                        },
+                                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                                    ) {
+                                                        Icon(Icons.Default.Download, contentDescription = "Pobierz PDF", modifier = Modifier.size(16.dp))
+                                                        Spacer(modifier = Modifier.width(4.dp))
+                                                        Text("PDF", fontSize = 12.sp)
+                                                    }
                                                 }
                                             }
                                         }
@@ -1034,7 +1079,7 @@ fun DailyPlanScreen(
                                                                 apiService.loadDietPackage(
                                                                     PatientLoadPackageRequest(
                                                                         templateId = prev.templateId,
-                                                                        startDate = selectedDateStr.value
+                                                                        startDate = effectiveStartDate
                                                                     )
                                                                 )
                                                                 packageActionStatus = "Pomyślnie załadowano pakiet ${prev.name}"

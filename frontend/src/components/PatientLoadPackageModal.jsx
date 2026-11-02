@@ -137,26 +137,42 @@ export function PatientLoadPackageModal({ isOpen, onClose, onPackageLoaded, init
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
               Wybierz, od którego dnia jadłospis ma zostać wdrożony:
             </div>
-            {pendingDiet?.start_date && (
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={() => setStartDate(pendingDiet.start_date)}
-                  className={`btn btn-xs ${startDate === pendingDiet.start_date ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem' }}
-                >
-                  📅 Wg zaleceń dietetyka: {pendingDiet.start_date}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStartDate(new Date().toISOString().split('T')[0])}
-                  className={`btn btn-xs ${startDate === new Date().toISOString().split('T')[0] ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem' }}
-                >
-                  📅 Od dziś: {new Date().toISOString().split('T')[0]}
-                </button>
-              </div>
-            )}
+            {(() => {
+              const todayStr = new Date().toISOString().split('T')[0];
+              const tomorrow = new Date();
+              tomorrow.setDate(tomorrow.getDate() + 1);
+              const tomorrowStr = tomorrow.toISOString().split('T')[0];
+              return (
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => setStartDate(todayStr)}
+                    className={`btn btn-xs ${startDate === todayStr ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem' }}
+                  >
+                    📅 Od dziś: {todayStr}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStartDate(tomorrowStr)}
+                    className={`btn btn-xs ${startDate === tomorrowStr ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem' }}
+                  >
+                    📅 Od jutra: {tomorrowStr}
+                  </button>
+                  {pendingDiet?.start_date && (
+                    <button
+                      type="button"
+                      onClick={() => setStartDate(pendingDiet.start_date)}
+                      className={`btn btn-xs ${startDate === pendingDiet.start_date ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem' }}
+                    >
+                      📅 Wg zaleceń dietetyka: {pendingDiet.start_date}
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
           </div>
           <input
             type="date"
@@ -330,7 +346,18 @@ export function PatientLoadPackageModal({ isOpen, onClose, onPackageLoaded, init
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem', marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem', marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      disabled={submittingId === currentDiet.template_id}
+                      onClick={() => handleLoadPackage(currentDiet.template_id)}
+                      className="btn btn-secondary btn-sm"
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 700 }}
+                      title="Zmień datę rozpoczęcia aktualnego jadłospisu lub wdroż go na nowo"
+                    >
+                      <RotateCcw size={14} />
+                      {submittingId === currentDiet.template_id ? 'Wdrażanie...' : `Zmień datę / Przeładuj od ${startDate}`}
+                    </button>
                     <a
                       href={dietPlansApi.getTemplatePdfUrl(currentDiet.template_id)}
                       target="_blank"
@@ -457,7 +484,7 @@ export function PatientLoadPackageModal({ isOpen, onClose, onPackageLoaded, init
                           style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
                         >
                           <RotateCcw size={13} />
-                          {submittingId === diet.template_id ? 'Ładowanie...' : 'Załaduj ponownie'}
+                          {submittingId === diet.template_id ? 'Ładowanie...' : `Załaduj od ${startDate}`}
                         </button>
                       </div>
                     </div>
