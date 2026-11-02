@@ -1,13 +1,30 @@
-export const APP_VERSION = '1.17';
+export const APP_VERSION = '1.18';
 export const APP_RELEASE_DATE = '2026-11-02';
 
 export const CHANGELOG_DATA = [
+  {
+    version: '1.18',
+    date: '2026-11-02',
+    time: '08:35 CET',
+    title: 'Wydanie 1.18 – Miary kuchenne w aplikacji mobilnej i dynamiczne przeliczanie',
+    badge: 'Aktualna',
+    badgeType: 'emerald',
+    changes: [
+      {
+        category: 'Miary kuchenne (łyżki, szklanki, garście, plastry)',
+        items: [
+          'Aplikacja Mobilna (Android): Dodano automatyczne wyświetlanie miar kuchennych (np. 1 łyżka, 1 szklanka, 2 garście, 1/2 kostki) w oknie opcji i szczegółów posiłku obok gramatury.',
+          'Backend & Skalowanie: Wprowadzono dynamiczne przeliczanie miar kuchennych w czasie rzeczywistym podczas zmiany wielkości porcji posiłku.'
+        ]
+      }
+    ]
+  },
   {
     version: '1.17',
     date: '2026-11-02',
     time: '06:30 CET',
     title: 'Wydanie 1.17 – Mnożnik listy zakupów i ujednolicenie składników posiłków',
-    badge: 'Aktualna',
+    badge: 'Wcześniejsza',
     badgeType: 'emerald',
     changes: [
       {

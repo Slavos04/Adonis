@@ -285,7 +285,7 @@ fun MealOptionsDialog(
                             )
                             res.ingredients.forEach { ing ->
                                 Text(
-                                    "• ${ing.productName}${if (isDiscountStore(ing.store)) " (${ing.store})" else ""}: ${ing.scaledAmount} ${ing.unit}",
+                                    "• ${ing.productName}${if (isDiscountStore(ing.store)) " (${ing.store})" else ""}: ${if (ing.scaledAmount % 1.0 == 0.0) ing.scaledAmount.toInt().toString() else ing.scaledAmount.toString()} ${ing.unit}${if (!ing.kitchenMeasure.isNullOrBlank()) " (${ing.kitchenMeasure})" else ""}",
                                     fontSize = 12.sp,
                                     modifier = Modifier.padding(vertical = 2.dp)
                                 )

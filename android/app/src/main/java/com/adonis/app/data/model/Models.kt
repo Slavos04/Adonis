@@ -101,7 +101,8 @@ data class ScaledIngredient(
     val store: String,
     val brand: String,
     @SerializedName("scaled_amount") val scaledAmount: Double,
-    val unit: String
+    val unit: String,
+    @SerializedName("kitchen_measure") val kitchenMeasure: String? = null
 )
 
 data class ScaledRecipeResponse(
