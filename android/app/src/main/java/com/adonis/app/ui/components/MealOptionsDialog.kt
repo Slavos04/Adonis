@@ -637,112 +637,127 @@ fun MealOptionsDialog(
 
                                 Spacer(modifier = Modifier.height(4.dp))
 
-                                // 3. Pobierz z bazy kodów EAN
+                                // 3. Pobierz z bazy kodów EAN (pełna szerokość pola na 13 cyfr)
                                 Text("Pobierz z bazy kodów EAN:", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    OutlinedTextField(
-                                        value = eanCodeInput,
-                                        onValueChange = { eanCodeInput = it },
-                                        placeholder = { Text("Wpisz EAN", fontSize = 12.sp) },
-                                        modifier = Modifier.weight(1f),
-                                        singleLine = true,
-                                        trailingIcon = {
-                                            IconButton(
-                                                onClick = {
-                                                    barcodeScanner?.startScan()
-                                                        ?.addOnSuccessListener { barcode ->
-                                                            barcode.rawValue?.let { lookupBarcode(it) }
-                                                        }
-                                                        ?.addOnFailureListener {
-                                                            Toast.makeText(context, "Błąd skanera: ${it.message}", Toast.LENGTH_SHORT).show()
-                                                        }
-                                                }
-                                            ) {
-                                                Icon(
-                                                    Icons.Default.PhotoCamera,
-                                                    contentDescription = "Skanuj aparatem",
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
+                                OutlinedTextField(
+                                    value = eanCodeInput,
+                                    onValueChange = { eanCodeInput = it },
+                                    placeholder = { Text("Wpisz kod EAN (13 cyfr)...", fontSize = 12.sp) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 2.dp, bottom = 4.dp),
+                                    singleLine = true,
+                                    trailingIcon = {
+                                        IconButton(
+                                            onClick = {
+                                                barcodeScanner?.startScan()
+                                                    ?.addOnSuccessListener { barcode ->
+                                                        barcode.rawValue?.let { lookupBarcode(it) }
+                                                    }
+                                                    ?.addOnFailureListener {
+                                                        Toast.makeText(context, "Błąd skanera: ${it.message}", Toast.LENGTH_SHORT).show()
+                                                    }
                                             }
-                                        }
-                                    )
-                                    Button(
-                                        onClick = { lookupBarcode(eanCodeInput) },
-                                        enabled = !isSearchingEan && eanCodeInput.isNotBlank(),
-                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                                    ) {
-                                        if (isSearchingEan) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier.size(16.dp),
-                                                strokeWidth = 2.dp,
-                                                color = MaterialTheme.colorScheme.onPrimary
+                                        ) {
+                                            Icon(
+                                                Icons.Default.PhotoCamera,
+                                                contentDescription = "Skanuj aparatem",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(20.dp)
                                             )
-                                        } else {
-                                            Text("Szukaj EAN", fontSize = 11.sp)
                                         }
+                                    }
+                                )
+
+                                Button(
+                                    onClick = { lookupBarcode(eanCodeInput) },
+                                    enabled = !isSearchingEan && eanCodeInput.isNotBlank(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 6.dp),
+                                    contentPadding = PaddingValues(vertical = 4.dp)
+                                ) {
+                                    if (isSearchingEan) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(16.dp),
+                                            strokeWidth = 2.dp,
+                                            color = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("Szukam...", fontSize = 11.sp)
+                                    } else {
+                                        Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("Szukaj EAN", fontSize = 11.sp)
                                     }
                                 }
 
                                 if (eanNotFound) {
-                                    Text("⚠️ Brak w bazie. Wpisz poniżej.", color = Color(0xFFFBBF24), fontSize = 10.sp, modifier = Modifier.padding(bottom = 2.dp))
+                                    Text("⚠️ Brak w bazie. Wpisz poniżej.", color = Color(0xFFFBBF24), fontSize = 10.sp, modifier = Modifier.padding(bottom = 4.dp))
                                 }
 
-                                // 4. Pola wartości odżywczych (zwięzłe B: T: W: Kcal)
-                                OutlinedTextField(
-                                    value = inputItemName,
-                                    onValueChange = { inputItemName = it },
-                                    label = { Text("Nazwa składnika", fontSize = 11.sp) },
-                                    modifier = Modifier.fillMaxWidth().padding(bottom = 3.dp),
-                                    singleLine = true
-                                )
-
+                                // 4. Pola składnika:
+                                // Wiersz 1: Nazwa produktu (2/3 szerokości) + Waga (1/3 szerokości)
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 4.dp, bottom = 6.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     OutlinedTextField(
-                                        value = inputWeight,
-                                        onValueChange = { inputWeight = it },
-                                        label = { Text("Waga(g)", fontSize = 10.sp) },
-                                        modifier = Modifier.weight(1.1f),
+                                        value = inputItemName,
+                                        onValueChange = { inputItemName = it },
+                                        label = { Text("Nazwa składnika", fontSize = 11.sp) },
+                                        modifier = Modifier.weight(2f),
                                         singleLine = true
                                     )
                                     OutlinedTextField(
+                                        value = inputWeight,
+                                        onValueChange = { inputWeight = it },
+                                        label = { Text("Waga (g)", fontSize = 11.sp) },
+                                        modifier = Modifier.weight(1f),
+                                        singleLine = true
+                                    )
+                                }
+
+                                // Wiersz 2: Kcal / B / T / W równomiernie na całej szerokości (po 25% każde)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 6.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    OutlinedTextField(
                                         value = inputKcal100g,
                                         onValueChange = { inputKcal100g = it },
-                                        label = { Text("Kcal", fontSize = 10.sp) },
+                                        label = { Text("Kcal", fontSize = 11.sp) },
                                         modifier = Modifier.weight(1f),
                                         singleLine = true
                                     )
                                     OutlinedTextField(
                                         value = inputP100g,
                                         onValueChange = { inputP100g = it },
-                                        label = { Text("B:", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
-                                        modifier = Modifier.weight(0.9f),
+                                        label = { Text("B:", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                                        modifier = Modifier.weight(1f),
                                         singleLine = true
                                     )
                                     OutlinedTextField(
                                         value = inputF100g,
                                         onValueChange = { inputF100g = it },
-                                        label = { Text("T:", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
-                                        modifier = Modifier.weight(0.9f),
+                                        label = { Text("T:", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                                        modifier = Modifier.weight(1f),
                                         singleLine = true
                                     )
                                     OutlinedTextField(
                                         value = inputC100g,
                                         onValueChange = { inputC100g = it },
-                                        label = { Text("W:", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
-                                        modifier = Modifier.weight(0.9f),
+                                        label = { Text("W:", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                                        modifier = Modifier.weight(1f),
                                         singleLine = true
                                     )
                                 }
 
-                                Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Button(
                                     onClick = { handleAddItem() },
                                     modifier = Modifier.fillMaxWidth(),
