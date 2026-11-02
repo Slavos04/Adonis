@@ -13,6 +13,7 @@ export const CHANGELOG_DATA = [
       {
         category: 'Nawigacja i kontrola jadłospisu (Android & Web)',
         items: [
+          'Tygodniowy Kalendarz Jadłospisu: Naprawiono rozwijanie podglądu dań – lista posiłków i makroskładników wyświetla się teraz ponad wszystkimi kontenerami (jako pływające okno popover renderowane na zewnątrz formularza), gwarantując pełną widoczność bez obcinania przez krawędzie kasetki.',
           'Aplikacja Mobilna: Dodano dedykowaną kartę nawigacji po dniach z wyraźnymi przyciskami < i > oraz wyborem daty z kalendarza.',
           'Dynamiczne sumy dnia: Zmiana wielkości porcji posiłku natychmiast przelicza dzienne sumy kalorii oraz makroskładników (B, T, W).',
           'Cel kaloryczny & Ostrzeżenie: Wyświetlanie dziennego celu kalorycznego dietetyka oraz ostrzeżenia (czerwony wykrzyknik ❗) przy dacie w przypadku przekroczenia limitu.'

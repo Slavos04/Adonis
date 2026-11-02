@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { dietPlansApi, measurementsApi, chatApi, authApi } from '../api/client';
 import { PortionScalerModal } from '../components/PortionScalerModal';
@@ -37,6 +38,62 @@ export function PatientDashboard() {
   const [recDismissed, setRecDismissed] = useState(false);
   const [showLoadPackageModal, setShowLoadPackageModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+
+  // Floating Popover for Weekly Calendar Meals (renders via Portal outside all containers)
+  const [popoverState, setPopoverState] = useState(null); // { day, rect, isPinned }
+  const popoverTimeoutRef = useRef(null);
+
+  const handleDayMouseEnter = (e, day) => {
+    if (popoverTimeoutRef.current) clearTimeout(popoverTimeoutRef.current);
+    const rect = e.currentTarget.getBoundingClientRect();
+    setHoveredDate(day.date);
+    setPopoverState(prev => (prev?.isPinned && prev.day.date === day.date) ? prev : { day, rect, isPinned: false });
+  };
+
+  const handleDayMouseLeave = () => {
+    setHoveredDate(null);
+    popoverTimeoutRef.current = setTimeout(() => {
+      setPopoverState(prev => (prev?.isPinned ? prev : null));
+    }, 180);
+  };
+
+  const handlePopoverMouseEnter = () => {
+    if (popoverTimeoutRef.current) clearTimeout(popoverTimeoutRef.current);
+  };
+
+  const handlePopoverMouseLeave = () => {
+    popoverTimeoutRef.current = setTimeout(() => {
+      setPopoverState(prev => (prev?.isPinned ? prev : null));
+    }, 180);
+  };
+
+  const handleDayClick = (e, day) => {
+    setSelectedDate(day.date);
+    const rect = e.currentTarget.getBoundingClientRect();
+    setPopoverState({ day, rect, isPinned: true });
+  };
+
+  useEffect(() => {
+    const handleScrollOrResize = () => {
+      setPopoverState(null);
+    };
+    window.addEventListener('scroll', handleScrollOrResize, { passive: true });
+    window.addEventListener('resize', handleScrollOrResize, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScrollOrResize);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!popoverState?.isPinned) return;
+    const handleClickOutside = (e) => {
+      if (e.target.closest('.weekly-meals-popover') || e.target.closest('.week-calendar-day-card')) return;
+      setPopoverState(null);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [popoverState?.isPinned]);
 
   useEffect(() => {
     if (profile?.official_recommendations) {
@@ -539,7 +596,7 @@ export function PatientDashboard() {
           {weeklyData?.days.map((day) => {
             const isSelected = day.date === selectedDate;
             const isToday = day.date === todayStr;
-            const isHovered = hoveredDate === day.date;
+            const isHovered = (hoveredDate === day.date) || (popoverState?.day?.date === day.date);
             const shortName = shortDaysMap[day.day_name] || day.day_name;
             const dateParts = day.date.split('-');
             const displayDate = `${dateParts[2]}.${dateParts[1]}`;
@@ -547,12 +604,13 @@ export function PatientDashboard() {
             return (
               <div
                 key={day.date}
+                className="week-calendar-day-card"
                 style={{ position: 'relative' }}
-                onMouseEnter={() => setHoveredDate(day.date)}
-                onMouseLeave={() => setHoveredDate(null)}
+                onMouseEnter={(e) => handleDayMouseEnter(e, day)}
+                onMouseLeave={handleDayMouseLeave}
               >
                 <div
-                  onClick={() => setSelectedDate(day.date)}
+                  onClick={(e) => handleDayClick(e, day)}
                   style={{
                     padding: '1rem 0.6rem',
                     borderRadius: '12px',
@@ -607,85 +665,149 @@ export function PatientDashboard() {
                     </div>
                   )}
                 </div>
-
-                {/* HOVER TOOLTIP / POPOVER WITH MEAL DETAILS */}
-                {isHovered && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '105%',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      width: '280px',
-                      background: '#0f172a',
-                      border: '1px solid rgba(16,185,129,0.5)',
-                      boxShadow: '0 12px 36px rgba(0,0,0,0.6)',
-                      borderRadius: '12px',
-                      padding: '1rem',
-                      zIndex: 1000,
-                      pointerEvents: 'none',
-                      animation: 'fadeIn 0.15s ease',
-                    }}
-                  >
-                    <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem', marginBottom: '0.75rem' }}>
-                      <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#34d399' }}>
-                        {day.day_name}, {displayDate}
-                      </div>
-                      <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                        <span>🔥 {day.total_calories} kcal</span>
-                        <span>🥩 B: {day.total_protein_g}g</span>
-                        <span>🥑 T: {day.total_fat_g}g</span>
-                        <span>🌾 W: {day.total_carbs_g}g</span>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      {day.meals_preview && day.meals_preview.length > 0 ? (
-                        day.meals_preview.map((m, idx) => (
-                          <div
-                            key={idx}
-                            style={{
-                              background: 'rgba(255,255,255,0.03)',
-                              padding: '0.4rem 0.6rem',
-                              borderRadius: '6px',
-                              fontSize: '0.75rem',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                            }}
-                          >
-                            <div style={{ flex: 1, paddingRight: '0.5rem' }}>
-                              <span style={{ color: '#10b981', fontWeight: 700, marginRight: '0.3rem' }}>
-                                {m.meal_type}:
-                              </span>
-                              <span style={{ color: '#fff' }}>{m.recipe_title}</span>
-                            </div>
-                            <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                              <div style={{ color: '#10b981', fontSize: '0.72rem', fontWeight: 700 }}>
-                                {m.calories} kcal
-                              </div>
-                              {m.preparation_time_minutes ? (
-                                <div style={{ color: 'var(--text-dim)', fontSize: '0.67rem', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '2px' }}>
-                                  <Clock size={10} /> {m.preparation_time_minutes} min
-                                </div>
-                              ) : null}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textAlign: 'center', padding: '0.5rem' }}>
-                          Brak przypisanych dań na ten dzień.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
             );
           })}
           </div>
         </div>
       </div>
+
+      {/* FLOATING POPOVER WITH MEAL DETAILS (RENDERED DIRECTLY TO BODY VIA PORTAL - NEVER CLIPPED) */}
+      {popoverState && createPortal(
+        (() => {
+          const popoverWidth = 320;
+          const leftPos = Math.max(
+            12,
+            Math.min(
+              window.innerWidth - popoverWidth - 12,
+              popoverState.rect.left + (popoverState.rect.width / 2) - (popoverWidth / 2)
+            )
+          );
+          const wouldOverflowBottom = popoverState.rect.bottom + 360 > window.innerHeight;
+          const topPos = wouldOverflowBottom
+            ? Math.max(10, popoverState.rect.top - 360)
+            : popoverState.rect.bottom + 10;
+          const dateParts = popoverState.day.date.split('-');
+          const displayDate = `${dateParts[2]}.${dateParts[1]}`;
+
+          return (
+            <div
+              className="weekly-meals-popover"
+              style={{
+                position: 'fixed',
+                top: `${topPos}px`,
+                left: `${leftPos}px`,
+                width: `${popoverWidth}px`,
+                maxWidth: 'calc(100vw - 24px)',
+                background: '#0f172a',
+                border: '1.5px solid rgba(16, 185, 129, 0.7)',
+                boxShadow: '0 20px 50px rgba(0, 0, 0, 0.85), 0 0 24px rgba(16, 185, 129, 0.25)',
+                borderRadius: '16px',
+                padding: '1.1rem',
+                zIndex: 999999,
+                animation: 'fadeIn 0.15s ease-out',
+                pointerEvents: 'auto',
+              }}
+              onMouseEnter={handlePopoverMouseEnter}
+              onMouseLeave={handlePopoverMouseLeave}
+            >
+              <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.6rem', marginBottom: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontWeight: 800, fontSize: '1rem', color: '#34d399' }}>
+                    {popoverState.day.day_name}, {displayDate}
+                  </div>
+                  {popoverState.isPinned ? (
+                    <button
+                      onClick={() => setPopoverState(null)}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: 'none',
+                        color: '#fff',
+                        cursor: 'pointer',
+                        borderRadius: '6px',
+                        width: '24px',
+                        height: '24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      title="Zamknij podgląd"
+                    >
+                      <X size={14} />
+                    </button>
+                  ) : null}
+                </div>
+                <div style={{ display: 'flex', gap: '0.6rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem', flexWrap: 'wrap' }}>
+                  <span style={{ fontWeight: 700, color: '#34d399' }}>🔥 {popoverState.day.total_calories} kcal</span>
+                  <span>🥩 B: {popoverState.day.total_protein_g}g</span>
+                  <span>🥑 T: {popoverState.day.total_fat_g}g</span>
+                  <span>🌾 W: {popoverState.day.total_carbs_g}g</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '280px', overflowY: 'auto', paddingRight: '4px' }}>
+                {popoverState.day.meals_preview && popoverState.day.meals_preview.length > 0 ? (
+                  popoverState.day.meals_preview.map((m, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.04)',
+                        padding: '0.5rem 0.7rem',
+                        borderRadius: '8px',
+                        fontSize: '0.78rem',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        border: '1px solid rgba(255, 255, 255, 0.06)',
+                      }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <div style={{ color: '#10b981', fontWeight: 800, fontSize: '0.72rem', marginBottom: '2px' }}>
+                          {m.meal_type}
+                        </div>
+                        <div style={{ color: '#fff', fontWeight: 600, lineHeight: 1.3 }}>
+                          {m.recipe_title}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <div style={{ color: '#34d399', fontSize: '0.8rem', fontWeight: 800 }}>
+                          {m.calories} kcal
+                        </div>
+                        {m.preparation_time_minutes ? (
+                          <div style={{ color: 'var(--text-muted)', fontSize: '0.68rem', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '3px', marginTop: '2px' }}>
+                            <Clock size={11} /> {m.preparation_time_minutes} min
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textAlign: 'center', padding: '0.75rem' }}>
+                    Brak przypisanych dań na ten dzień.
+                  </div>
+                )}
+              </div>
+
+              {popoverState.day.meals_count > 0 && popoverState.day.date !== selectedDate && (
+                <div style={{ marginTop: '0.75rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.6rem', textAlign: 'center' }}>
+                  <button
+                    onClick={() => {
+                      setSelectedDate(popoverState.day.date);
+                      setPopoverState(null);
+                    }}
+                    className="btn btn-primary btn-sm"
+                    style={{ width: '100%', fontSize: '0.78rem', padding: '0.35rem 0.6rem' }}
+                  >
+                    Przejdź do tego dnia
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })(),
+        document.body
+      )}
 
       {/* Main Grid: Left = Meals & Plan, Right = Goals & Measurements */}
       <div className="dashboard-grid" style={{ padding: 0 }}>
