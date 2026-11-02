@@ -46,6 +46,14 @@ class DailyMealPlanOutSchema(Schema):
     total_protein_g: float
     total_fat_g: float
     total_carbs_g: float
+    daily_calories_goal: Optional[int] = None
+    protein_goal_g: Optional[float] = None
+    fat_goal_g: Optional[float] = None
+    carbs_goal_g: Optional[float] = None
+    is_calories_exceeded: Optional[bool] = False
+
+class UpdateMealPortionsSchema(Schema):
+    portions: float
 
 class WeeklyDaySummarySchema(Schema):
     date: date

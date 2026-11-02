@@ -205,103 +205,173 @@ fun DailyPlanScreen(
                 }
             }
         }
-        // Wiersz nawigacji z kafelkiem "Załaduj jadłospis" na lewo od daty
+        // Wiersz 1: Akcje jadłospisu (Załaduj jadłospis + Pobierz PDF)
         item {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(bottom = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Kafelek "Załaduj jadłospis" na lewo od daty (tekst w 2 wierszach)
                 OutlinedButton(
                     onClick = { openPackagesDialog() },
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.padding(end = 4.dp)
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(10.dp)
                 ) {
-                    Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(15.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Załaduj\njadłospis",
-                        fontSize = 11.sp,
-                        lineHeight = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Start
+                        text = "Załaduj jadłospis",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
 
-                // Przycisk pobierania PDF jadłospisu
-                IconButton(
+                OutlinedButton(
                     onClick = {
                         val pdfUrl = AdonisApiClient.getWeeklyPdfUrl(selectedDateStr.value, tokenManager.getToken())
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(pdfUrl))
                         context.startActivity(intent)
                     },
-                    modifier = Modifier.size(34.dp)
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(10.dp)
                 ) {
                     Icon(
                         Icons.Default.Download,
-                        contentDescription = "Pobierz jadłospis PDF",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
                     )
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                // Poprzedni dzień
-                IconButton(onClick = {
-                    val cal = Calendar.getInstance().apply {
-                        time = currentCalendar.value.time
-                        add(Calendar.DAY_OF_YEAR, -1)
-                    }
-                    currentCalendar.value = cal
-                }) {
-                    Icon(Icons.Default.ChevronLeft, contentDescription = "Poprzedni dzień")
-                }
-
-                // Data i powrót do dzisiaj
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = displayDateStr.value,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        text = "Pobierz PDF",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
                     )
-                    if (isToday) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(4.dp),
-                            modifier = Modifier.padding(top = 2.dp)
+                }
+            }
+        }
+
+        // Wiersz 2: Dedykowana karta wyboru dnia z wyraźnymi przyciskami < i > oraz ostrzeżeniem ❗
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Przycisk < (poprzedni dzień)
+                    FilledTonalIconButton(
+                        onClick = {
+                            val cal = Calendar.getInstance().apply {
+                                time = currentCalendar.value.time
+                                add(Calendar.DAY_OF_YEAR, -1)
+                            }
+                            currentCalendar.value = cal
+                        },
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Text(
+                            text = "<",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    // Data, kalendarz i powrót do dzisiaj
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable {
+                                val c = currentCalendar.value
+                                android.app.DatePickerDialog(
+                                    context,
+                                    { _, y, m, d ->
+                                        val newCal = Calendar.getInstance().apply {
+                                            set(y, m, d)
+                                        }
+                                        currentCalendar.value = newCal
+                                    },
+                                    c.get(Calendar.YEAR),
+                                    c.get(Calendar.MONTH),
+                                    c.get(Calendar.DAY_OF_MONTH)
+                                ).show()
+                            }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = "Dzisiaj",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
+                                text = displayDateStr.value,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            if (planResponse?.isCaloriesExceeded == true) {
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "❗",
+                                    fontSize = 16.sp
+                                )
+                            }
+                        }
+                        if (isToday) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(4.dp),
+                                modifier = Modifier.padding(top = 2.dp)
+                            ) {
+                                Text(
+                                    text = "Dzisiaj",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = "← Wróć do dzisiaj",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                modifier = Modifier
+                                    .clickable { currentCalendar.value = Calendar.getInstance() }
+                                    .padding(top = 2.dp)
                             )
                         }
-                    } else {
-                        TextButton(
-                            onClick = { currentCalendar.value = Calendar.getInstance() },
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("← Dzisiaj", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
-                        }
                     }
-                }
 
-                // Następny dzień
-                IconButton(onClick = {
-                    val cal = Calendar.getInstance().apply {
-                        time = currentCalendar.value.time
-                        add(Calendar.DAY_OF_YEAR, 1)
+                    // Przycisk > (następny dzień)
+                    FilledTonalIconButton(
+                        onClick = {
+                            val cal = Calendar.getInstance().apply {
+                                time = currentCalendar.value.time
+                                add(Calendar.DAY_OF_YEAR, 1)
+                            }
+                            currentCalendar.value = cal
+                        },
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Text(
+                            text = ">",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
-                    currentCalendar.value = cal
-                }) {
-                    Icon(Icons.Default.ChevronRight, contentDescription = "Następny dzień")
                 }
             }
         }
@@ -325,27 +395,54 @@ fun DailyPlanScreen(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(14.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text("Cal", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("${plan.totalCalories.toInt()} kcal", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.primary)
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column {
+                                    Text("Kalorie", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    val goalCalText = plan.dailyCaloriesGoal?.let { " / $it" } ?: ""
+                                    Text(
+                                        "${plan.totalCalories.toInt()}$goalCalText kcal",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = if (plan.isCaloriesExceeded == true) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                Column {
+                                    Text("Białko", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    val pGoal = plan.proteinGoalG?.let { " / ${it.toInt()}g" } ?: "g"
+                                    Text("${plan.totalProteinG}$pGoal", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                }
+                                Column {
+                                    Text("Tłuszcz", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    val fGoal = plan.fatGoalG?.let { " / ${it.toInt()}g" } ?: "g"
+                                    Text("${plan.totalFatG}$fGoal", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                }
+                                Column {
+                                    Text("Węgle", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    val cGoal = plan.carbsGoalG?.let { " / ${it.toInt()}g" } ?: "g"
+                                    Text("${plan.totalCarbsG}$cGoal", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                }
                             }
-                            Column {
-                                Text("B", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("${plan.totalProteinG}g", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                            }
-                            Column {
-                                Text("T", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("${plan.totalFatG}g", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                            }
-                            Column {
-                                Text("W", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("${plan.totalCarbsG}g", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+
+                            if (plan.isCaloriesExceeded == true && plan.dailyCaloriesGoal != null) {
+                                val diff = plan.totalCalories.toInt() - plan.dailyCaloriesGoal
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("❗", fontSize = 14.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Przekroczono dzienny cel o $diff kcal!",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
                             }
                         }
                     }

@@ -217,12 +217,14 @@ fun AppInfoDialog(
                             version = "1.18.0",
                             date = "2 listopada 2026",
                             isLatest = true,
-                            title = "Miary kuchenne & Changelog w aplikacji mobilnej",
+                            title = "Nawigacja jadłospisu, sumy dnia & miary kuchenne",
                             items = listOf(
-                                "Miary kuchenne: Automatyczne przeliczanie składników na łyżki, łyżeczki, szklanki, garście, plastry i sztuki w całej aplikacji mobilnej.",
-                                "Dynamiczne skalowanie: Miary kuchenne automatycznie przeliczają się przy zmianie porcji posiłku oraz w liście zakupów.",
-                                "Historia zmian: Dodano pełny Changelog w oknie 'O aplikacji', umożliwiający przeglądanie nowości w każdym wydaniu.",
-                                "Dynamiczna wersja: Usunięto statyczne oznaczenia wersji, aplikacja zawsze raportuje rzeczywistą wersję pakietu."
+                                "Nawigacja po dniach: Wygodne i widoczne przyciski < i > obok daty z opcją wyboru z kalendarza.",
+                                "Dynamiczne sumy dnia: Zmiana wielkości porcji posiłku aktualizuje dzienne kalorie oraz makroskładniki.",
+                                "Cel kaloryczny & ostrzeżenie: Wyświetlanie dziennego limitu kalorii oraz czerwonego wykrzyknika ❗ przy dacie w przypadku przekroczenia.",
+                                "Lista zakupów: Przeniesienie ikony domku pod checkbox oraz zwięzłe i czytelne miary kuchenne.",
+                                "Miary kuchenne: Automatyczne przeliczanie składników na łyżki, łyżeczki, szklanki, garście i sztuki w całej aplikacji.",
+                                "Historia zmian: Pełny Changelog dostępny bezpośrednio w oknie O aplikacji."
                             )
                         )
 

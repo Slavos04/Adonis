@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Scale
 import com.adonis.app.data.model.isDiscountStore
 import androidx.compose.material.icons.filled.Store
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -679,14 +680,31 @@ fun ShoppingListScreen(apiService: AdonisApiService, tokenManager: TokenManager?
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                Checkbox(
-                                    checked = item.isBought,
-                                    onCheckedChange = { checked ->
-                                        toggleBought(item, checked)
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.padding(end = 8.dp)
+                                ) {
+                                    Checkbox(
+                                        checked = item.isBought,
+                                        onCheckedChange = { checked ->
+                                            toggleBought(item, checked)
+                                        },
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                    IconButton(
+                                        onClick = { toggleSkipped(item) },
+                                        modifier = Modifier.size(30.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Home,
+                                            contentDescription = if (item.isSkipped) "W lodówce" else "Mam w domu",
+                                            tint = if (item.isSkipped) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+                                            modifier = Modifier.size(19.dp)
+                                        )
                                     }
-                                )
+                                }
 
-                                Column(modifier = Modifier.padding(start = 6.dp)) {
+                                Column(modifier = Modifier.weight(1f).padding(end = 6.dp)) {
                                     Text(
                                         text = item.productName,
                                         fontWeight = FontWeight.Bold,
@@ -736,37 +754,27 @@ fun ShoppingListScreen(apiService: AdonisApiService, tokenManager: TokenManager?
                             }
 
                             Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = "${formatScaledAmount(item.amount, multiplier)} ${item.unit}",
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                val kMeasure = com.adonis.app.util.KitchenMeasureHelper.format(item.productName, item.amount * multiplier)
+                                if (kMeasure.isNotBlank()) {
                                     Text(
-                                        text = "${formatScaledAmount(item.amount, multiplier)} ${item.unit}",
-                                        fontWeight = FontWeight.ExtraBold,
-                                        fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.primary
+                                        text = "($kMeasure)",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.secondary
                                     )
-                                    val kMeasure = com.adonis.app.util.KitchenMeasureHelper.format(item.productName, item.amount * multiplier)
-                                    if (kMeasure.isNotBlank()) {
-                                        Text(
-                                            text = "($kMeasure)",
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = MaterialTheme.colorScheme.secondary
-                                        )
-                                    }
+                                }
 
-                                    if (multiplier != 1.0f) {
-                                        Text(
-                                            text = "baza: ${if (item.amount % 1.0 == 0.0) item.amount.toInt().toString() else item.amount.toString()} ${item.unit}",
-                                            fontSize = 9.sp,
-                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                        )
-                                    }
-
-                                TextButton(
-                                    onClick = { toggleSkipped(item) },
-                                    contentPadding = PaddingValues(0.dp)
-                                ) {
+                                if (multiplier != 1.0f) {
                                     Text(
-                                        if (item.isSkipped) "W lodówce ✓" else "Mam w domu",
-                                        fontSize = 10.sp
+                                        text = "baza: ${if (item.amount % 1.0 == 0.0) item.amount.toInt().toString() else item.amount.toString()} ${item.unit}",
+                                        fontSize = 9.sp,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                     )
                                 }
                             }

@@ -18,7 +18,7 @@ from .schemas import (
     DietPlanTemplateOutSchema, ApplyTemplateToPatientSchema,
     AssignmentHistoryOutSchema, PatientLoadPackageSchema,
     MealSubstituteSchema, PatientPackagesOverviewSchema,
-    PatientPackageItemSchema
+    PatientPackageItemSchema, UpdateMealPortionsSchema
 )
 from .services import generate_smart_shopping_list, normalize_shopping_category, SHOPPING_CATEGORY_ORDER
 from apps.recipes.models import Recipe, Product, StoreChoice
@@ -312,6 +312,22 @@ def serialize_daily_plan(plan: DailyMealPlan) -> dict:
     if assignment and assignment.template:
         active_pkg_name = assignment.template.name
 
+    goal_cal = None
+    goal_p = None
+    goal_f = None
+    goal_c = None
+    if hasattr(plan.patient, 'patient_profile') and plan.patient.patient_profile:
+        prof = plan.patient.patient_profile
+        goal_cal = prof.daily_calories_goal
+        goal_p = float(prof.protein_goal_g) if prof.protein_goal_g is not None else None
+        goal_f = float(prof.fat_goal_g) if prof.fat_goal_g is not None else None
+        goal_c = float(prof.carbs_goal_g) if prof.carbs_goal_g is not None else None
+
+    if not goal_cal and assignment and assignment.template:
+        goal_cal = assignment.template.target_calories
+
+    is_exceeded = bool(goal_cal and tot_cal > goal_cal)
+
     return {
         "id": plan.id,
         "date": plan.date,
@@ -323,6 +339,11 @@ def serialize_daily_plan(plan: DailyMealPlan) -> dict:
         "total_protein_g": round(tot_p, 1),
         "total_fat_g": round(tot_f, 1),
         "total_carbs_g": round(tot_c, 1),
+        "daily_calories_goal": goal_cal,
+        "protein_goal_g": goal_p,
+        "fat_goal_g": goal_f,
+        "carbs_goal_g": goal_c,
+        "is_calories_exceeded": is_exceeded,
     }
 
 @router.get("/daily", response=DailyMealPlanOutSchema, auth=JWTAuth())
@@ -1224,6 +1245,26 @@ def revert_meal_substitution(request, meal_id: int):
     meal.save()
 
     return {"message": "Przywrócono oryginalny posiłek.", "meal_id": meal.id}
+
+@router.post("/meals/{meal_id}/portions", auth=JWTAuth())
+def update_meal_portions(request, meal_id: int, payload: UpdateMealPortionsSchema):
+    """Aktualizuje wielkość porcji dla wybranego posiłku."""
+    meal = PlannedMeal.objects.select_related('daily_plan').filter(id=meal_id).first()
+    if not meal:
+        raise HttpError(404, "Nie znaleziono posiłku.")
+    if meal.daily_plan.patient_id != request.auth_user.id and request.auth_user.role != UserRole.ADMIN:
+        raise HttpError(403, "Brak uprawnień.")
+
+    p = float(payload.portions)
+    if p <= 0:
+        p = 1.0
+    meal.portions = p
+    meal.save()
+    return {
+        "message": "Zaktualizowano wielkość porcji.",
+        "meal_id": meal.id,
+        "portions": float(meal.portions)
+    }
 
 @router.get("/patient-packages-overview", response=PatientPackagesOverviewSchema, auth=JWTAuth())
 def get_patient_packages_overview(request):

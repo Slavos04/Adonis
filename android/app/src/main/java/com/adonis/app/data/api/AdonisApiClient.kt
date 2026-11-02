@@ -51,6 +51,12 @@ interface AdonisApiService {
         @Path("meal_id") mealId: Int
     ): Map<String, Any>
 
+    @POST("diet-plans/meals/{meal_id}/portions")
+    suspend fun updateMealPortions(
+        @Path("meal_id") mealId: Int,
+        @Body request: UpdateMealPortionsRequest
+    ): Map<String, Any>
+
     @GET("recipes/openfoodfacts/barcode/{barcode}")
     suspend fun getProductByBarcode(
         @Path("barcode") barcode: String

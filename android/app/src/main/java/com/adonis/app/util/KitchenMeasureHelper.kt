@@ -10,7 +10,7 @@ object KitchenMeasureHelper {
      */
     fun getMeasureText(productName: String?, amountG: Double?, existingMeasure: String? = null): String {
         if (!existingMeasure.isNullOrBlank()) {
-            return existingMeasure.trim()
+            return shortenMeasure(existingMeasure.trim())
         }
         if (productName.isNullOrBlank() || amountG == null || amountG <= 0.0) {
             return ""
@@ -24,7 +24,27 @@ object KitchenMeasureHelper {
     }
 
     /**
-     * Konwertuje gramaturę produktu na polską miarę kuchenną (łyżki, łyżeczki, szklanki, garście, plastry, sztuki itp.).
+     * Skraca rozbudowane napisy miar (np. usuwa nawiasy z gramaturą), aby zmieściły się w jednej linii.
+     */
+    fun shortenMeasure(measure: String): String {
+        return measure
+            .replace(" (ok. 1/2 opakowania)", "")
+            .replace(" (1/2 szklanki)", "")
+            .replace(" (2 łyżki)", "")
+            .replace(" (125g)", "")
+            .replace(" (150g)", "")
+            .replace(" (200g)", "")
+            .replace(" (400g)", "")
+            .replace(" (50g)", "")
+            .replace(" (100g)", "")
+            .replace(" / porcja", "")
+            .replace(" / butelki", "")
+            .replace("ok. ", "")
+            .trim()
+    }
+
+    /**
+     * Konwertuje gramaturę produktu na polską miarę kuchenną (zwięzłe etykiety).
      */
     fun format(productName: String, amountG: Double): String {
         val name = productName.lowercase()
@@ -92,8 +112,8 @@ object KitchenMeasureHelper {
 
         // 6. Jogurt, skyr, serek (1 kubek = 150g, 1 łyżka = 25g)
         if (listOf("jogurt", "skyr", "serek wiejski", "ricotta").any { name.contains(it) }) {
-            if (amt in 130.0..165.0) return "1 mały kubek (150g)"
-            if (amt in 190.0..220.0) return "1 duże opakowanie (200g)"
+            if (amt in 130.0..165.0) return "1 kubek"
+            if (amt in 190.0..220.0) return "1 opak."
             val tbsp = (amt / 25.0 * 10.0).roundToInt() / 10.0
             return if (tbsp in 2.0..4.0) "${formatNumber(tbsp)} łyżki" else "${formatNumber(tbsp)} łyżek"
         }
@@ -101,17 +121,17 @@ object KitchenMeasureHelper {
         // 7. Twaróg (1/2 kostki = 100g, 1 kostka = 200g, 1 plaster = 50g)
         if (name.contains("twaróg")) {
             if (amt in 90.0..115.0) return "1/2 kostki"
-            if (amt in 190.0..220.0) return "1 cała kostka"
+            if (amt in 190.0..220.0) return "1 kostka"
             val slices = (amt / 50.0).roundToInt()
-            return if (slices > 1) "$slices grube plastry" else "1 gruby plaster"
+            return if (slices > 1) "$slices plastry" else "1 plaster"
         }
 
         // 8. Warzywa liściaste (szpinak, rukola, roszponka, sałata, jarmuż)
         if (listOf("szpinak", "rukol", "roszponk", "sałat", "jarmuż").any { name.contains(it) }) {
             return when {
-                amt <= 30.0 -> "1 duża garść"
-                amt <= 65.0 -> "2 garście (ok. 1/2 opakowania)"
-                amt <= 130.0 -> "1 całe opakowanie"
+                amt <= 35.0 -> "1 garść"
+                amt <= 70.0 -> "2 garście"
+                amt <= 130.0 -> "1 opak."
                 else -> "${formatNumber(amt / 50.0)} garści"
             }
         }
@@ -126,8 +146,8 @@ object KitchenMeasureHelper {
         // 10. Owoce jagodowe (borówki, jagody, maliny, truskawki)
         if (listOf("borówk", "jagod", "malin", "truskawk").any { name.contains(it) }) {
             return when {
-                amt <= 40.0 -> "ok. 1 garść (2 łyżki)"
-                amt <= 80.0 -> "ok. 2 garście (1/2 szklanki)"
+                amt <= 40.0 -> "1 garść"
+                amt <= 80.0 -> "2 garście"
                 else -> "1 szklanka"
             }
         }
@@ -152,15 +172,15 @@ object KitchenMeasureHelper {
                 if (amt in 100.0..140.0) return "1 puszka"
                 return "${formatNumber(amt / 120.0)} puszki"
             }
-            if (amt in 110.0..165.0) return "1 filet / porcja"
+            if (amt in 110.0..165.0) return "1 filet"
             if (amt in 60.0..90.0) return "1/2 fileta"
             return "${formatNumber(amt / 130.0)} fileta"
         }
 
         // 13. Mięso i drób (kurczak, indyk, schab, wołowina)
         if (listOf("kurczak", "indyk", "pierś", "schab", "wołowin", "mięso").any { name.contains(it) }) {
-            if (amt in 100.0..150.0) return "1 pojedyncza pierś / porcja"
-            if (amt in 160.0..220.0) return "1 duży filet"
+            if (amt in 100.0..150.0) return "1 pierś"
+            if (amt in 160.0..220.0) return "1 filet"
             if (amt in 40.0..80.0) return "1/2 fileta"
             return "${formatNumber(amt / 120.0)} porcji"
         }
@@ -188,7 +208,7 @@ object KitchenMeasureHelper {
         // 16. Ziemniaki i bataty
         if (name.contains("batat")) {
             val pcs = (amt / 160.0 * 10.0).roundToInt() / 10.0
-            return if (pcs in 0.8..1.2) "1 średni batat" else if (pcs in 0.4..0.6) "1/2 batata" else "${formatNumber(pcs)} szt."
+            return if (pcs in 0.8..1.2) "1 batat" else if (pcs in 0.4..0.6) "1/2 batata" else "${formatNumber(pcs)} szt."
         }
         if (name.contains("ziemniak")) {
             val pcs = (amt / 85.0).roundToInt()
@@ -202,16 +222,16 @@ object KitchenMeasureHelper {
         // 17. Owoce / warzywa sztukowe
         if (listOf("banan", "jabłko", "pomidor", "gruszka", "pomarańcza", "brzoskwinia").any { name.contains(it) }) {
             val pcs = (amt / 130.0 * 10.0).roundToInt() / 10.0
-            return if (pcs in 0.8..1.2) "1 średnia sztuka" else if (pcs in 0.4..0.6) "1/2 sztuki" else "${formatNumber(pcs)} szt."
+            return if (pcs in 0.8..1.2) "1 sztuka" else if (pcs in 0.4..0.6) "1/2 sztuki" else "${formatNumber(pcs)} szt."
         }
 
         if (name.contains("cebul")) {
             val pcs = (amt / 100.0 * 10.0).roundToInt() / 10.0
-            return if (pcs in 0.8..1.2) "1 średnia sztuka" else if (pcs in 0.4..0.6) "1/2 sztuki" else "${formatNumber(pcs)} szt."
+            return if (pcs in 0.8..1.2) "1 sztuka" else if (pcs in 0.4..0.6) "1/2 sztuki" else "${formatNumber(pcs)} szt."
         }
 
         if (name.contains("ogórek") || name.contains("marchew") || name.contains("cukinia")) {
-            if (amt < 50.0) return "kawałek (kilka plasterków)"
+            if (amt < 50.0) return "kawałek"
             val pcs = (amt / 100.0 * 10.0).roundToInt() / 10.0
             return if (pcs in 0.8..1.2) "1 sztuka" else if (pcs in 0.4..0.6) "1/2 sztuki" else "${formatNumber(pcs)} szt."
         }
@@ -223,12 +243,12 @@ object KitchenMeasureHelper {
 
         // 18. Sery (mozzarella, feta, ser żółty)
         if (name.contains("mozzarella")) {
-            if (amt in 110.0..135.0) return "1 cała kulka (125g)"
+            if (amt in 110.0..135.0) return "1 kulka"
             if (amt in 50.0..70.0) return "1/2 kulki"
         }
         if (name.contains("feta")) {
-            if (amt in 40.0..60.0) return "1/4 kostki (50g)"
-            if (amt in 90.0..115.0) return "1/2 kostki (100g)"
+            if (amt in 40.0..60.0) return "1/4 kostki"
+            if (amt in 90.0..115.0) return "1/2 kostki"
         }
         if (listOf("ser żółty", "gouda", "cheddar", "edam").any { name.contains(it) }) {
             val slices = (amt / 25.0).roundToInt()
@@ -241,8 +261,8 @@ object KitchenMeasureHelper {
 
         // 19. Sosy, passata, musztarda, majonez
         if (listOf("passata", "przecier pomidorowy", "pomidory w puszce").any { name.contains(it) }) {
-            if (amt in 180.0..220.0) return "1/2 puszki / butelki"
-            if (amt in 380.0..420.0) return "1 puszka (400g)"
+            if (amt in 180.0..220.0) return "1/2 puszki"
+            if (amt in 380.0..420.0) return "1 puszka"
             val tbsp = (amt / 20.0).roundToInt()
             return "$tbsp łyżek"
         }

@@ -310,12 +310,12 @@ def format_kitchen_measure(product_name: str, amount_g: float) -> str:
 
     # Warzywa liściaste (szpinak, rukola, roszponka, sałata, jarmuż)
     if any(k in name for k in ['szpinak', 'rukol', 'roszponk', 'sałat', 'jarmuż']):
-        if amt <= 30:
-            return "1 duża garść"
-        if amt <= 65:
-            return "2 garście (ok. 1/2 opakowania)"
+        if amt <= 35:
+            return "1 garść"
+        if amt <= 70:
+            return "2 garście"
         if amt <= 130:
-            return "1 całe opakowanie"
+            return "1 opak."
         return f"{round(amt / 50.0, 1)} garści"
 
     # Ryby (łosoś, dorsz, mintaj, pstrąg, tuńczyk, makrela)
@@ -325,7 +325,7 @@ def format_kitchen_measure(product_name: str, amount_g: float) -> str:
                 return "1 puszka"
             return f"{round(amt / 120.0, 1)} puszki"
         if 110 <= amt <= 165:
-            return "1 filet / porcja"
+            return "1 filet"
         if 60 <= amt <= 90:
             return "1/2 fileta"
         return f"{round(amt / 130.0, 1)} fileta"
@@ -333,9 +333,9 @@ def format_kitchen_measure(product_name: str, amount_g: float) -> str:
     # Drób i mięso (pierś z kurczaka, indyk, schab, wołowina)
     if any(k in name for k in ['kurczak', 'indyk', 'pierś', 'schab', 'wołowin', 'mięso']):
         if 100 <= amt <= 150:
-            return "1 pojedyncza pierś / porcja"
+            return "1 pierś"
         if 160 <= amt <= 220:
-            return "1 duży filet"
+            return "1 filet"
         if 40 <= amt <= 80:
             return "1/2 fileta"
         return f"{round(amt / 120.0, 1)} porcji"

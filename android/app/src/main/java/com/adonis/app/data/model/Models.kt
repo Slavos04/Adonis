@@ -163,6 +163,10 @@ data class PlannedMeal(
     @SerializedName("custom_items") val customItems: List<CustomMealItem>? = null
 )
 
+data class UpdateMealPortionsRequest(
+    val portions: Double
+)
+
 data class DailyMealPlanResponse(
     val id: Int,
     val date: String,
@@ -172,7 +176,12 @@ data class DailyMealPlanResponse(
     @SerializedName("total_calories") val totalCalories: Double,
     @SerializedName("total_protein_g") val totalProteinG: Double,
     @SerializedName("total_fat_g") val totalFatG: Double,
-    @SerializedName("total_carbs_g") val totalCarbsG: Double
+    @SerializedName("total_carbs_g") val totalCarbsG: Double,
+    @SerializedName("daily_calories_goal") val dailyCaloriesGoal: Int? = null,
+    @SerializedName("protein_goal_g") val proteinGoalG: Double? = null,
+    @SerializedName("fat_goal_g") val fatGoalG: Double? = null,
+    @SerializedName("carbs_goal_g") val carbsGoalG: Double? = null,
+    @SerializedName("is_calories_exceeded") val isCaloriesExceeded: Boolean? = false
 )
 
 data class ShoppingListItem(

@@ -304,6 +304,28 @@ fun MealOptionsDialog(
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                         }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    try {
+                                        apiService.updateMealPortions(meal.id, UpdateMealPortionsRequest(selectedPortions))
+                                        Toast.makeText(context, "Zapisano wielkość porcji: ${selectedPortions}x", Toast.LENGTH_SHORT).show()
+                                        onPlanUpdated()
+                                        onDismiss()
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "Błąd zapisu porcji: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Zastosuj porcję ${selectedPortions}x do dnia", fontWeight = FontWeight.Bold)
+                        }
                     } else {
                         // TAB 1: ZAMIEŃ POSIŁEK (MEAL SUBSTITUTION)
                         if (meal.isCustomSubstitution) {
