@@ -37,6 +37,7 @@ fun LoginScreen(
     tokenManager: TokenManager,
     onLoginSuccess: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     var isRegisterMode by remember { mutableStateOf(false) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -442,7 +443,7 @@ fun LoginScreen(
         }
 
         Text(
-            text = "ADONIS fit & eat • ver. 1.1",
+            text = "ADONIS fit & eat • ver. ${com.adonis.app.util.AppVersionHelper.getVersionName(context)}",
             fontSize = 11.sp,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
             modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)

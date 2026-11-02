@@ -494,7 +494,8 @@ fun DailyPlanScreen(
                         if (!recipe.ingredients.isNullOrEmpty()) {
                             Text("Składniki:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             recipe.ingredients.forEach { ing ->
-                                val measureInfo = if (!ing.kitchenMeasure.isNullOrBlank()) " (${ing.kitchenMeasure})" else ""
+                                val kMeasure = com.adonis.app.util.KitchenMeasureHelper.getMeasureText(ing.product.name, ing.amountG, ing.kitchenMeasure)
+                                val measureInfo = if (kMeasure.isNotBlank()) " ($kMeasure)" else ""
                                 Text(
                                     text = "• ${ing.product.name} — ${ing.amountG} ${ing.unit}$measureInfo${if (isDiscountStore(ing.product.store)) " (${ing.product.store})" else ""}",
                                     fontSize = 12.sp,

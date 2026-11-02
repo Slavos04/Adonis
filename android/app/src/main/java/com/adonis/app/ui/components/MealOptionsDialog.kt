@@ -284,8 +284,10 @@ fun MealOptionsDialog(
                                 modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
                             )
                             res.ingredients.forEach { ing ->
+                                val kMeasure = com.adonis.app.util.KitchenMeasureHelper.getMeasureText(ing.productName, ing.scaledAmount, ing.kitchenMeasure)
+                                val measureInfo = if (kMeasure.isNotBlank()) " ($kMeasure)" else ""
                                 Text(
-                                    "• ${ing.productName}${if (isDiscountStore(ing.store)) " (${ing.store})" else ""}: ${if (ing.scaledAmount % 1.0 == 0.0) ing.scaledAmount.toInt().toString() else ing.scaledAmount.toString()} ${ing.unit}${if (!ing.kitchenMeasure.isNullOrBlank()) " (${ing.kitchenMeasure})" else ""}",
+                                    "• ${ing.productName}${if (isDiscountStore(ing.store)) " (${ing.store})" else ""}: ${if (ing.scaledAmount % 1.0 == 0.0) ing.scaledAmount.toInt().toString() else ing.scaledAmount.toString()} ${ing.unit}$measureInfo",
                                     fontSize = 12.sp,
                                     modifier = Modifier.padding(vertical = 2.dp)
                                 )

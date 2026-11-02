@@ -736,12 +736,22 @@ fun ShoppingListScreen(apiService: AdonisApiService, tokenManager: TokenManager?
                             }
 
                             Column(horizontalAlignment = Alignment.End) {
-                                Text(
-                                    text = "${formatScaledAmount(item.amount, multiplier)} ${item.unit}",
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                                    Text(
+                                        text = "${formatScaledAmount(item.amount, multiplier)} ${item.unit}",
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    val kMeasure = com.adonis.app.util.KitchenMeasureHelper.format(item.productName, item.amount * multiplier)
+                                    if (kMeasure.isNotBlank()) {
+                                        Text(
+                                            text = "($kMeasure)",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
+
                                     if (multiplier != 1.0f) {
                                         Text(
                                             text = "baza: ${if (item.amount % 1.0 == 0.0) item.amount.toInt().toString() else item.amount.toString()} ${item.unit}",

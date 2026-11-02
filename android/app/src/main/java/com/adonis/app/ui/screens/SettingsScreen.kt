@@ -676,7 +676,7 @@ fun SettingsScreen(
                     Text("O aplikacji ADONIS fit & eat", fontSize = 12.sp)
                 }
                 Text(
-                    text = "ver. 1.1 (Produkcyjna)",
+                    text = "ver. ${com.adonis.app.util.AppVersionHelper.getVersionName(context)} (Produkcyjna)",
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
                 )

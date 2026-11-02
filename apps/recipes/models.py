@@ -296,8 +296,87 @@ def format_kitchen_measure(product_name: str, amount_g: float) -> str:
         return "1 sztuka" if pcs == 1 else f"{int(pcs)} sztuki" if pcs in (2, 3, 4) else f"{int(pcs)} sztuk"
 
     # Owoce/warzywa
-    if any(k in name for k in ['banan', 'jabłko', 'pomidor', 'gruszka', 'pomarańcza']):
+    if any(k in name for k in ['banan', 'jabłko', 'pomidor', 'gruszka', 'pomarańcza', 'brzoskwinia', 'nektarynka']):
         pcs = round(amt / 130.0, 1)
+        return "1 średnia sztuka" if 0.8 <= pcs <= 1.2 else "1/2 sztuki" if 0.4 <= pcs <= 0.6 else f"{pcs} szt."
+
+    # Ziemniaki i bataty (1 średni ziemniak = ok. 80-90g, 1 batat = ok. 150-180g)
+    if 'batat' in name:
+        pcs = round(amt / 160.0, 1)
+        return "1 średni batat" if 0.8 <= pcs <= 1.2 else "1/2 batata" if 0.4 <= pcs <= 0.6 else f"{pcs} szt."
+    if 'ziemniak' in name:
+        pcs = round(amt / 85.0)
+        return "1 sztuka" if pcs == 1 else f"{int(pcs)} sztuki" if pcs in (2, 3, 4) else f"{int(pcs)} sztuk"
+
+    # Warzywa liściaste (szpinak, rukola, roszponka, sałata, jarmuż)
+    if any(k in name for k in ['szpinak', 'rukol', 'roszponk', 'sałat', 'jarmuż']):
+        if amt <= 30:
+            return "1 duża garść"
+        if amt <= 65:
+            return "2 garście (ok. 1/2 opakowania)"
+        if amt <= 130:
+            return "1 całe opakowanie"
+        return f"{round(amt / 50.0, 1)} garści"
+
+    # Ryby (łosoś, dorsz, mintaj, pstrąg, tuńczyk, makrela)
+    if any(k in name for k in ['łosoś', 'dorsz', 'mintaj', 'pstrąg', 'ryb', 'makrel']):
+        if 'tuńczyk' in name:
+            if 100 <= amt <= 140:
+                return "1 puszka"
+            return f"{round(amt / 120.0, 1)} puszki"
+        if 110 <= amt <= 165:
+            return "1 filet / porcja"
+        if 60 <= amt <= 90:
+            return "1/2 fileta"
+        return f"{round(amt / 130.0, 1)} fileta"
+
+    # Drób i mięso (pierś z kurczaka, indyk, schab, wołowina)
+    if any(k in name for k in ['kurczak', 'indyk', 'pierś', 'schab', 'wołowin', 'mięso']):
+        if 100 <= amt <= 150:
+            return "1 pojedyncza pierś / porcja"
+        if 160 <= amt <= 220:
+            return "1 duży filet"
+        if 40 <= amt <= 80:
+            return "1/2 fileta"
+        return f"{round(amt / 120.0, 1)} porcji"
+
+    # Sery (mozzarella, feta, ser żółty, parmezan)
+    if 'mozzarella' in name:
+        if 110 <= amt <= 135:
+            return "1 cała kulka (125g)"
+        if 50 <= amt <= 70:
+            return "1/2 kulki"
+    if 'feta' in name:
+        if 40 <= amt <= 60:
+            return "1/4 kostki (50g)"
+        if 90 <= amt <= 110:
+            return "1/2 kostki (100g)"
+    if any(k in name for k in ['ser żółty', 'gouda', 'cheddar', 'edam']):
+        slices = round(amt / 25.0)
+        return "1 plaster" if slices == 1 else f"{int(slices)} plastry" if slices in (2, 3, 4) else f"{int(slices)} plastrów"
+
+    # Sosy, passata, koncentrat, musztarda, ocet
+    if any(k in name for k in ['passata', 'przecier pomidorowy', 'pomidory w puszce', 'krojone']):
+        if 180 <= amt <= 220:
+            return "1/2 puszki / butelki"
+        if 380 <= amt <= 420:
+            return "1 puszka (400g)"
+        tbsp = round(amt / 20.0)
+        return f"{int(tbsp)} łyżek"
+    if any(k in name for k in ['musztard', 'chrzan', 'majonez', 'ketchup', 'sos sojowy', 'ocet']):
+        if amt <= 8:
+            return "1 łyżeczka"
+        tbsp = round(amt / 15.0)
+        return "1 łyżka" if tbsp == 1 else f"{int(tbsp)} łyżki"
+
+    # Przyprawy i zioła
+    if any(k in name for k in ['sól', 'pieprz', 'oregano', 'bazylia', 'papryka słodka', 'papryka ostra', 'kurkuma', 'zioła']):
+        if amt <= 3:
+            return "1 szczypta"
+        return "1 łyżeczka"
+
+    if 'cebul' in name:
+        pcs = round(amt / 100.0, 1)
         return "1 średnia sztuka" if 0.8 <= pcs <= 1.2 else "1/2 sztuki" if 0.4 <= pcs <= 0.6 else f"{pcs} szt."
 
     if 'ogórek' in name or 'marchew' in name or 'cukinia' in name:
