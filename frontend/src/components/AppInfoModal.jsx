@@ -249,7 +249,7 @@ export function AppInfoModal({ isOpen, onClose }) {
                   title="Zeskanuj aparatem telefonu"
                 >
                   <QRCodeSVG
-                    value={typeof window !== 'undefined' ? `${window.location.origin}/Adonis.apk` : 'https://adonis.slavosmm.duckdns.org/Adonis.apk'}
+                    value={typeof window !== 'undefined' ? `${window.location.origin}/pobierz` : 'https://adonis.slavosmm.duckdns.org/pobierz'}
                     size={170}
                     level="H"
                     includeMargin={false}
@@ -330,7 +330,7 @@ export function AppInfoModal({ isOpen, onClose }) {
                       textDecoration: 'none'
                     }}
                   >
-                    <Download size={15} /> Pobierz .APK
+                    <Download size={15} /> Pobierz Adonis v{APP_VERSION} (.APK)
                   </a>
                   {copied ? (
                     <button

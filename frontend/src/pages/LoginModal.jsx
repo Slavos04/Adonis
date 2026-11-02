@@ -323,7 +323,7 @@ export function LoginModal({ onLoginSuccess }) {
             transition: 'all 0.2s ease'
           }}
         >
-          <Smartphone size={16} /> Pobierz aplikację na telefon (.APK)
+          <Smartphone size={16} /> Pobierz aplikację na telefon (.APK v{APP_VERSION})
         </a>
       </div>
     </div>
