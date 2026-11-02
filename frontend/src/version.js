@@ -8,11 +8,18 @@ export const CHANGELOG_DATA = [
     time: '21:15 CET',
     title: 'Wydanie 1.16 – Naprawa zapisu pomiarów (waga, talia) i obsługa błędów',
     badge: 'Aktualna',
-    highlights: [
-      'Backend: Usunięto błąd walidacji pola daty (shadowing typu w Pydantic), umożliwiając bezproblemowy zapis wagi i talii',
-      'Aplikacja Mobilna (Android): Dodano czytelną prezentację błędów w oknie dodawania pomiaru',
-      'Web: Przyjazne komunikaty błędów walidacji zamiast [object Object]',
-    ],
+    badgeType: 'emerald',
+    changes: [
+      {
+        category: 'Pomiary ciała i walidacja backendu',
+        items: [
+          'Backend: Usunięto błąd walidacji pola daty (shadowing typu w Pydantic), umożliwiając bezproblemowy zapis wagi i talii.',
+          'Pomiary Dietetyka: Umożliwiono dietetykowi bezpośrednie wprowadzanie pomiarów dla podopiecznych w systemie.',
+          'Aplikacja Web: Wprowadzono czytelne komunikaty błędów walidacji zamiast [object Object].',
+          'Aplikacja Mobilna (Android): Dodano czytelną prezentację błędów w oknie dodawania pomiaru w MeasurementsScreen.'
+        ]
+      }
+    ]
   },
   {
     version: '1.15',
@@ -20,12 +27,18 @@ export const CHANGELOG_DATA = [
     time: '20:10 CET',
     title: 'Wydanie 1.15 – Samodzielne przypisywanie i wybór dietetyka (Web & Android)',
     badge: 'Wcześniejsza',
-    highlights: [
-      'Konto Dietetyka: Bezpośrednie przypisywanie nowych podopiecznych pod opiekę („Przypisz pacjenta”) oraz zwalnianie opieki',
-      'Konto Pacjenta: Samodzielny wybór i zmiana dietetyka prowadzącego w Ustawieniach i Pulpicie',
-      'Aplikacja Mobilna (Android): Nowe moduły wyboru dietetyka w Ustawieniach oraz przypisywania w Kartotece dietetyka',
-      'Powiadomienia systemowe: Automatyczne powiadamianie pacjenta i dietetyka o objęciu opieką',
-    ],
+    badgeType: 'emerald',
+    changes: [
+      {
+        category: 'Zarządzanie opieką dietetyczną (Web & Mobile)',
+        items: [
+          'Konto Dietetyka: Bezpośrednie przypisywanie nowych podopiecznych pod opiekę („+ Przypisz pacjenta”) oraz natychmiastowe zwalnianie opieki („Odepnij pacjenta”).',
+          'Konto Pacjenta: Samodzielny wybór i zmiana dietetyka prowadzącego w Ustawieniach konta oraz bezpośrednio na Pulpicie Pacjenta.',
+          'Aplikacja Mobilna (Android): Nowe moduły wyboru dietetyka w Ustawieniach oraz przyciski przypisywania i odpinania w Kartotece dietetyka.',
+          'Powiadomienia systemowe: Automatyczne powiadamianie pacjenta i dietetyka o objęciu opieką.'
+        ]
+      }
+    ]
   },
   {
     version: '1.14',

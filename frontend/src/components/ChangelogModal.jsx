@@ -137,13 +137,13 @@ export function ChangelogModal({ isOpen, onClose, onBack }) {
 
               {/* Changes categories */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                {entry.changes.map((group, idx) => (
+                {entry.changes && entry.changes.map((group, idx) => (
                   <div key={idx} style={{ background: 'var(--bg-card)', padding: '0.75rem 0.9rem', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
                     <div style={{ fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--accent-emerald)', marginBottom: '0.45rem' }}>
                       {group.category}
                     </div>
                     <ul style={{ margin: 0, paddingLeft: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      {group.items.map((item, itemIdx) => (
+                      {(group.items || []).map((item, itemIdx) => (
                         <li key={itemIdx} style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
                           {item}
                         </li>
@@ -151,6 +151,17 @@ export function ChangelogModal({ isOpen, onClose, onBack }) {
                     </ul>
                   </div>
                 ))}
+                {entry.highlights && !entry.changes && (
+                  <div style={{ background: 'var(--bg-card)', padding: '0.75rem 0.9rem', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+                    <ul style={{ margin: 0, paddingLeft: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      {entry.highlights.map((item, itemIdx) => (
+                        <li key={itemIdx} style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           ))}
